@@ -1,0 +1,3 @@
+[submodule "vendor/CppLogger2"]
+	path = vendor/CppLogger2
+	url = https://github.com/emilienlemaire/CppLogger2.git
