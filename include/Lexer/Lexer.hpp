@@ -26,13 +26,13 @@ private:
 
     FILE* pFile;
 
-    int getNextChar();
 public:
     Lexer(const std::string& filepath="");
-    virtual ~Lexer();
+    ~Lexer();
 
     Token peekToken();
     [[nodiscard]] Token getNextToken();
+    int getNextChar();
 };
 
 

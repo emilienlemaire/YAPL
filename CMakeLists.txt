@@ -12,8 +12,9 @@ project(YAPL)
 include_directories(include vendor)
 
 add_subdirectory(vendor)
+add_subdirectory(libs)
 
 add_executable(YAPL
     main.cpp)
 
-target_link_libraries(YAPL PRIVATE cpplogger)
+target_link_libraries(YAPL PRIVATE cpplogger lexer)

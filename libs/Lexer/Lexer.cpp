@@ -1,4 +1,5 @@
 #include "Lexer/Lexer.hpp"
+#include "CppLogger2/include/CppLogger.h"
 #include "CppLogger2/include/Format.h"
 #include <cstdio>
 #include <cstdlib>
@@ -9,9 +10,9 @@ std::ostream& operator<<(std::ostream& os, const Token& token){
     return os;
 }
 
-Lexer::Lexer(const std::string& filepath){
-
-    logger = CppLogger::CppLogger(CppLogger::Level::Trace, "Lexer");
+Lexer::Lexer(const std::string& filepath)
+    :logger(CppLogger::Level::Trace, "Lexer")
+{
 
     CppLogger::Format format({
             CppLogger::FormatAttribute::Name
@@ -25,10 +26,17 @@ Lexer::Lexer(const std::string& filepath){
             logger.printError("Cannot open file: {}\nExiting!!", filepath);
             exit(EXIT_FAILURE);
         }
+    } else {
+        pFile = stdin;
     }
 }
 
-int Lexer::getNextChar(){
+Lexer::~Lexer(){
+    fclose(pFile);
+}
 
-    return 0;
+int Lexer::getNextChar(){
+    m_CurrentChar = getc(pFile);
+
+    return m_CurrentChar;
 }

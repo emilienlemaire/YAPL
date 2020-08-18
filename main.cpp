@@ -3,6 +3,7 @@
 #include <CppLogger2/CppLogger2.h>
 
 #include "YAPL.h"
+#include "Lexer/Lexer.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -18,10 +19,12 @@ int main(int argc, char *argv[])
     std::string input = "";
     std::cout << "YAPL version" << VERSION << std::endl;
 
+    Lexer lexer = Lexer();
+
     while (input != "exit()") {
         std::cout << "YAPL >>>";
-        std::cin >> input;
-        mainConsole.printInfo("Vous avez ecrit: {}", input);
+        int c = lexer.getNextChar();
+        mainConsole.printInfo("Vous avez ecrit: {}", (char)c);
     }
 
     mainConsole.printInfo("Fin du programme");
