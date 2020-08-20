@@ -23,8 +23,8 @@ int main(int argc, char *argv[])
 
     while (input != "exit()") {
         std::cout << "YAPL >>>";
-        int c = lexer.getNextChar();
-        mainConsole.printInfo("Vous avez ecrit: {}", (char)c);
+        Token tok = lexer.getNextToken();
+        mainConsole.printInfo("Vous avez ecrit: {}", tok);
     }
 
     mainConsole.printInfo("Fin du programme");
