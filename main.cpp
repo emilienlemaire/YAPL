@@ -16,14 +16,18 @@ int main(int argc, char *argv[])
 
     mainConsole.setFormat(mainFormat);
 
-    std::string input = "";
-    std::cout << "YAPL version" << VERSION << std::endl;
+    std::cout << "YAPL version " << VERSION << std::endl;
+    std::cout << "YAPL >>>";
 
     Lexer lexer = Lexer();
 
-    while (input != "exit()") {
+    Token tok = lexer.getNextToken();
+
+    mainConsole.printInfo("Vous avez ecrit: {}", tok);
+
+    while (tok.identifier != "exit") {
         std::cout << "YAPL >>>";
-        Token tok = lexer.getNextToken();
+        tok = lexer.getNextToken();
         mainConsole.printInfo("Vous avez ecrit: {}", tok);
     }
 

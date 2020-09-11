@@ -1,0 +1,59 @@
+import stdio;
+import math::{cos, sin};
+
+int x;
+int y = 10;
+
+double z = cos(10);
+
+stdio::print("hello");
+
+func add(int x, int y) -> int {
+    return x + y;
+}
+
+for(int i in 0...4) {
+    stdio::print(i); // 0, 1, 2, 3, 4
+}
+
+for(int i in 0..<4) {
+    stdio::print(i); // 0, 1, 2, 3
+}
+
+for(int i in 0..-4) {
+    stdio::print(i); // 0, -1, -2, -3
+}
+
+for(int i in 0<..4) {
+    stdio::print(i); // 1, 2, 3, 4
+}
+
+int x[3] = {0, 1, 2};
+
+stdio::print(x[0]) // 0
+
+export struct exampleStruct {
+    int a;
+    double b;
+}
+
+stdio::print(example.a);
+
+func mult(int x, int y) {
+    return x * y;
+}
+
+export {add, mult};
+
+// In other file
+
+import example;
+
+example::add(5, 2);
+example::exampleStruct.a;
+
+// or
+
+import example::{add};
+
+add(5, 2);
