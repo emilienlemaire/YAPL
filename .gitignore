@@ -1,3 +1,4 @@
 .cache
 .clangd
 Debug
+vendor/CppLogger2/release

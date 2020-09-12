@@ -75,12 +75,24 @@ Token Lexer::getNextToken(){
             return {token::type, "int"};
         }
 
-        if (identifier == "func") {
-            return {token::func, ""};
-        }
-
         if (identifier == "float" || identifier == "double") {
             return {token::type, "double"};
+        }
+
+        if (identifier == "void") {
+            return {token::type, "void"};
+        }
+
+        if (identifier == "bool") {
+            return {token::type, "bool"};
+        }
+
+        if (identifier == "string") {
+            return {token::type, "string"};
+        }
+
+        if (identifier == "func") {
+            return {token::func, ""};
         }
 
         if (identifier == "for") {

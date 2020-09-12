@@ -1,5 +1,4 @@
-#ifndef LEXER_H
-#define LEXER_H
+#pragma once
 
 #include <ostream>
 #include <string>
@@ -33,7 +32,4 @@ public:
     [[nodiscard]] Token getNextToken();
     int getNextChar();
 };
-
-
-#endif /* LEXER_H */
 
