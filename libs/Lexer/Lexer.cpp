@@ -91,6 +91,10 @@ Token Lexer::getNextToken(){
             return {token::type, "string"};
         }
 
+        if (identifier == "struct") {
+            return {token::structtok, ""};
+        }
+
         if (identifier == "func") {
             return {token::func, ""};
         }

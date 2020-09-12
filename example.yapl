@@ -35,11 +35,23 @@ stdio::print(x[0]) // 0
 export struct exampleStruct {
     int a;
     double b;
+    func addA(int b) -> int {
+        a = a + b;
+        return a + b;
+    }
 }
+
+exampleStruct example(1, 2.5);
+
+int test = example.addA(12);
+
+example = (3, 1.5);
+
+example.a = 8;
 
 stdio::print(example.a);
 
-func mult(int x, int y) {
+func mult(int x, int y) -> int {
     return x * y;
 }
 

@@ -1,0 +1,136 @@
+(* YAPL's EBNF Grammar, just has an helper to build the AST
+ * Warnings: - The grammar might not be 100% accurate, for a better understanding of the language,
+ *               check example.yapl
+ *           - Most of the terminal symbols have to or can be seperated by whitespaces that are
+ *              not shown here
+ *           - The Comment rule will be ignored in the AST
+ * *)
+
+
+Program = {Node};
+
+Node = Statement
+   | Expression
+   | Program
+   | Comment;
+
+Statement = Import
+   | Export
+   | Declaration
+   | Initialization
+   | Assignment
+   | Return
+   | Block
+   | If
+   | Else
+   | ElseIf
+   | For
+   | FunctionDefinition
+   | StructDefinition
+   | StructInitialization
+   | StructAssignement
+   | AttributeAssignment
+   | ArrayDefinition
+   | ArrayInitialization
+   | ArrayAssignment
+   | ArrayMemberAssigment;
+
+Expression = Literal
+    | Binary
+    | Identifier
+    | NamespaceIdentifier
+    | FunctionCall
+    | MethodCall;
+
+Import = "import"
+    ( Identifier
+    | Identifier, "::{", Identifier, { "," Identifier }, "}" ), ";";
+
+Export = "export"
+    ( Identifier
+    | FunctionDefinition
+    | StructDefinition ), ";";
+
+Declaration = Type, Identifier, ";";
+
+Initialization = Type, Identifier, "=", Expression, ";";
+
+Assignment = Identifier, "=", Expression, ";";
+
+Return = "return", Expression, ";";
+
+Block = "{", { Statement }, "}";
+
+If = "if", "(", Expression, ")", Block;
+
+Else = "else", Block;
+
+ElseIf = "else ", If;
+
+For = "for", "(", Type, Identifier, "in", Range, ")", Block;
+
+FunctionDefinition = "func ", Identifier,
+    "(", Type, Identifier, { "s", Type, Identifier }, ")", "->", Type, Block;
+
+StructDefinition = "struct", Identifier, "{",
+    { Initialization | Declaration | FunctionDefinition | StructDefinition },
+    "}";
+
+StructInitialization = (NamespaceIdentifier | Identifier), Identifier,
+    "(", Expression, {"," Expression}, ")", ";";
+
+StructAssignement = (NamespaceIdentifier | Identifier), "=",
+    "(", Expression, {",", Expression}, ")", ";";
+
+AttributeAssignment = (Identifier | NamespaceIdentifier), ".", Identifier, "=", Expression, ";";
+
+ArrayDefinition = (Type | Identifier | NamespaceIdentifier), Identifier, "[", Int, "]", ";";
+
+ArrayInitialization = (Type | Identifier | NamespaceIdentifier), Identifier, "[", Int, "]",
+    "=", "{", Expression, {",", Expression }, "}", ";";
+
+ArrayAssignment = (Identifier | NamespaceIdentifier),
+    "=", "{", Expression, {",", Expression }, "}", ";";
+
+ArrayMemberAssigment = (Identifier | NamespaceIdentifier), "[", Int, "]", "=", Expression, ";";
+
+Literal = Int | Float | StringLiteral | Bool | Identifier | NamespaceIdentifier | Attribute;
+
+Binary = Expression, Operator, Expression;
+
+Identifier = Letter, { Num | Letter };
+
+NamespaceIdentifier = Identifier, "::", Identifier;
+
+FunctionCall = (NamespaceIdentifier | Identifier), "(", [ Expression, {",", Expression} ], ")";
+
+MethodCall = (NamespaceIdentifier | Identifier), ".", Identifier, "(",
+    [Expression, "{", {",", Expression} ], ")";
+
+Attribute = (NamespaceIdentifier | Identifier), ".", Identifier;
+
+Range = (Int | Identifier), RangeOperator, (Int | Identifier);
+
+StringLiteral = '"', String, '"';
+
+Float = ["-"], {Num}, ".", {Num};
+
+Int = ["-"] {Num};
+
+Comment = "//", String;
+
+String = {Char};
+
+RangeOperator = "..." | "..<" | "..-" | "<..";
+
+Operator = "+" | "-" | "/" | "*" | "%";
+
+Type = "int" | "double" | "float" | "void" | "bool";
+
+Bool = "true" | "false";
+
+Char = ?.?;
+
+Num = ?[0-9]?;
+
+Letter = ?[a-zA-Z]?;

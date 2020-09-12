@@ -94,6 +94,8 @@ inline std::string tokenToString(int token){
             return "comma";
         case -45:
             return "arrow";
+        case -46:
+            return "struct";
         default:
             return std::string(1, (char)token);
     }
@@ -155,6 +157,7 @@ enum token{
 
   semicolon    = -43,
   comma        = -44,
-  arrow        = -45
+  arrow        = -45,
+  structtok    = -46
 };
 
