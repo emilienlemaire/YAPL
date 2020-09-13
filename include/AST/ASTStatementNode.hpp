@@ -22,9 +22,9 @@ public:
 
 class ASTExportNode : public ASTStatementNode {
 private:
-    std::vector<std::unique_ptr<ASTStatementNode>> m_Modules;
+    std::unique_ptr<ASTStatementNode> m_Module;
 public:
-    ASTExportNode(std::vector<std::unique_ptr<ASTStatementNode>> modules);
+    ASTExportNode(std::unique_ptr<ASTStatementNode> module);
 };
 
 class ASTDeclarationNode : public ASTStatementNode {
@@ -77,31 +77,13 @@ public:
 class ASTIfNode: public ASTStatementNode {
 private:
     std::unique_ptr<ASTExprNode> m_Condition;
-    std::unique_ptr<ASTBlockNode> m_Block;
+    std::unique_ptr<ASTBlockNode> m_IfBlock;
+    std::unique_ptr<ASTBlockNode> m_ElseBlock;
 public:
-    ASTIfNode(std::unique_ptr<ASTExportNode> condition, std::unique_ptr<ASTBlockNode> block);
-};
-
-class ASTElseNode: public ASTStatementNode {
-private:
-    std::unique_ptr<ASTIfNode> m_IfStatement;
-    std::unique_ptr<ASTBlockNode> m_Block;
-public:
-    ASTElseNode(std::unique_ptr<ASTIfNode> ifStatement, std::unique_ptr<ASTBlockNode> block);
-};
-
-class ASTElseIfNode: public ASTStatementNode {
-private:
-    std::unique_ptr<ASTIfNode> m_IfStatement;
-    std::vector<std::unique_ptr<ASTElseIfNode>> m_ElseIfNodes;
-    std::unique_ptr<ASTExprNode> m_Condition;
-    std::unique_ptr<ASTBlockNode> m_Block;
-public:
-    ASTElseIfNode(
-            std::unique_ptr<ASTIfNode> ifStatement,
-            std::vector<std::unique_ptr<ASTElseIfNode>> elseIfNodes,
+    ASTIfNode(
             std::unique_ptr<ASTExprNode> condition,
-            std::unique_ptr<ASTBlockNode> block
+            std::unique_ptr<ASTBlockNode> ifBlock,
+            std::unique_ptr<ASTBlockNode> elseBlock
             );
 };
 
@@ -121,15 +103,15 @@ public:
 class ASTFunctionDefinitionNode: public ASTStatementNode {
 private:
     std::string m_Name;
-    std::vector<ASTDeclarationNode> m_Args;
+    std::vector<std::unique_ptr<ASTDeclarationNode>> m_Args;
     ASTNode::TYPE m_ReturnType;
     std::unique_ptr<ASTBlockNode> m_Body;
 public:
     ASTFunctionDefinitionNode(
             std::string name,
-            std::vector<ASTDeclarationNode> args,
+            std::vector<std::unique_ptr<ASTDeclarationNode>> args,
             ASTNode::TYPE returnType,
-            std::unique_ptr<ASTBlockNode> m_Body
+            std::unique_ptr<ASTBlockNode> body
             );
 };
 
@@ -155,7 +137,7 @@ public:
     ASTStructInitializationNode(
             std::string structName,
             std::string name,
-            std::vector<std::unique_ptr<ASTExportNode>> attributesValues
+            std::vector<std::unique_ptr<ASTExprNode>> attributesValues
             );
 };
 
@@ -226,7 +208,11 @@ class ASTArrayMemeberAssignmentNode: public ASTStatementNode {
 private:
     std::string m_ArrayName;
     size_t m_Index;
+    std::unique_ptr<ASTExprNode> m_Value;
 public:
-    ASTArrayMemeberAssignmentNode(std::string arrayName, size_t index);
+    ASTArrayMemeberAssignmentNode(
+            std::string arrayName,
+            size_t index,
+            std::unique_ptr<ASTExprNode> value);
 };
 
