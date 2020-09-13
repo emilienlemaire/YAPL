@@ -59,7 +59,7 @@ Assignment = Identifier, "=", Expression, ";";
 
 Return = "return", Expression, ";";
 
-Block = "{", { Statement }, "}";
+Block = "{", { Node }, "}";
 
 If = "if", "(", Expression, ")", Block;
 
