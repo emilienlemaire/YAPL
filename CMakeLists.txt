@@ -17,4 +17,4 @@ add_subdirectory(libs)
 add_executable(YAPL
     main.cpp)
 
-target_link_libraries(YAPL PRIVATE cpplogger lexer)
+target_link_libraries(YAPL PRIVATE cpplogger lexer parser)

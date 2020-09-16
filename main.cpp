@@ -4,6 +4,7 @@
 
 #include "YAPL.h"
 #include "Lexer/Lexer.hpp"
+#include "Parser/Parser.hpp"
 #include "libs/Lexer/TokenUtils.hpp"
 
 int main(int argc, char *argv[])
@@ -32,6 +33,8 @@ int main(int argc, char *argv[])
         }
         mainConsole.printInfo("Vous avez ecrit: {}", tok);
     }
+
+    Parser parser;
 
     mainConsole.printInfo("Fin du programme");
 

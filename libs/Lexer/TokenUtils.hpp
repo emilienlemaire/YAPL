@@ -17,7 +17,7 @@ inline std::string tokenToString(int token){
         case -6:
             return "popen";
         case -7:
-            return "pclone";
+            return "pclose";
         case -8:
             return "bopen";
         case -9:
