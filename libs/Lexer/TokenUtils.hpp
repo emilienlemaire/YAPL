@@ -43,59 +43,47 @@ inline std::string tokenToString(int token){
         case -19:
             return "mth";
         case -20:
-            return "leq";
+            return "forlabel";
         case -21:
-            return "med";
+            return "whilelabel";
         case -22:
-            return "fto";
-        case -23:
-            return "flabel";
-        case -24:
-            return "whilelable";
-        case -25:
             return "iflabel";
-        case -26:
+        case -23:
             return "elselabel";
-        case -27:
+        case -24:
             return "inlabel";
+        case -25:
+            return "structlabel";
+        case -26:
+            return "truelalbel";
+        case -27:
+            return "falselabel";
         case -28:
-            return "int_value";
+            return "importlabel";
         case -29:
-            return "float_value";
+            return "exportlabel";
         case -30:
-            return "ftol";
+            return "int_value";
         case -31:
-            return "ftom";
+            return "float_value";
         case -32:
-            return "ffroml";
+            return "semicolon";
         case -33:
-            return "notsym";
+            return "comma";
         case -34:
-            return "andsym";
+            return "notsym";
         case -35:
             return "orsym";
         case -36:
-            return "eqsym";
+            return "andsym";
         case -37:
-            return "neqsym";
+            return "point";
         case -38:
-            return "truelabel";
+            return "colon";
         case -39:
-            return "falselabel";
+            return "squote";
         case -40:
-            return "dcoloperator";
-        case -41:
-            return "importlabel";
-        case -42:
-            return "exportlalbel";
-        case -43:
-            return "semicolon";
-        case -44:
-            return "comma";
-        case -45:
-            return "arrow";
-        case -46:
-            return "struct";
+            return "dquote";
         default:
             return std::string(1, (char)token);
     }
@@ -124,40 +112,31 @@ enum token{
   mod          = -17,
   lth          = -18,
   mth          = -19,
-  leq          = -20,
-  meq          = -21,
 
-  fto          = -22,
-  forlabel     = -23,
-  whilelabel   = -24,
-  iflabel      = -25,
-  elselabel    = -26,
-  inlabel      = -27,
+  forlabel     = -20,
+  whilelabel   = -21,
+  iflabel      = -22,
+  elselabel    = -23,
+  inlabel      = -24,
+  structlabel  = -25,
+  truelabel    = -26,
+  falselabel   = -27,
+  importlabel  = -28,
+  exportlalbel = -29,
 
-  int_value    = -28,
-  float_value  = -29,
+  int_value    = -30,
+  float_value  = -31,
 
-  ftol         = -30,
-  ftom         = -31,
-  ffroml       = -32,
+  semicolon    = -32,
+  comma        = -33,
 
-  notsym       = -33,
-  andsym       = -34,
+  notsym       = -34,
   orsym        = -35,
-  eqsym        = -36,
-  neqsym       = -37,
+  andsym       = -36,
 
-  truelabel    = -38,
-  falselabel   = -39,
-
-  dcoloperator = -40,
-
-  importlabel  = -41,
-  exportlalbel = -42,
-
-  semicolon    = -43,
-  comma        = -44,
-  arrow        = -45,
-  structtok    = -46
+  point        = -37,
+  colon        = -38,
+  squote       = -39,
+  dquote       = -40
 };
 

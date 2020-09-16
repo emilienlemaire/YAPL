@@ -4,6 +4,7 @@
 
 #include "YAPL.h"
 #include "Lexer/Lexer.hpp"
+#include "libs/Lexer/TokenUtils.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -17,17 +18,18 @@ int main(int argc, char *argv[])
     mainConsole.setFormat(mainFormat);
 
     std::cout << "YAPL version " << VERSION << std::endl;
-    std::cout << "YAPL >>>";
 
-    Lexer lexer = Lexer();
+    Lexer lexer = Lexer("../example.yapl");
 
     Token tok = lexer.getNextToken();
 
     mainConsole.printInfo("Vous avez ecrit: {}", tok);
 
-    while (tok.identifier != "exit") {
-        std::cout << "YAPL >>>";
+    while (tok.token != token::eof) {
         tok = lexer.getNextToken();
+        if (tok.identifier == "\n") {
+            tok.identifier = "\\n";
+        }
         mainConsole.printInfo("Vous avez ecrit: {}", tok);
     }
 

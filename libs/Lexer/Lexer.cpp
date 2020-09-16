@@ -92,7 +92,7 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "struct") {
-            return {token::structtok, ""};
+            return {token::structlabel, ""};
         }
 
         if (identifier == "func") {
@@ -141,11 +141,13 @@ Token Lexer::getNextToken(){
     if (std::isdigit(m_CurrentChar)) {
         bool isFloat = false;
         numVal += m_CurrentChar;
-        while (std::isdigit(getNextChar()) || (!isFloat && m_CurrentChar == '.')) {
+        getNextChar();
+        while (std::isdigit(m_CurrentChar) || (!isFloat && m_CurrentChar == '.')) {
             if (m_CurrentChar == '.') {
                 isFloat = true;
             }
             numVal += m_CurrentChar;
+            getNextChar();
         }
 
         return isFloat ? Token{token::float_value, numVal} :
@@ -156,11 +158,6 @@ Token Lexer::getNextToken(){
         identifier = m_CurrentChar;
 
         getNextChar();
-
-        while (std::ispunct(m_CurrentChar)) {
-            identifier += m_CurrentChar;
-            getNextChar();
-        }
 
         if (identifier  == "(") {
             return {token::paropen, ""};
@@ -186,21 +183,7 @@ Token Lexer::getNextToken(){
             return {token::iclose, ""};
         }
 
-        if (identifier == "...") {
-            return {token::fto, ""};
-        }
-
-        if (identifier == "..<") {
-            return {token::ftol, ""};
-        }
-
-        if (identifier == "..-") {
-            return {token::ftom, ""};
-        }
-
-        if (identifier == "<..") {
-            return {token::ffroml, ""};
-        }
+        // TODO: add point, colon, or, and
 
         if (identifier == "=") {
             return {token::eq, ""};
@@ -234,36 +217,8 @@ Token Lexer::getNextToken(){
             return {token::mth, ""};
         }
 
-        if (identifier == "<=") {
-            return {token::leq, ""};
-        }
-
-        if (identifier == ">=") {
-            return {token::meq, ""};
-        }
-
         if (identifier == "!") {
             return {token::notsym, ""};
-        }
-
-        if (identifier == "&&") {
-            return {token::andsym, ""};
-        }
-
-        if (identifier == "||") {
-            return {token::orsym, ""};
-        }
-
-        if (identifier == "==") {
-            return {token::eqsym, ""};
-        }
-
-        if (identifier == "!=") {
-            return {token::neqsym, ""};
-        }
-
-        if (identifier == "::") {
-            return {token::dcoloperator, ""};
         }
 
         if (identifier == ";") {
@@ -274,8 +229,28 @@ Token Lexer::getNextToken(){
             return {token::comma, ""};
         }
 
-        if (identifier == "->") {
-            return {token::arrow, ""};
+        if (identifier == ".") {
+            return {token::point, ""};
+        }
+
+        if (identifier == ":") {
+            return {token::colon, ""};
+        }
+
+        if (identifier == "|") {
+            return {token::orsym, ""};
+        }
+
+        if (identifier == "&") {
+            return {token::andsym, ""};
+        }
+
+        if (identifier == "\"") {
+            return {token::dquote, ""};
+        }
+
+        if (identifier == "'") {
+            return {token::squote, ""};
         }
     }
 
