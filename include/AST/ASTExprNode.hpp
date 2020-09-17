@@ -1,10 +1,11 @@
 #pragma once
 
+#include "AST/ASTNode.hpp"
 #include <memory>
 #include <string>
 #include <vector>
 
-class ASTExprNode
+class ASTExprNode : public ASTNode
 {};
 
 template<typename T>

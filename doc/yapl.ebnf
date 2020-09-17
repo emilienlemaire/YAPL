@@ -47,8 +47,7 @@ Import = "import"
     | Identifier, "::{", Identifier, { "," Identifier }, "}" ), ";";
 
 Export = "export"
-    ( Identifier
-    | FunctionDefinition
+    (FunctionDefinition
     | StructDefinition ), ";";
 
 Declaration = Type, Identifier, ";";

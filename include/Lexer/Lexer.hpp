@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Lexer/TokenUtils.hpp"
 #include <ostream>
 #include <string>
 #include <cstdio>
@@ -12,6 +13,13 @@ struct Token{
     std::string identifier;
 
     friend std::ostream& operator<<(std::ostream& os, const Token& token);
+    bool operator!=(int tok){
+        return token != tok;
+    }
+
+    bool operator==(int tok) {
+        return token == tok;
+    }
 };
 
 class Lexer

@@ -11,7 +11,7 @@ project(YAPL)
 
 include_directories(include vendor)
 
-link_directories(vendor/CppLogger2/release/src)
+link_directories(vendor/CppLogger2/Debug/src)
 add_subdirectory(libs)
 
 add_executable(YAPL

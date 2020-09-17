@@ -9,7 +9,7 @@
 #include "AST/ASTNode.hpp"
 #include "AST/ASTExprNode.hpp"
 
-class ASTStatementNode
+class ASTStatementNode : public ASTNode
 {};
 
 class ASTImportNode : public ASTStatementNode {
@@ -18,6 +18,7 @@ private:
     std::vector<std::string> m_SubModules;
 public:
     ASTImportNode(std::string module, std::vector<std::string> subModules);
+    ASTImportNode(std::string module);
 };
 
 class ASTExportNode : public ASTStatementNode {
@@ -36,7 +37,7 @@ public:
 };
 
 template<typename T>
-class ASTInitializationNode : public ASTStatementNode {
+class ASTInitializationNode : public ASTDeclarationNode {
 private:
     std::string m_Name;
     ASTNode::TYPE m_Type;
@@ -165,7 +166,7 @@ public:
             );
 };
 
-class ASTArrayDefinitionNode: public ASTStatementNode {
+class ASTArrayDefinitionNode: public ASTDeclarationNode {
 private:
     std::string m_Name;
     size_t m_Size;
@@ -175,7 +176,7 @@ public:
 };
 
 template<size_t t_Size>
-class ASTArrayInitializationNode: public ASTStatementNode {
+class ASTArrayInitializationNode: public ASTArrayDefinitionNode {
 private:
     std::string m_Name;
     ASTNode::TYPE m_Type;

@@ -16,8 +16,8 @@ private:
 
     Token m_CurrentToken;
 
-    template<typename... T>
-    std::unique_ptr<ASTNode> parseError(std::string msg, T... var) {
+    template<typename Ptr, typename... T>
+    std::unique_ptr<Ptr> parseError(std::string msg, T... var) {
         m_Logger.printError(msg, var...);
         return nullptr;
     }
@@ -44,7 +44,7 @@ private:
     std::unique_ptr<ASTStructInitializationNode> parseStructInitialization();
     std::unique_ptr<ASTStructAssignmentNode> parseStructAssignement();
     std::unique_ptr<ASTAttributeAssignmentNode> parseAttributeAssignment();
-    std::unique_ptr<ASTArrayDefinitionNode> parseArrayDefinition();
+    std::unique_ptr<ASTArrayDefinitionNode> parseArrayDefinition(ASTNode::TYPE, std::string);
     std::unique_ptr<ASTArrayMemeberAssignmentNode> parseArrayMemberAssignment();
 
     // Expression parsing
@@ -57,13 +57,13 @@ private:
     // Templated parsing
     // Statement
     template<typename T>
-    std::unique_ptr<ASTAssignmentNode<T>> parseAssigment();
+    std::unique_ptr<ASTAssignmentNode<T>> parseAssigment(std::string);
     template<typename T>
-    std::unique_ptr<ASTInitializationNode<T>> parseInitialization();
+    std::unique_ptr<ASTInitializationNode<T>> parseInitialization(std::string);
     template<size_t t_Size>
-    std::unique_ptr<ASTArrayInitializationNode<t_Size>> parseArrayInitialization();
+    std::unique_ptr<ASTArrayInitializationNode<t_Size>> parseArrayInitialization(std::string);
     template<size_t t_Size>
-    std::unique_ptr<ASTArrayAssignmentNode<t_Size>> parseArrayAssignment();
+    std::unique_ptr<ASTArrayAssignmentNode<t_Size>> parseArrayAssignment(std::string);
     // Expression
     template<typename T>
     std::unique_ptr<ASTLiteralNode<T>> parseLiteral();

@@ -2,6 +2,7 @@
 
 #include <CppLogger2/CppLogger2.h>
 
+#include "CppLogger2/include/CppLogger.h"
 #include "YAPL.h"
 #include "Lexer/Lexer.hpp"
 #include "Parser/Parser.hpp"
@@ -20,23 +21,9 @@ int main(int argc, char *argv[])
 
     std::cout << "YAPL version " << VERSION << std::endl;
 
-    Lexer lexer = Lexer("../example.yapl");
+    Parser parser("../example.yapl", CppLogger::Level::Trace);
 
-    Token tok = lexer.getNextToken();
-
-    mainConsole.printInfo("Vous avez ecrit: {}", tok);
-
-    while (tok.token != token::eof) {
-        tok = lexer.getNextToken();
-        if (tok.identifier == "\n") {
-            tok.identifier = "\\n";
-        }
-        mainConsole.printInfo("Vous avez ecrit: {}", tok);
-    }
-
-    Parser parser;
-
-    mainConsole.printInfo("Fin du programme");
+    parser.parse();
 
     return 0;
 }

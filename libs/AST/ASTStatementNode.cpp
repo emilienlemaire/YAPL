@@ -11,6 +11,10 @@ ASTImportNode::ASTImportNode(std::string module, std::vector<std::string> subMod
     : m_Module(module), m_SubModules(subModules)
 {}
 
+ASTImportNode::ASTImportNode(std::string module)
+    : m_Module(std::move(module))
+{}
+
 ASTExportNode::ASTExportNode(std::unique_ptr<ASTStatementNode> module)
     : m_Module(std::move(module))
 {}
