@@ -1,7 +1,7 @@
 #include "Lexer/Lexer.hpp"
 #include "CppLogger2/include/CppLogger.h"
 #include "CppLogger2/include/Format.h"
-#include "TokenUtils.hpp"
+#include "Lexer/TokenUtils.hpp"
 
 #include <cctype>
 #include <cstdio>
@@ -40,6 +40,10 @@ Lexer::~Lexer(){
     fclose(pFile);
 }
 
+Token Lexer::peekToken() {
+    return m_CurrentToken;
+}
+
 int Lexer::getNextChar(){
     m_CurrentChar = getc(pFile);
 
@@ -59,7 +63,8 @@ Token Lexer::getNextToken(){
     }
 
     if(m_CurrentChar == EOF) {
-        return {token::eof, ""};
+        m_CurrentToken = {token::eof, ""};
+        return m_CurrentToken;
     }
 
     if (std::isalpha(m_CurrentChar)) {
@@ -72,70 +77,87 @@ Token Lexer::getNextToken(){
         }
 
         if(identifier == "int") {
-            return {token::type, "int"};
+            m_CurrentToken = {token::type, "int"};
+            return m_CurrentToken;
         }
 
         if (identifier == "float" || identifier == "double") {
-            return {token::type, "double"};
+            m_CurrentToken = {token::type, "double"};
+            return m_CurrentToken;
         }
 
         if (identifier == "void") {
-            return {token::type, "void"};
+            m_CurrentToken = {token::type, "void"};
+            return m_CurrentToken;
         }
 
         if (identifier == "bool") {
-            return {token::type, "bool"};
+            m_CurrentToken = {token::type, "bool"};
+            return m_CurrentToken;
         }
 
         if (identifier == "string") {
-            return {token::type, "string"};
+            m_CurrentToken = {token::type, "string"};
+            return m_CurrentToken;
         }
 
         if (identifier == "struct") {
-            return {token::structlabel, ""};
+            m_CurrentToken = {token::structlabel, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "func") {
-            return {token::func, ""};
+            m_CurrentToken = {token::func, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "for") {
-            return {token::forlabel, ""};
+            m_CurrentToken = {token::forlabel, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "while") {
-            return {token::whilelabel, ""};
+            m_CurrentToken = {token::whilelabel, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "if") {
-            return {token::iflabel, ""};
+            m_CurrentToken = {token::iflabel, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "else") {
-            return {token::elselabel, ""};
+            m_CurrentToken = {token::elselabel, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "in") {
-            return {token::inlabel, ""};
+            m_CurrentToken = {token::inlabel, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "true") {
-            return {token::truelabel, ""};
+            m_CurrentToken = {token::truelabel, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "false") {
-            return {token::falselabel, ""};
+            m_CurrentToken = {token::falselabel, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "import") {
-            return {token::importlabel, ""};
+            m_CurrentToken = {token::importlabel, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "export") {
-            return {token::exportlalbel, ""};
+            m_CurrentToken = {token::exportlalbel, ""};
+            return m_CurrentToken;
         }
 
-        return {token::label, identifier};
+        m_CurrentToken = {token::label, identifier};
+        return m_CurrentToken;
     }
 
     if (std::isdigit(m_CurrentChar)) {
@@ -150,8 +172,10 @@ Token Lexer::getNextToken(){
             getNextChar();
         }
 
-        return isFloat ? Token{token::float_value, numVal} :
+        m_CurrentToken = isFloat ? Token{token::float_value, numVal} :
             Token{token::int_value, numVal};
+
+        return m_CurrentToken;
     }
 
     if (std::ispunct(m_CurrentChar)) {
@@ -160,99 +184,122 @@ Token Lexer::getNextToken(){
         getNextChar();
 
         if (identifier  == "(") {
-            return {token::paropen, ""};
+            m_CurrentToken = {token::paropen, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == ")" ) {
-            return {token::parclose, ""};
+            m_CurrentToken = {token::parclose, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "{") {
-            return {token::bopen, ""};
+            m_CurrentToken = {token::bopen, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "}") {
-            return {token::bclose, ""};
+            m_CurrentToken = {token::bclose, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "[") {
-            return {token::iopen, ""};
+            m_CurrentToken = {token::iopen, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "]") {
-            return {token::iclose, ""};
+            m_CurrentToken = {token::iclose, ""};
+            return m_CurrentToken;
         }
 
-        // TODO: add point, colon, or, and
-
         if (identifier == "=") {
-            return {token::eq, ""};
+            m_CurrentToken = {token::eq, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "+") {
-            return {token::plus, ""};
+            m_CurrentToken = {token::plus, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "-") {
-            return {token::minus, ""};
+            m_CurrentToken = {token::minus, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "/") {
-            return {token::divide, ""};
+            m_CurrentToken = {token::divide, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "*") {
-            return {token::times};
+            m_CurrentToken = {token::times};
+            return m_CurrentToken;
         }
 
         if (identifier == "%") {
-            return {token::mod, ""};
+            m_CurrentToken = {token::mod, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "<") {
-            return {token::lth, ""};
+            m_CurrentToken = {token::lth, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == ">") {
-            return {token::mth, ""};
+            m_CurrentToken = {token::mth, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "!") {
-            return {token::notsym, ""};
+            m_CurrentToken = {token::notsym, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == ";") {
-            return {token::semicolon, ""};
+            m_CurrentToken = {token::semicolon, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == ",") {
-            return {token::comma, ""};
+            m_CurrentToken = {token::comma, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == ".") {
-            return {token::point, ""};
+            m_CurrentToken = {token::point, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == ":") {
-            return {token::colon, ""};
+            m_CurrentToken = {token::colon, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "|") {
-            return {token::orsym, ""};
+            m_CurrentToken = {token::orsym, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "&") {
-            return {token::andsym, ""};
+            m_CurrentToken = {token::andsym, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "\"") {
-            return {token::dquote, ""};
+            m_CurrentToken = {token::dquote, ""};
+            return m_CurrentToken;
         }
 
         if (identifier == "'") {
-            return {token::squote, ""};
+            m_CurrentToken = {token::squote, ""};
+            return m_CurrentToken;
         }
     }
 
-    return {m_CurrentChar, ""};
+    m_CurrentToken = {m_CurrentChar, ""};
+    return m_CurrentToken;
 }
+

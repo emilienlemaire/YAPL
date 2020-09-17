@@ -5,7 +5,7 @@
 #include "YAPL.h"
 #include "Lexer/Lexer.hpp"
 #include "Parser/Parser.hpp"
-#include "libs/Lexer/TokenUtils.hpp"
+#include "Lexer/TokenUtils.hpp"
 
 int main(int argc, char *argv[])
 {

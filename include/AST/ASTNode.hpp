@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 class ASTNode {
@@ -11,7 +12,8 @@ public:
 
 class ASTProgramNode : public ASTNode {
 private:
-    std::vector<ASTNode*> m_Nodes;
+    std::vector<std::unique_ptr<ASTNode>> m_Nodes;
 public:
-    explicit ASTProgramNode(std::vector<ASTNode*>);
+    explicit ASTProgramNode() = default;
+    void addNode(std::unique_ptr<ASTNode> node);
 };
