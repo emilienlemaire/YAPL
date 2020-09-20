@@ -84,6 +84,16 @@ inline std::string tokenToString(int token){
             return "squote";
         case -40:
             return "dquote";
+        case -41:
+            return "access_sym";
+        case -42:
+            return "fromto";
+        case -43:
+            return "fromtol";
+        case -44:
+            return "fromtominus";
+        case -45:
+            return "fromoreto";
         default:
             return std::string(1, (char)token);
     }
@@ -137,6 +147,19 @@ enum token{
   point        = -37,
   colon        = -38,
   squote       = -39,
-  dquote       = -40
+  dquote       = -40,
+
+  access_sym   = -41,
+  fromto       = -42,
+  fromtol      = -43,
+  fromtominus  = -44,
+  fromoreto    = -45,
+
+  eqcomp       = -46,
+  leq          = -47,
+  meq          = -48,
+  arrow_op     = -49,
+
+  unknown      =-100
 };
 

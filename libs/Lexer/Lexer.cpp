@@ -214,6 +214,11 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "=") {
+            getNextChar();
+            if (m_CurrentChar == '=') {
+                m_CurrentToken = {token::eqcomp, ""};
+                return m_CurrentToken;
+            }
             m_CurrentToken = {token::eq, ""};
             return m_CurrentToken;
         }
@@ -224,11 +229,50 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "-") {
+            getNextChar();
+            if (m_CurrentChar == '>') {
+                m_CurrentToken = {token::arrow_op, ""};
+                return m_CurrentToken;
+            } else if (std::isdigit(m_CurrentChar)) {
+                bool isFloat = false;
+                std::string numVal = "-";
+                numVal += m_CurrentChar;
+                getNextChar();
+                while (std::isdigit(m_CurrentChar) || (!isFloat && m_CurrentChar == '.')) {
+                    numVal += m_CurrentChar;
+                    if (m_CurrentChar == '.') {
+                        isFloat = true;
+                    }
+                    getNextChar();
+                }
+                m_CurrentToken = {isFloat ? token::float_value : token:: int_value, numVal};
+                return m_CurrentToken;
+            }
             m_CurrentToken = {token::minus, ""};
             return m_CurrentToken;
         }
 
         if (identifier == "/") {
+            getNextChar();
+            if (m_CurrentChar == '/') {
+                getNextChar();
+                while (m_CurrentChar != '\n') {
+                    getNextChar();
+                }
+                return getNextToken();
+            }
+            if (m_CurrentChar == '*') {
+                getNextChar();
+                while (true) {
+                    if (m_CurrentChar == '*') {
+                        getNextChar();
+                        if (m_CurrentChar == '/') {
+                            return getNextToken();
+                        }
+                    }
+                    getNextChar();
+                }
+            }
             m_CurrentToken = {token::divide, ""};
             return m_CurrentToken;
         }
@@ -244,11 +288,31 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "<") {
+            getNextChar();
+            if (m_CurrentChar == '=') {
+                m_CurrentToken = {token::leq, ""};
+                return m_CurrentToken;
+            } else if (m_CurrentChar == '.') {
+                getNextChar();
+                if (m_CurrentChar == '.') {
+                    m_CurrentToken = {token::fromoreto, ""};
+                    return m_CurrentToken;
+                }
+                identifier += ".";
+                identifier += m_CurrentChar;
+                m_CurrentToken = {token::unknown, identifier};
+                return m_CurrentToken;
+            }
             m_CurrentToken = {token::lth, ""};
             return m_CurrentToken;
         }
 
         if (identifier == ">") {
+            getNextChar();
+            if (m_CurrentChar == '=') {
+                m_CurrentToken = {token::meq, ""};
+                return m_CurrentToken;
+            }
             m_CurrentToken = {token::mth, ""};
             return m_CurrentToken;
         }
@@ -269,11 +333,46 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == ".") {
+            getNextChar();
+            if (std::isdigit(m_CurrentChar)) {
+                std::string numVal = ".";
+                numVal += m_CurrentChar;
+                getNextChar();
+                while (std::isdigit(m_CurrentChar)) {
+                    numVal += m_CurrentChar;
+                    getNextChar();
+                }
+                m_CurrentToken = {token::float_value, numVal};
+                return m_CurrentToken;
+            }
+            if (m_CurrentChar == '.') {
+                getNextChar();
+                if (m_CurrentChar == '.') {
+                    m_CurrentToken = {token::fromto, ""};
+                    return m_CurrentToken;
+                }
+                if (m_CurrentChar == '>') {
+                    m_CurrentToken = {token::fromtol, ""};
+                    return m_CurrentToken;
+                }
+                if (m_CurrentChar == '-') {
+                    m_CurrentToken = {token::fromtominus, ""};
+                    return m_CurrentToken;
+                }
+                identifier += ".";
+                identifier += m_CurrentChar;
+                return {token::unknown, identifier};
+            }
             m_CurrentToken = {token::point, ""};
             return m_CurrentToken;
         }
 
         if (identifier == ":") {
+            getNextChar();
+            if (m_CurrentChar == ':') {
+                m_CurrentToken = {token::access_sym, ""};
+                return m_CurrentToken;
+            }
             m_CurrentToken = {token::colon, ""};
             return m_CurrentToken;
         }

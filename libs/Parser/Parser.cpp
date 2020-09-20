@@ -63,17 +63,8 @@ std::unique_ptr<ASTImportNode> Parser::parseImport() {
         return std::make_unique<ASTImportNode>(module);
     }
 
-    if (m_CurrentToken.token == token::colon) {
+    if (m_CurrentToken.token == token::access_sym) {
         m_CurrentToken = m_Lexer.getNextToken();
-        if (m_CurrentToken != token::colon) {
-            return std::move(parseError<ASTImportNode>(
-                        "Syntax error: Expected ':' insted of {}",
-                        m_CurrentToken
-                        ));
-        }
-
-        m_CurrentToken = m_Lexer.getNextToken();
-
         if (m_CurrentToken != token::bopen) {
             return std::move(parseError<ASTImportNode>(
                         "Syntax error: Expected '{' instead of {}",
