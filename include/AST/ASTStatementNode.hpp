@@ -48,11 +48,10 @@ public:
 class ASTAssignmentNode: public ASTStatementNode {
 private:
     std::string m_Name;
-    ASTNode::TYPE m_Type;
     std::unique_ptr<ASTExprNode> m_Value;
 public:
-    ASTAssignmentNode(std::string name, ASTNode::TYPE type, std::unique_ptr<ASTExprNode> value)
-        : m_Name(std::move(name)), m_Type(type), m_Value(std::move(value))
+    ASTAssignmentNode(std::string name, std::unique_ptr<ASTExprNode> value)
+        : m_Name(std::move(name)), m_Value(std::move(value))
     {}
 };
 
@@ -127,12 +126,12 @@ public:
 
 class ASTStructInitializationNode: public ASTStatementNode {
 private:
-    std::string m_Struct;
+    std::unique_ptr<ASTIdentifierNode> m_Struct;
     std::string m_Name;
     std::vector<std::unique_ptr<ASTExprNode>> m_AttributesValues;
 public:
     ASTStructInitializationNode(
-            std::string structName,
+            std::unique_ptr<ASTIdentifierNode> t_Struct,
             std::string name,
             std::vector<std::unique_ptr<ASTExprNode>> attributesValues
             );
@@ -171,31 +170,28 @@ public:
     ASTArrayDefinitionNode(std::string name, size_t size, ASTNode::TYPE type);
 };
 
-template<size_t t_Size>
 class ASTArrayInitializationNode: public ASTArrayDefinitionNode {
 private:
-    std::string m_Name;
-    ASTNode::TYPE m_Type;
-    std::array<std::unique_ptr<ASTExprNode>, t_Size> m_Values;
+    std::vector<std::unique_ptr<ASTExprNode>> m_Values;
 public:
     ASTArrayInitializationNode(
             std::string name,
             ASTNode::TYPE type,
-            std::array<std::unique_ptr<ASTExprNode>, t_Size> values
+            size_t size,
+            std::vector<std::unique_ptr<ASTExprNode>> values
             )
-        : m_Name(std::move(name)), m_Type(type), m_Values(std::move(values))
+        : ASTArrayDefinitionNode(std::move(name), size, type), m_Values(std::move(values))
     {}
 };
 
-template<size_t t_Size>
-class ASTArrayAssignmentNode: ASTStatementNode {
+class ASTArrayAssignmentNode: public ASTStatementNode {
 private:
     std::string m_Name;
-    std::array<std::unique_ptr<ASTExprNode>, t_Size> m_Values;
+    std::vector<std::unique_ptr<ASTExprNode>> m_Values;
 public:
     ASTArrayAssignmentNode(
             std::string name,
-            std::array<std::unique_ptr<ASTExprNode>, t_Size> values
+            std::vector<std::unique_ptr<ASTExprNode>> values
             )
         : m_Name(std::move(name)), m_Values(std::move(values))
     {}

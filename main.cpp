@@ -1,6 +1,6 @@
 #include <iostream>
-
 #include <CppLogger2/CppLogger2.h>
+#include <memory>
 
 #include "CppLogger2/include/CppLogger.h"
 #include "YAPL.h"

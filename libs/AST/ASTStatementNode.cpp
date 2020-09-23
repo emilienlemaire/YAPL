@@ -65,10 +65,10 @@ ASTStructDefinitionNode::ASTStructDefinitionNode(
 {}
 
 ASTStructInitializationNode::ASTStructInitializationNode(
-        std::string structName,
+        std::unique_ptr<ASTIdentifierNode> t_Struct,
         std::string name,
         std::vector<std::unique_ptr<ASTExprNode>> attributesValues)
-    : m_Struct(structName), m_Name(name), m_AttributesValues(std::move(attributesValues))
+    : m_Struct(std::move(t_Struct)), m_Name(name), m_AttributesValues(std::move(attributesValues))
 {}
 
 ASTStructAssignmentNode::ASTStructAssignmentNode(

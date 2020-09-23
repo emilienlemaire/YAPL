@@ -13,6 +13,21 @@ enum class RangeOperator {
     fmt
 };
 
+enum class Operator {
+    plus,
+    minus,
+    times,
+    divide,
+    mod,
+    lth,
+    mth,
+    orsym,
+    andsym,
+    eqcomp,
+    leq,
+    meq
+};
+
 class ASTExprNode : public ASTNode
 {};
 
@@ -29,12 +44,12 @@ public:
 class ASTBinaryNode: public ASTExprNode {
 private:
     std::unique_ptr<ASTExprNode> m_LeftOperrand;
-    char m_Operator;
+    Operator m_Operator;
     std::unique_ptr<ASTExprNode> m_RightOperrand;
 public:
     ASTBinaryNode(
             std::unique_ptr<ASTExprNode> leftOperrand,
-            char t_Operator,
+            Operator t_Operator,
             std::unique_ptr<ASTExprNode> rightOperrand
             );
 };
@@ -61,32 +76,50 @@ public:
     ASTIdentifierNode(std::string identifier);
 };
 
-class ASTNamspaceIdentifierNode: public ASTExprNode {
+class ASTNamespaceIdentifierNode: public ASTIdentifierNode {
 private:
     std::string m_Namespace;
-    std::string m_Identifier;
 public:
-    ASTNamspaceIdentifierNode(std::string t_Namespace, std::string identifier);
+    ASTNamespaceIdentifierNode(std::string t_Namespace, std::string identifier);
 };
 
 class ASTFunctionCallNode: public ASTExprNode {
 private:
-    std::string m_Name;
+    std::unique_ptr<ASTIdentifierNode> m_Name;
     std::vector<std::unique_ptr<ASTExprNode>> m_Args;
 public:
-    ASTFunctionCallNode(std::string name, std::vector<std::unique_ptr<ASTExprNode>> args);
+    ASTFunctionCallNode(std::unique_ptr<ASTIdentifierNode> name, std::vector<std::unique_ptr<ASTExprNode>> args);
 };
 
-class ASTMethodCallNode: public ASTExprNode {
+class ASTAttributeAccessNode : public ASTExprNode {
 private:
-    std::string m_StructIdentifier;
-    std::string m_MethodName;
-    std::vector<std::unique_ptr<ASTExprNode>> m_Args;
+    std::string m_Name;
+    std::string m_Attribute;
 public:
-    ASTMethodCallNode(
-            std::string structIdentifier,
-            std::string methodName,
-            std::vector<std::unique_ptr<ASTExprNode>> args
-            );
+    ASTAttributeAccessNode(std::string name, std::string attribute)
+        : m_Name(std::move(name)), m_Attribute(std::move(attribute))
+    {}
 };
 
+class ASTMethodCallNode: public ASTAttributeAccessNode {
+    private:
+        std::string m_StructIdentifier;
+        std::string m_MethodName;
+        std::vector<std::unique_ptr<ASTExprNode>> m_Args;
+    public:
+        ASTMethodCallNode(
+                std::string structIdentifier,
+                std::string methodName,
+                std::vector<std::unique_ptr<ASTExprNode>> args
+                );
+};
+
+class ASTArrayAccessNode : public ASTExprNode {
+private:
+    std::string m_Name;
+    size_t m_Index;
+public:
+    ASTArrayAccessNode(std::string name, size_t index)
+        : m_Name(std::move(name)), m_Index(index)
+    {}
+};

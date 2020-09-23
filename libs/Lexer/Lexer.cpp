@@ -156,7 +156,12 @@ Token Lexer::getNextToken(){
             return m_CurrentToken;
         }
 
+        if (identifier == "return") {
+            m_CurrentToken = {token::returnlabel, ""};
+            return m_CurrentToken;
+        }
         m_CurrentToken = {token::label, identifier};
+        std::cout << "Got a label: " << identifier << " and current char: " << (char)m_CurrentChar <<std::endl;
         return m_CurrentToken;
     }
 
@@ -214,8 +219,8 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "=") {
-            getNextChar();
             if (m_CurrentChar == '=') {
+                getNextChar();
                 m_CurrentToken = {token::eqcomp, ""};
                 return m_CurrentToken;
             }
@@ -229,8 +234,8 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "-") {
-            getNextChar();
             if (m_CurrentChar == '>') {
+                getNextChar();
                 m_CurrentToken = {token::arrow_op, ""};
                 return m_CurrentToken;
             } else if (std::isdigit(m_CurrentChar)) {
@@ -253,7 +258,6 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "/") {
-            getNextChar();
             if (m_CurrentChar == '/') {
                 getNextChar();
                 while (m_CurrentChar != '\n') {
@@ -288,13 +292,14 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "<") {
-            getNextChar();
             if (m_CurrentChar == '=') {
+                getNextChar();
                 m_CurrentToken = {token::leq, ""};
                 return m_CurrentToken;
             } else if (m_CurrentChar == '.') {
                 getNextChar();
                 if (m_CurrentChar == '.') {
+                    getNextChar();
                     m_CurrentToken = {token::fromoreto, ""};
                     return m_CurrentToken;
                 }
@@ -308,8 +313,8 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == ">") {
-            getNextChar();
             if (m_CurrentChar == '=') {
+                getNextChar();
                 m_CurrentToken = {token::meq, ""};
                 return m_CurrentToken;
             }
@@ -333,8 +338,8 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == ".") {
-            getNextChar();
             if (std::isdigit(m_CurrentChar)) {
+                getNextChar();
                 std::string numVal = ".";
                 numVal += m_CurrentChar;
                 getNextChar();
@@ -348,14 +353,17 @@ Token Lexer::getNextToken(){
             if (m_CurrentChar == '.') {
                 getNextChar();
                 if (m_CurrentChar == '.') {
+                    getNextChar();
                     m_CurrentToken = {token::fromto, ""};
                     return m_CurrentToken;
                 }
-                if (m_CurrentChar == '>') {
+                if (m_CurrentChar == '<') {
+                    getNextChar();
                     m_CurrentToken = {token::fromtol, ""};
                     return m_CurrentToken;
                 }
                 if (m_CurrentChar == '-') {
+                    getNextChar();
                     m_CurrentToken = {token::fromtominus, ""};
                     return m_CurrentToken;
                 }
@@ -368,8 +376,8 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == ":") {
-            getNextChar();
             if (m_CurrentChar == ':') {
+                getNextChar();
                 m_CurrentToken = {token::access_sym, ""};
                 return m_CurrentToken;
             }

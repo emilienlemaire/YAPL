@@ -94,6 +94,16 @@ inline std::string tokenToString(int token){
             return "fromtominus";
         case -45:
             return "fromoreto";
+        case -46:
+            return "eqcomp";
+        case -47:
+            return "leq";
+        case -48:
+            return "meq";
+        case -49:
+            return "arrow_op";
+        case -50:
+            return "returnlabel";
         default:
             return std::string(1, (char)token);
     }
@@ -159,6 +169,8 @@ enum token{
   leq          = -47,
   meq          = -48,
   arrow_op     = -49,
+
+  returnlabel = -50,
 
   unknown      =-100
 };

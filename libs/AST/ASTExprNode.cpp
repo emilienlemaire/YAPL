@@ -5,7 +5,7 @@
 
 ASTBinaryNode::ASTBinaryNode(
         std::unique_ptr<ASTExprNode> leftOperrand,
-        char t_Operator,
+        Operator t_Operator,
         std::unique_ptr<ASTExprNode> rightOperrand
         )
     : m_LeftOperrand(std::move(leftOperrand)),
@@ -17,24 +17,24 @@ ASTIdentifierNode::ASTIdentifierNode(std::string identifier)
     : m_Identifier(std::move(identifier))
 {}
 
-ASTNamspaceIdentifierNode::ASTNamspaceIdentifierNode(
+ASTNamespaceIdentifierNode::ASTNamespaceIdentifierNode(
         std::string t_Namespace,
         std::string identifier
         )
-    : m_Namespace(t_Namespace), m_Identifier(identifier)
+    : m_Namespace(t_Namespace), ASTIdentifierNode(identifier)
 {}
 
 ASTFunctionCallNode::ASTFunctionCallNode(
-        std::string name,
+        std::unique_ptr<ASTIdentifierNode> name,
         std::vector<std::unique_ptr<ASTExprNode>> args
         )
-    : m_Name(name), m_Args(std::move(args))
+    : m_Name(std::move(name)), m_Args(std::move(args))
 {}
 
 ASTMethodCallNode::ASTMethodCallNode(
         std::string structIdentifier,
         std::string methodName,
         std::vector<std::unique_ptr<ASTExprNode>> args)
-    : m_StructIdentifier(structIdentifier), m_MethodName(methodName), m_Args(std::move(args))
+    : ASTAttributeAccessNode(std::move(structIdentifier), std::move(methodName)), m_Args(std::move(args))
 {}
 
