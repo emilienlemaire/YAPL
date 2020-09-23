@@ -36,27 +36,23 @@ public:
     ASTDeclarationNode(std::string name, ASTNode::TYPE type);
 };
 
-template<typename T>
 class ASTInitializationNode : public ASTDeclarationNode {
 private:
-    std::string m_Name;
-    ASTNode::TYPE m_Type;
-    T m_Value;
+    std::unique_ptr<ASTExprNode> m_Value;
 public:
-    ASTInitializationNode(std::string name, ASTNode::TYPE type, T value)
-        : m_Name(std::move(name)), m_Type(type), m_Value(value)
+    ASTInitializationNode(std::string name, ASTNode::TYPE type, std::unique_ptr<ASTExprNode> value)
+        : ASTDeclarationNode(name, type), m_Value(std::move(value))
     {}
 };
 
-template<typename T>
 class ASTAssignmentNode: public ASTStatementNode {
 private:
     std::string m_Name;
     ASTNode::TYPE m_Type;
-    T m_Value;
+    std::unique_ptr<ASTExprNode> m_Value;
 public:
-    ASTAssignmentNode(std::string name, ASTNode::TYPE type, T value)
-        : m_Name(std::move(name)), m_Type(type), m_Value(value)
+    ASTAssignmentNode(std::string name, ASTNode::TYPE type, std::unique_ptr<ASTExprNode> value)
+        : m_Name(std::move(name)), m_Type(type), m_Value(std::move(value))
     {}
 };
 
@@ -90,12 +86,12 @@ public:
 
 class ASTForNode: public ASTStatementNode {
 private:
-    std::string m_Iterator;
+    std::unique_ptr<ASTDeclarationNode> m_Iterator;
     std::unique_ptr<ASTExprNode> m_Condition;
     std::unique_ptr<ASTBlockNode> m_Block;
 public:
     ASTForNode(
-            std::string iterator,
+            std::unique_ptr<ASTDeclarationNode> iterator,
             std::unique_ptr<ASTExprNode> condition,
             std::unique_ptr<ASTBlockNode> block
             );
@@ -169,8 +165,8 @@ public:
 class ASTArrayDefinitionNode: public ASTDeclarationNode {
 private:
     std::string m_Name;
-    size_t m_Size;
     ASTNode::TYPE m_Type;
+    size_t m_Size;
 public:
     ASTArrayDefinitionNode(std::string name, size_t size, ASTNode::TYPE type);
 };

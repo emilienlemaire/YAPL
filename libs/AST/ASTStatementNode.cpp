@@ -42,7 +42,7 @@ ASTIfNode::ASTIfNode(
 {}
 
 ASTForNode::ASTForNode(
-        std::string iterator,
+        std::unique_ptr<ASTDeclarationNode> iterator,
         std::unique_ptr<ASTExprNode> condition,
         std::unique_ptr<ASTBlockNode> block
         )
@@ -87,7 +87,7 @@ ASTAttributeAssignmentNode::ASTAttributeAssignmentNode(
 {}
 
 ASTArrayDefinitionNode::ASTArrayDefinitionNode(std::string name, size_t size, ASTNode::TYPE type)
-    : m_Name(name), m_Size(size), m_Type(type)
+    : ASTDeclarationNode(name, type), m_Size(size)
 {}
 
 ASTArrayMemeberAssignmentNode::ASTArrayMemeberAssignmentNode(

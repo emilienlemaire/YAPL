@@ -36,19 +36,20 @@ Statement = Import
    | ArrayMemberAssigment;
 
 Expression = Literal
-    | Binary
-    | Identifier
-    | NamespaceIdentifier
-    | FunctionCall
-    | MethodCall;
+   | Binary
+   | Range
+   | Identifier
+   | NamespaceIdentifier
+   | FunctionCall
+   | MethodCall;
 
 Import = "import"
-    ( Identifier
-    | Identifier, "::{", Identifier, { "," Identifier }, "}" ), ";";
+   ( Identifier
+      | Identifier, "::{", Identifier, { "," Identifier }, "}" ), ";";
 
 Export = "export"
-    (FunctionDefinition
-    | StructDefinition ), ";";
+   (FunctionDefinition
+      | StructDefinition ), ";";
 
 Declaration = Type, Identifier, ";";
 
@@ -69,27 +70,27 @@ ElseIf = "else ", If;
 For = "for", "(", Type, Identifier, "in", Range, ")", Block;
 
 FunctionDefinition = "func ", Identifier,
-    "(", Type, Identifier, { "s", Type, Identifier }, ")", "->", Type, Block;
+                   "(", Type, Identifier, { "s", Type, Identifier }, ")", "->", Type, Block;
 
 StructDefinition = "struct", Identifier, "{",
-    { Initialization | Declaration | FunctionDefinition | StructDefinition },
-    "}";
+      { Initialization | Declaration | FunctionDefinition | StructDefinition },
+   "}";
 
 StructInitialization = (NamespaceIdentifier | Identifier), Identifier,
-    "(", Expression, {"," Expression}, ")", ";";
+                     "(", Expression, {"," Expression}, ")", ";";
 
 StructAssignement = (NamespaceIdentifier | Identifier), "=",
-    "(", Expression, {",", Expression}, ")", ";";
+                  "(", Expression, {",", Expression}, ")", ";";
 
 AttributeAssignment = (Identifier | NamespaceIdentifier), ".", Identifier, "=", Expression, ";";
 
 ArrayDefinition = (Type | Identifier | NamespaceIdentifier), Identifier, "[", Int, "]", ";";
 
 ArrayInitialization = (Type | Identifier | NamespaceIdentifier), Identifier, "[", Int, "]",
-    "=", "{", Expression, {",", Expression }, "}", ";";
+                    "=", "{", Expression, {",", Expression }, "}", ";";
 
 ArrayAssignment = (Identifier | NamespaceIdentifier),
-    "=", "{", Expression, {",", Expression }, "}", ";";
+                "=", "{", Expression, {",", Expression }, "}", ";";
 
 ArrayMemberAssigment = (Identifier | NamespaceIdentifier), "[", Int, "]", "=", Expression, ";";
 
@@ -104,7 +105,7 @@ NamespaceIdentifier = Identifier, "::", Identifier;
 FunctionCall = (NamespaceIdentifier | Identifier), "(", [ Expression, {",", Expression} ], ")";
 
 MethodCall = (NamespaceIdentifier | Identifier), ".", Identifier, "(",
-    [Expression, "{", {",", Expression} ], ")";
+           [Expression, "{", {",", Expression} ], ")";
 
 Attribute = (NamespaceIdentifier | Identifier), ".", Identifier;
 

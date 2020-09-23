@@ -28,7 +28,9 @@ for(int i in 0<..4) {
     stdio::print(i); // 1, 2, 3, 4
 }
 
-int x[3] = {0, 1, 2};
+int x[3] = [0, 1, 2];
+
+x = [2, 3, 4];
 
 stdio::print(x[0]) // 0
 
@@ -45,7 +47,7 @@ exampleStruct example(1, 2.5);
 
 int test = example.addA(12);
 
-example = (3, 1.5);
+example = {3, 1.5};
 
 example.a = 8;
 
@@ -62,7 +64,7 @@ export {add, mult};
 import example;
 
 example::add(5, 2);
-example::exampleStruct.a;
+example::exampleStruct thisIsAStruct;
 
 // or
 

@@ -3,7 +3,15 @@
 #include "AST/ASTNode.hpp"
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
+
+enum class RangeOperator {
+    ft,
+    ftl,
+    ftm,
+    fmt
+};
 
 class ASTExprNode : public ASTNode
 {};
@@ -29,6 +37,21 @@ public:
             char t_Operator,
             std::unique_ptr<ASTExprNode> rightOperrand
             );
+};
+
+class ASTRangeNode: public ASTExprNode {
+private:
+    std::unique_ptr<ASTExprNode> m_Start;
+    RangeOperator m_Operator;
+    std::unique_ptr<ASTExprNode> m_Stop;
+public:
+    ASTRangeNode(
+        std::unique_ptr<ASTExprNode> start,
+        RangeOperator t_Operator,
+        std::unique_ptr<ASTExprNode> stop
+        )
+    : m_Start(std::move(start)), m_Operator(t_Operator), m_Stop(std::move(stop))
+    {}
 };
 
 class ASTIdentifierNode: public ASTExprNode {

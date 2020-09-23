@@ -30,11 +30,13 @@ public:
 private:
     std::unique_ptr<ASTStatementNode> parseStatement();
     std::unique_ptr<ASTExprNode> parseExpr();
+    std::unique_ptr<ASTNode> parseLabel(std::string indentifier);
 
     // Statement parsing
     std::unique_ptr<ASTImportNode> parseImport();
     std::unique_ptr<ASTExportNode> parseExport();
     std::unique_ptr<ASTDeclarationNode> parseDeclaration();
+    std::unique_ptr<ASTInitializationNode> parseInitialization(std::string name, ASTNode::TYPE type);
     std::unique_ptr<ASTReturnNode> parseReturnNode();
     std::unique_ptr<ASTBlockNode> parseBlock();
     std::unique_ptr<ASTIfNode> parseIf();
@@ -53,13 +55,10 @@ private:
     std::unique_ptr<ASTNamspaceIdentifierNode> parseNamespaceIdentifier();
     std::unique_ptr<ASTFunctionCallNode> parseFunctionCall();
     std::unique_ptr<ASTMethodCallNode> parseMethodeCall();
+    std::unique_ptr<ASTRangeNode> parseRange();
 
     // Templated parsing
     // Statement
-    template<typename T>
-    std::unique_ptr<ASTAssignmentNode<T>> parseAssigment(std::string);
-    template<typename T>
-    std::unique_ptr<ASTInitializationNode<T>> parseInitialization(std::string);
     template<size_t t_Size>
     std::unique_ptr<ASTArrayInitializationNode<t_Size>> parseArrayInitialization(std::string);
     template<size_t t_Size>
