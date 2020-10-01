@@ -22,19 +22,26 @@ Parser::Parser(std::string filepath, CppLogger::Level level)
             });
 
     m_Logger.setFormat(format);
-
-    parseError<std::nullptr_t>("This is a test");
-    parseError<std::nullptr_t>("This is a test with {}", 1);
 }
 
 void Parser::parseInfo(std::string info) {
+#ifdef LOG_PARSER
     m_Logger.printInfo("Parsing {}", info);
+#endif
 }
 
 void Parser::parse() {
+    std::vector<std::unique_ptr<ASTNode>> nodes;
     while (m_Lexer.peekToken().token != token::eof) {
-        parseNext();
+        auto node = parseNext();
+        nodes.push_back(std::move(node));
     }
+
+    m_Program = std::make_unique<ASTProgramNode>(std::move(nodes));
+}
+
+std::unique_ptr<ASTProgramNode> Parser::getProgram() {
+    return std::move(m_Program);
 }
 
 std::unique_ptr<ASTNode> Parser::parseNext() {
@@ -141,25 +148,24 @@ std::unique_ptr<ASTExprNode> Parser::parseExpr() {
     std::unique_ptr<ASTExprNode> tmpExpr;
 
     parseInfo("expr");
-    m_Logger.printWarn("Current token: {}", m_CurrentToken);
 
     if (m_CurrentToken == token::int_value) {
-        m_Logger.printInfo("Parsing int value");
+        parseInfo("int literal");
         tmpExpr = parseLiteral<int>();
     }
 
     if (m_CurrentToken == token::float_value) {
-        m_Logger.printInfo("Parsing double value");
+        parseInfo("double literal");
         tmpExpr = parseLiteral<double>();
     }
 
     if (m_CurrentToken == token::truelabel || m_CurrentToken == token::falselabel) {
-        m_Logger.printInfo("Parsing bool value");
+        parseInfo("bool literal");
         tmpExpr = parseLiteral<bool>();
     }
 
     if (m_CurrentToken == token::dquote) {
-        m_Logger.printInfo("Parsing string literal");
+        parseInfo("string literal");
         tmpExpr = parseLiteral<std::string>();
     }
 
@@ -176,7 +182,6 @@ std::unique_ptr<ASTExprNode> Parser::parseExpr() {
         m_CurrentToken = m_Lexer.getNextToken();
     }
 
-    m_Logger.printWarn("Parsed tmpExpr, current token: {}", m_CurrentToken);
     if (m_CurrentToken == token::plus
             || m_CurrentToken == token::minus
             || m_CurrentToken == token::times
@@ -199,7 +204,6 @@ std::unique_ptr<ASTExprNode> Parser::parseExpr() {
         return parseRange(std::move(tmpExpr));
     }
 
-    m_Logger.printInfo("Parsed expression");
     return std::move(tmpExpr);
 }
 
@@ -218,12 +222,10 @@ std::unique_ptr<ASTImportNode> Parser::parseImport() {
     m_CurrentToken = m_Lexer.getNextToken();
 
     if (m_CurrentToken.token == token::semicolon) {
-        m_Logger.printWarn("Parsed import with module: {}", module);
         return std::make_unique<ASTImportNode>(module);
     }
 
     if (m_CurrentToken.token == token::access_sym) {
-        m_Logger.printWarn("Parsed import with module: {}, and submodules", module);
         m_CurrentToken = m_Lexer.getNextToken();
         if (m_CurrentToken != token::bopen) {
             return std::move(parseError<ASTImportNode>(
@@ -274,11 +276,6 @@ std::unique_ptr<ASTImportNode> Parser::parseImport() {
                         m_CurrentToken));
         }
 
-        m_Logger.printWarn(
-                "Parsed import statement: module {}, \n \t sub-modules: {}",
-                module,
-                subModules);
-
         return std::make_unique<ASTImportNode>(module, subModules);
     }
 
@@ -287,15 +284,18 @@ std::unique_ptr<ASTImportNode> Parser::parseImport() {
 
 std::unique_ptr<ASTExportNode> Parser::parseExport() {
     parseInfo("export");
-    m_CurrentToken = m_Lexer.getNextToken();
+
+    m_CurrentToken = m_Lexer.getNextToken(); // Eat 'export'
 
     if (m_CurrentToken == token::structlabel) {
         std::unique_ptr<ASTStructDefinitionNode> exportStruct = parseStructDefintion();
+        logParser("Parsed struct export");
         return std::make_unique<ASTExportNode>(std::move(exportStruct));
     }
 
     if (m_CurrentToken == token::func) {
         std::unique_ptr<ASTFunctionDefinitionNode> exportFunc = parseFunctionDefinition();
+        logParser("Parsed func export");
         return std::make_unique<ASTExportNode>(std::move(exportFunc));
     }
 
@@ -367,14 +367,12 @@ std::unique_ptr<ASTBlockNode> Parser::parseBlock() {
     while (m_CurrentToken != token::bclose) {
         std::unique_ptr<ASTNode> node = parseNextBlock();
         nodes.push_back(std::move(node));
-        m_Logger.printWarn("Parsed node, and current token: {}", m_CurrentToken);
 
         if(m_CurrentToken == token::semicolon) {
             m_CurrentToken = m_Lexer.getNextToken();
         }
     }
 
-    m_Logger.printInfo("Parsed block with {} nodes", nodes.size());
     return std::make_unique<ASTBlockNode>(std::move(nodes));
 }
 
@@ -580,7 +578,6 @@ std::unique_ptr<ASTStructInitializationNode> Parser::parseStructInitialization(s
     m_CurrentToken = m_Lexer.getNextToken();
 
     while(m_CurrentToken != token::parclose) {
-        m_Logger.printTrace("An argument, and current token: {}", m_CurrentToken);
         auto attribute = parseExpr();
         attributes.push_back(std::move(attribute));
 
@@ -605,7 +602,6 @@ std::unique_ptr<ASTStructAssignmentNode> Parser::parseStructAssignement(std::str
     std::vector<std::unique_ptr<ASTExprNode>> attributes;
 
     while (m_CurrentToken != token::bclose) {
-        m_Logger.printTrace("An attribute, and current token: {}", m_CurrentToken);
         auto expr = parseExpr();
         attributes.push_back(std::move(expr));
 
@@ -703,7 +699,6 @@ std::unique_ptr<ASTArrayAssignmentNode> Parser::parseArrayAssignment(std::string
         auto expr = parseExpr();
         values.push_back(std::move(expr));
 
-        m_Logger.printWarn("Parsed assignment expr, current token: {}", m_CurrentToken);
         if (m_CurrentToken != token::comma && m_CurrentToken != token::iclose) {
             return parseError<ASTArrayAssignmentNode>("Syntax Error: Expecting ',' or ']' instead of {}", m_CurrentToken);
         }
@@ -875,13 +870,12 @@ std::unique_ptr<ASTNamespaceIdentifierNode> Parser::parseNamespaceIdentifier(std
 }
 
 std::unique_ptr<ASTFunctionCallNode> Parser::parseFunctionCall(std::unique_ptr<ASTIdentifierNode> callee) {
-    m_Logger.printInfo("Parsing function call, and current token: {}", m_CurrentToken);
+    parseInfo("function call");
     std::vector<std::unique_ptr<ASTExprNode>> args;
 
     m_CurrentToken = m_Lexer.getNextToken();
 
     while (m_CurrentToken != token::parclose) {
-        m_Logger.printInfo("Parsing call arguments, current token: {}", m_CurrentToken);
         auto arg = parseExpr();
         args.push_back(std::move(arg));
 
@@ -894,8 +888,6 @@ std::unique_ptr<ASTFunctionCallNode> Parser::parseFunctionCall(std::unique_ptr<A
     }
 
     m_CurrentToken = m_Lexer.getNextToken(); // Eat ')'
-
-    m_Logger.printInfo("Parsed function call");
 
     return std::make_unique<ASTFunctionCallNode>(std::move(callee), std::move(args));
 }
@@ -919,8 +911,6 @@ std::unique_ptr<ASTMethodCallNode> Parser::parseMethodCall(std::string structIde
     }
 
     m_CurrentToken = m_Lexer.getNextToken(); // Eat ')'
-
-    m_Logger.printWarn("Parsed method call with {} attributes", args.size());
 
     return std::make_unique<ASTMethodCallNode>(structIdentifier, methodIdentifier, std::move(args));
 }
@@ -946,7 +936,6 @@ std::unique_ptr<ASTAttributeAccessNode> Parser::parseAttributeAccess(std::string
 
 std::unique_ptr<ASTRangeNode> Parser::parseRange(std::unique_ptr<ASTExprNode> expr) {
     parseInfo("range");
-    m_Logger.printWarn("Current token: {}", m_CurrentToken);
     RangeOperator t_Operator;
 
     switch (m_CurrentToken.token) {
@@ -967,8 +956,6 @@ std::unique_ptr<ASTRangeNode> Parser::parseRange(std::unique_ptr<ASTExprNode> ex
     }
 
     m_CurrentToken = m_Lexer.getNextToken();
-
-    m_Logger.printWarn("Found range op, current token: {}", m_CurrentToken);
 
     auto stop = parseExpr();
 

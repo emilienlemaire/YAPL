@@ -15,7 +15,7 @@ std::ostream& operator<<(std::ostream& os, const Token& token){
 }
 
 Lexer::Lexer(const std::string& filepath)
-    :logger(CppLogger::Level::Trace, "Lexer")
+    :m_Logger(CppLogger::Level::Trace, "Lexer")
 {
 
     CppLogger::Format format({
@@ -23,12 +23,12 @@ Lexer::Lexer(const std::string& filepath)
             CppLogger::FormatAttribute::Message
     });
 
-    logger.setFormat(format);
+    m_Logger.setFormat(format);
 
     if (filepath != "") {
         pFile = fopen(filepath.c_str(), "r");
         if (pFile == nullptr) {
-            logger.printError("Cannot open file: {}\nExiting!!", filepath);
+            m_Logger.printError("Cannot open file: {}\nExiting!!", filepath);
             exit(EXIT_FAILURE);
         }
     } else {
@@ -161,7 +161,6 @@ Token Lexer::getNextToken(){
             return m_CurrentToken;
         }
         m_CurrentToken = {token::label, identifier};
-        std::cout << "Got a label: " << identifier << " and current char: " << (char)m_CurrentChar <<std::endl;
         return m_CurrentToken;
     }
 

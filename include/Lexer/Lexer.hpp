@@ -28,7 +28,7 @@ private:
     Token m_CurrentToken;
     int m_CurrentChar = '\0';
     std::string m_CurrentIdentifier = "";
-    CppLogger::CppLogger logger;
+    CppLogger::CppLogger m_Logger;
 
     FILE* pFile;
 

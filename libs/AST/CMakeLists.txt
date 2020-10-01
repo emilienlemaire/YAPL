@@ -1,1 +1,1 @@
-add_library(ast ASTNode.cpp ASTStatementNode.cpp ASTExprNode.cpp)
+add_library(ast SHARED ASTNode.cpp ASTStatementNode.cpp ASTExprNode.cpp)

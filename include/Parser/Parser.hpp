@@ -1,7 +1,6 @@
 #include "AST/ASTExprNode.hpp"
 #include "AST/ASTNode.hpp"
 #include "AST/ASTStatementNode.hpp"
-#include "CppLogger2/include/CppLogger.h" //NOLINT
 #include "Lexer/Lexer.hpp"
 #include <CppLogger2/CppLogger2.h>
 #include <array>
@@ -26,11 +25,18 @@ private:
     }
 
     void parseInfo(std::string);
+    template<typename... T>
+    void logParser(std::string msg, T... var) {
+#ifdef LOG_PARSER
+        m_Logger.printInfo(msg, var...);
+#endif
+    }
 
 public:
     Parser(std::string file="", CppLogger::Level level=CppLogger::Level::Warn);
     std::unique_ptr<ASTNode> parseNext();
     void parse();
+    std::unique_ptr<ASTProgramNode> getProgram();
 
 private:
     std::unique_ptr<ASTNode> parseNextBlock();
