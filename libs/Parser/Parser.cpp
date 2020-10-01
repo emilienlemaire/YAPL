@@ -30,6 +30,37 @@ void Parser::parseInfo(std::string info) {
 #endif
 }
 
+int Parser::getOpPrecedence(Operator t_Operator){
+    switch (t_Operator) {
+        case Operator::plus:
+            return 6;
+        case Operator::minus:
+            return 6;
+        case Operator::times:
+            return 5;
+        case Operator::divide:
+            return 5;
+        case Operator::mod:
+            return 5;
+        case Operator::lth:
+            return 9;
+        case Operator::mth:
+            return 9;
+        case Operator::orsym:
+            return 15;
+        case Operator::andsym:
+            return 14;
+        case Operator::eqcomp:
+            return 10;
+        case Operator::leq:
+            return 9;
+        case Operator::meq:
+            return 9;
+        case Operator::neq:
+            return 10;
+    }
+}
+
 void Parser::parse() {
     std::vector<std::unique_ptr<ASTNode>> nodes;
     while (m_Lexer.peekToken().token != token::eof) {
@@ -193,7 +224,8 @@ std::unique_ptr<ASTExprNode> Parser::parseExpr() {
             || m_CurrentToken == token::andsym
             || m_CurrentToken == token::eqcomp
             || m_CurrentToken == token::leq
-            || m_CurrentToken == token::meq) {
+            || m_CurrentToken == token::meq
+            || m_CurrentToken == token::neq) {
         return parseBinary(std::move(tmpExpr));
     }
 
@@ -850,6 +882,13 @@ std::unique_ptr<ASTBinaryNode> Parser::parseBinary(std::unique_ptr<ASTExprNode> 
     m_CurrentToken = m_Lexer.getNextToken();
 
     auto rhs = parseExpr();
+
+    if(auto bin = dynamic_cast<ASTBinaryNode*>(rhs.get())) {
+        if (getOpPrecedence(t_Operator) < getOpPrecedence(bin->m_Operator)) {
+            auto newLHS = std::make_unique<ASTBinaryNode>(std::move(lhs), t_Operator, std::move(bin->m_LeftOperrand));
+            return std::make_unique<ASTBinaryNode>(std::move(newLHS), bin->getOperator(), std::move(bin->m_RightOperrand));
+        }
+    }
 
     return std::make_unique<ASTBinaryNode>(std::move(lhs), t_Operator, std::move(rhs));
 }

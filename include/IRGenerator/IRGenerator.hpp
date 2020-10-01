@@ -9,6 +9,7 @@
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Instruction.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
@@ -34,7 +35,9 @@ private:
 
     std::unique_ptr<Parser> m_Parser;
 
-    llvm::Value *generateBinary();
+    llvm::Value *generate(ASTNode*);
+    llvm::Value *generateExpr(ASTExprNode*);
+    llvm::Value *generateBinary(ASTBinaryNode*);
     llvm::Value *generateLiteralInt(ASTLiteralNode<int>*);
     llvm::Value *generateLiteralDouble(ASTLiteralNode<double>*);
     llvm::Value *generateLiteralBool(ASTLiteralNode<bool>*);

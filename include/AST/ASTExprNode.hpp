@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+class Parser;
+
 enum class RangeOperator {
     ft,
     ftl,
@@ -26,7 +28,8 @@ enum class Operator {
     andsym,
     eqcomp,
     leq,
-    meq
+    meq,
+    neq
 };
 
 class ASTExprNode : public ASTNode
@@ -48,12 +51,18 @@ private:
     std::unique_ptr<ASTExprNode> m_LeftOperrand;
     Operator m_Operator;
     std::unique_ptr<ASTExprNode> m_RightOperrand;
+
+    friend Parser;
 public:
     ASTBinaryNode(
             std::unique_ptr<ASTExprNode> leftOperrand,
             Operator t_Operator,
             std::unique_ptr<ASTExprNode> rightOperrand
             );
+
+    std::unique_ptr<ASTExprNode> getLeftOperrand() { return std::move(m_LeftOperrand); }
+    std::unique_ptr<ASTExprNode> getRightOperrand() { return std::move(m_RightOperrand); }
+    Operator getOperator() const { return m_Operator; }
 };
 
 class ASTRangeNode: public ASTExprNode {

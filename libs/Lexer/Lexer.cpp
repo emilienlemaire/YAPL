@@ -322,6 +322,12 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "!") {
+            if (m_CurrentChar == '=') {
+                getNextChar();
+                m_CurrentToken = {token::neq, ""};
+                return m_CurrentToken;
+            }
+            m_Logger.printWarn("Unary operation not yet supported please avoid using them.");
             m_CurrentToken = {token::notsym, ""};
             return m_CurrentToken;
         }

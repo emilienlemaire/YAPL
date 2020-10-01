@@ -32,6 +32,7 @@ private:
 #endif
     }
 
+    int getOpPrecedence(Operator t_Operator);
 public:
     Parser(std::string file="", CppLogger::Level level=CppLogger::Level::Warn);
     std::unique_ptr<ASTNode> parseNext();
