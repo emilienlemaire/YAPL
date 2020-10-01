@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AST/ASTNode.hpp"
+#include <llvm/IR/Value.h>
 #include <memory>
 #include <string>
 #include <utility>
@@ -39,6 +40,7 @@ public:
     ASTLiteralNode(T value)
         : m_Value(value)
     {}
+    T getValue() const { return m_Value; }
 };
 
 class ASTBinaryNode: public ASTExprNode {

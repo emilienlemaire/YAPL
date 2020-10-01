@@ -3,6 +3,7 @@
 #include <CppLogger2/CppLogger2.h>
 
 #include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constant.h"
@@ -33,8 +34,12 @@ private:
 
     std::unique_ptr<Parser> m_Parser;
 
-    void generateBinary();
-    void generateLiteralInt(ASTLiteralNode<int>*);
+    llvm::Value *generateBinary();
+    llvm::Value *generateLiteralInt(ASTLiteralNode<int>*);
+    llvm::Value *generateLiteralDouble(ASTLiteralNode<double>*);
+    llvm::Value *generateLiteralBool(ASTLiteralNode<bool>*);
+
+    static unsigned m_AnonCount;
 
 public:
     IRGenerator(llvm::StringRef filepath)
@@ -44,7 +49,7 @@ public:
                 CppLogger::FormatAttribute::Name,
                 CppLogger::FormatAttribute::Level,
                 CppLogger::FormatAttribute::Message
-                });
+               });
 
         m_Logger.setFormat(format);
 

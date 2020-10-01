@@ -338,7 +338,6 @@ Token Lexer::getNextToken(){
 
         if (identifier == ".") {
             if (std::isdigit(m_CurrentChar)) {
-                getNextChar();
                 std::string numVal = ".";
                 numVal += m_CurrentChar;
                 getNextChar();
