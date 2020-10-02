@@ -3,3 +3,5 @@ tags
 .clangd
 Debug
 .vimspector.json
+
+tests/googletest

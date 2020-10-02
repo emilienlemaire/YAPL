@@ -29,6 +29,8 @@ llvm::Value *IRGenerator::generate(ASTNode* node) {
         m_Builder.SetInsertPoint(BB);
         m_Builder.CreateRet(genExpr);
 
+        llvm::verifyFunction(*anonFunc);
+
         m_Logger.printInfo("Generated anon expr:");
         anonFunc->print(llvm::errs());
         fprintf(stderr, "\n");
