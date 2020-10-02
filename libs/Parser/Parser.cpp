@@ -201,14 +201,14 @@ std::unique_ptr<ASTExprNode> Parser::parseExpr() {
     }
 
     if (m_CurrentToken == token::paropen) {
-        return parseParenExpr();
+        tmpExpr = parseParenExpr();
     }
 
 
     if (m_CurrentToken == token::label) {
         // Handles Warn: has array member assignment until better parsing
         // Identifier, NamespaceIdentifier, FunctionCall, MethodCall
-        auto expr = parseLabelExpr();
+        tmpExpr = parseLabelExpr();
     } else {
         m_CurrentToken = m_Lexer.getNextToken();
     }

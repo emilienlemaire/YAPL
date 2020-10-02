@@ -56,7 +56,7 @@ public:
 
         m_Logger.setFormat(format);
 
-        m_Parser = std::make_unique<Parser>(filepath.str());
+        m_Parser = std::make_unique<Parser>(filepath.str(), CppLogger::Level::Trace);
     }
 
     void generate();
