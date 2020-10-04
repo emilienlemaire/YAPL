@@ -10,9 +10,33 @@ void IRGenerator::generate() {
 
     m_Program = m_Parser->getProgram();
 
+    m_Module = std::make_unique<llvm::Module>("main", m_LLVMContext);
+
     for (const auto& node : *m_Program) {
-        generate(node.get());
+        if (node)
+            generate(node.get());
     }
+
+
+    auto anonFuncType = llvm::FunctionType::get(llvm::Type::getInt32Ty(m_LLVMContext), false);
+    auto anonFunc = llvm::Function::Create(
+            anonFuncType,
+            llvm::Function::InternalLinkage,
+            "__anon_expr",
+            m_Module.get()
+            );
+    auto BB = llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
+
+    //llvm::GlobalVariable gVar(*m_Module.get(),
+            //llvm::Type::getInt32Ty(m_LLVMContext),
+            //false,
+            //llvm::GlobalVariable::PrivateLinkage,
+            //nullptr,
+            //"myGlobVar");
+
+    m_Module->dump();
+
+    m_Module->dropAllReferences();
 }
 
 llvm::Value *IRGenerator::generate(ASTNode* node) {
@@ -29,13 +53,19 @@ llvm::Value *IRGenerator::generate(ASTNode* node) {
         m_Builder.SetInsertPoint(BB);
         m_Builder.CreateRet(genExpr);
 
-        llvm::verifyFunction(*anonFunc);
-
-        m_Logger.printInfo("Generated anon expr:");
-        anonFunc->print(llvm::errs());
-        fprintf(stderr, "\n");
+        //m_Logger.printInfo("Generated anon expr:");
+        //anonFunc->print(llvm::errs());
+        //fprintf(stderr, "\n");
 
         return genExpr;
+    } else {
+        if (auto declaration = dynamic_cast<ASTDeclarationNode*>(node)){
+            return generateDeclaration(declaration);
+        }
+
+        if (auto assignment = dynamic_cast<ASTAssignmentNode*>(node)) {
+            //return generateAssignement(assignment);
+        }
     }
 
     m_Logger.printError("The code you wrote cannot be compiled yet :(");
@@ -92,6 +122,9 @@ llvm::Value *IRGenerator::generateBinary(ASTBinaryNode *bin) {
         case Operator::minus:
             return m_Builder.CreateSub(L, R, "subtemp");
         case Operator::times:
+            if (L->getType()->isDoubleTy()) {
+                return m_Builder.CreateFMul(L, R, "multmp");
+            }
             return m_Builder.CreateMul(L, R, "multmp");
         case Operator::divide:
             if (L->getType()->isDoubleTy()) {
@@ -163,3 +196,60 @@ llvm::Value *IRGenerator::generateBinary(ASTBinaryNode *bin) {
     return genOp(genLhs, bin->getOperator(), genRhs);
 }
 
+// TODO: Add to context, and make sure to delete the pointers in
+// the context at destruction
+llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
+    if (auto initialization = dynamic_cast<ASTInitializationNode*>(declaration)) {
+        return generateInitialization(initialization);
+    }
+
+    // We are on top level scope so we want a global variable
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        auto llvmType = ASTTypeToLLVM(declaration->getType());
+        m_Module->getOrInsertGlobal(declaration->getName(), llvmType);
+        llvm::GlobalVariable *globalVar = m_Module->getNamedGlobal(declaration->getName());
+        globalVar->setLinkage(llvm::GlobalValue::PrivateLinkage);
+        globalVar->setAlignment(llvm::MaybeAlign(4));
+        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(declaration->getName(), globalVar));
+
+        return globalVar;
+    }
+
+    // TODO: Handle scoped declaration for inside a function;
+    return nullptr;
+}
+
+llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initialization) {
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        auto llvmType = ASTTypeToLLVM(initialization->getType());
+        auto valuePtr = initialization->getValue();
+        auto value = generateExpr(initialization->getValue());
+        m_Module->getOrInsertGlobal(initialization->getName(), llvmType);
+        llvm::GlobalVariable *globalVar = m_Module->getNamedGlobal(initialization->getName());
+        globalVar->setLinkage(llvm::GlobalValue::PrivateLinkage);
+        globalVar->setAlignment(llvm::MaybeAlign(4));
+        if (static_cast<llvm::Constant *>(value)) {
+            m_Logger.printInfo("It is a constant");
+        } else {
+            m_Logger.printError("It is not a constant");
+        }
+        globalVar->setInitializer(static_cast<llvm::Constant *>(value));
+
+        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(initialization->getName(), globalVar));
+
+        return globalVar;
+    }
+    // TODO: Handle scoped initialization
+    return nullptr;
+}
+
+llvm::Value *IRGenerator::generateAssignment(ASTAssignmentNode *assignment) {
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        m_Logger.printError("Assignment are forbidden outside of a function body");
+        return nullptr;
+    }
+
+    llvm::Value *variable = m_YAPLContext->getCurrentScope()->lookup(assignment->getName());
+    llvm::Value *value = generateExpr(assignment->getValue());
+    return m_Builder.CreateStore(value, variable);
+}

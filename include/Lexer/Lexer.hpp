@@ -25,7 +25,7 @@ struct Token{
 class Lexer
 {
 private:
-    Token m_CurrentToken;
+    Token m_CurrentToken = {token::unknown, ""};
     int m_CurrentChar = '\0';
     std::string m_CurrentIdentifier = "";
     CppLogger::CppLogger m_Logger;

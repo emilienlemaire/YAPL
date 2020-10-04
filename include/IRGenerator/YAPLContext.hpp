@@ -4,9 +4,15 @@
 
 class YAPLContext {
 private:
-    Scope *m_CurrentScope;
+    std::shared_ptr<Scope> m_CurrentScope;
 
 public:
-    Scope *getCurrentScope();
+    YAPLContext() {
+        m_CurrentScope = Scope::Create(nullptr);
+    }
+    const std::shared_ptr<Scope> &getCurrentScope() const;
     void pushScope();
+    void popScope();
+
+    bool isAtTopLevelScope();
 };

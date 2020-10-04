@@ -1,16 +1,15 @@
 #pragma once
 
-
 #include <string>
 #include <system_error>
 #include <vector>
 #include <parallel_hashmap/phmap.h>
 
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/StringMap.h"
-
 #include "llvm/Support/Error.h"
 #include "llvm/Object/Error.h"
+#include "llvm/IR/Value.h"
+#include "llvm/IR/Function.h"
 
 #include "IRGenerator/YAPLValue.hpp"
 #include "IRGenerator/YAPLFunction.hpp"
@@ -21,9 +20,9 @@ private:
     
     std::vector<std::shared_ptr<Scope>> m_ImportedScopes;
 
-    phmap::parallel_node_hash_map<std::string, std::shared_ptr<YAPLValue>> m_Values;
-    phmap::parallel_node_hash_map<std::string, std::shared_ptr<YAPLValue>> m_ImportedValues;
-    phmap::parallel_node_hash_map<std::string, std::shared_ptr<YAPLFunction>> m_Functions;
+    phmap::parallel_node_hash_map<std::string, llvm::Value *> m_Values;
+    phmap::parallel_node_hash_map<std::string, llvm::Value *> m_ImportedValues;
+    phmap::parallel_node_hash_map<std::string, llvm::Function *> m_Functions;
 public:
     Scope(std::shared_ptr<Scope> parentScope = nullptr)
         : m_ParentScope(parentScope)
@@ -32,8 +31,9 @@ public:
         return std::make_shared<Scope>(parentScope);
     }
 
-    std::shared_ptr<YAPLValue> lookup(llvm::StringRef);
-    std::shared_ptr<YAPLFunction> lookupFunction(llvm::StringRef);
-    llvm::Error pushValue(llvm::StringRef, std::shared_ptr<YAPLValue>);
-    llvm::Error pushFunction(llvm::StringRef, std::shared_ptr<YAPLFunction>);
+    std::shared_ptr<Scope> getParentScope() { return m_ParentScope; }
+    llvm::Value *lookup(llvm::StringRef);
+    llvm::Function *lookupFunction(llvm::StringRef);
+    llvm::Error pushValue(llvm::StringRef, llvm::Value *);
+    llvm::Error pushFunction(llvm::StringRef, llvm::Function *);
 };

@@ -34,6 +34,8 @@ private:
     ASTNode::TYPE m_Type;
 public:
     ASTDeclarationNode(std::string name, ASTNode::TYPE type);
+    const std::string &getName() const { return m_Name; }
+    const ASTNode::TYPE &getType() const { return m_Type; }
 };
 
 class ASTInitializationNode : public ASTDeclarationNode {
@@ -43,6 +45,7 @@ public:
     ASTInitializationNode(std::string name, ASTNode::TYPE type, std::unique_ptr<ASTExprNode> value)
         : ASTDeclarationNode(name, type), m_Value(std::move(value))
     {}
+    ASTExprNode *getValue() const { return m_Value.get(); }
 };
 
 class ASTAssignmentNode: public ASTStatementNode {
@@ -53,6 +56,9 @@ public:
     ASTAssignmentNode(std::string name, std::unique_ptr<ASTExprNode> value)
         : m_Name(std::move(name)), m_Value(std::move(value))
     {}
+
+    const std::string &getName() const { return m_Name; }
+    ASTExprNode *getValue() const { return m_Value.get(); }
 };
 
 class ASTReturnNode: public ASTStatementNode {

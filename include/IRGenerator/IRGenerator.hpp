@@ -9,6 +9,7 @@
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
@@ -41,8 +42,31 @@ private:
     llvm::Value *generateLiteralInt(ASTLiteralNode<int>*);
     llvm::Value *generateLiteralDouble(ASTLiteralNode<double>*);
     llvm::Value *generateLiteralBool(ASTLiteralNode<bool>*);
+    llvm::Value *generateIdentifier(ASTIdentifierNode*);
+    llvm::Value *generateFunctionCall(ASTFunctionCallNode*);
+    llvm::Value *generateMethodeCall(ASTMethodCallNode*);
+
+    llvm::Value *generateDeclaration(ASTDeclarationNode*);
+    llvm::Value *generateInitialization(ASTInitializationNode*);
+    llvm::Value *generateAssignment(ASTAssignmentNode*);
 
     static unsigned m_AnonCount;
+
+    llvm::Type *ASTTypeToLLVM(ASTNode::TYPE type) {
+        switch (type) {
+            case ASTNode::TYPE::INT:
+                return llvm::Type::getInt32Ty(m_LLVMContext);
+            case ASTNode::TYPE::DOUBLE:
+                return llvm::Type::getDoubleTy(m_LLVMContext);
+            case ASTNode::TYPE::BOOL:
+                return llvm::Type::getInt1Ty(m_LLVMContext);
+            case ASTNode::TYPE::VOID:
+                return llvm::Type::getVoidTy(m_LLVMContext);
+            case ASTNode::TYPE::STRING:
+            case ASTNode::TYPE::NONE:
+                llvm::llvm_unreachable_internal();
+        }
+    }
 
 public:
     IRGenerator(llvm::StringRef filepath)
@@ -57,6 +81,8 @@ public:
         m_Logger.setFormat(format);
 
         m_Parser = std::make_unique<Parser>(filepath.str(), CppLogger::Level::Trace);
+
+        m_YAPLContext = std::make_unique<YAPLContext>();
     }
 
     void generate();
