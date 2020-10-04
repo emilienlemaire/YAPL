@@ -4,4 +4,3 @@ tags
 Debug
 .vimspector.json
 
-tests/googletest
