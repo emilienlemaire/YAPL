@@ -94,7 +94,7 @@ llvm::Value *IRGenerator::generateExpr(ASTExprNode *expr) {
 }
 
 llvm::Value *IRGenerator::generateLiteralInt(ASTLiteralNode<int> *literalInt) {
-    auto val = llvm::ConstantInt::get(m_LLVMContext, llvm::APInt(sizeof(uint32_t), literalInt->getValue()));
+    auto val = llvm::ConstantInt::get(m_LLVMContext, llvm::APInt(llvm::Type::getInt32Ty(m_LLVMContext)->getScalarSizeInBits(), literalInt->getValue()));
     return val;
 }
 
@@ -205,6 +205,11 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
 
     // We are on top level scope so we want a global variable
     if (m_YAPLContext->isAtTopLevelScope()) {
+        if (auto var = m_YAPLContext->getCurrentScope()->lookup(declaration->getName())) {
+            m_Logger.printError("Redefintion of {}.", declaration->getName());
+            return nullptr;
+        }
+
         auto llvmType = ASTTypeToLLVM(declaration->getType());
         m_Module->getOrInsertGlobal(declaration->getName(), llvmType);
         llvm::GlobalVariable *globalVar = m_Module->getNamedGlobal(declaration->getName());
@@ -215,15 +220,30 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
         return globalVar;
     }
 
-    // TODO: Handle scoped declaration for inside a function;
-    return nullptr;
+    if (m_YAPLContext->getCurrentScope()->lookupScope(declaration->getName())) {
+        m_Logger.printError("Redefintion of {}", declaration->getName());
+        return nullptr;
+    }
+
+    auto llvmType = ASTTypeToLLVM(declaration->getType());
+
+    auto variable = m_Builder.CreateAlloca(llvmType, nullptr, declaration->getName());
+
+    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(declaration->getName(), variable));
+
+    return variable;
 }
 
 llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initialization) {
     if (m_YAPLContext->isAtTopLevelScope()) {
+        if (m_YAPLContext->getCurrentScope()->lookup(initialization->getName())) {
+            m_Logger.printError("Redefintion of {}.", initialization->getName());
+            return nullptr;
+        }
+
         auto llvmType = ASTTypeToLLVM(initialization->getType());
         auto valuePtr = initialization->getValue();
-        auto value = generateExpr(initialization->getValue());
+        auto value = generateExpr(valuePtr);
         m_Module->getOrInsertGlobal(initialization->getName(), llvmType);
         llvm::GlobalVariable *globalVar = m_Module->getNamedGlobal(initialization->getName());
         globalVar->setLinkage(llvm::GlobalValue::PrivateLinkage);
@@ -233,14 +253,28 @@ llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initiali
         } else {
             m_Logger.printError("It is not a constant");
         }
-        globalVar->setInitializer(static_cast<llvm::Constant *>(value));
 
+        globalVar->setInitializer(static_cast<llvm::Constant *>(value));
         llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(initialization->getName(), globalVar));
 
         return globalVar;
     }
-    // TODO: Handle scoped initialization
-    return nullptr;
+
+    if (m_YAPLContext->getCurrentScope()->lookupScope(initialization->getName())) {
+        m_Logger.printError("Redefintion of {}", initialization->getName());
+        return nullptr;
+    }
+
+    auto llvmType = ASTTypeToLLVM(initialization->getType());
+    auto valuePtr = initialization->getValue();
+    auto value = generateExpr(valuePtr);
+
+    auto variableAlloc = m_Builder.CreateAlloca(llvmType, nullptr, initialization->getName());
+    auto variableStore = m_Builder.CreateStore(value, variableAlloc);
+
+    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(initialization->getName(), variableStore));
+
+    return variableStore;
 }
 
 llvm::Value *IRGenerator::generateAssignment(ASTAssignmentNode *assignment) {

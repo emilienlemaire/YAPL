@@ -32,8 +32,13 @@ public:
     }
 
     std::shared_ptr<Scope> getParentScope() { return m_ParentScope; }
+
+    llvm::Value *lookupScope(llvm::StringRef);
+    llvm::Function *lookupFunctionScope(llvm::StringRef);
+
     llvm::Value *lookup(llvm::StringRef);
     llvm::Function *lookupFunction(llvm::StringRef);
+    
     llvm::Error pushValue(llvm::StringRef, llvm::Value *);
     llvm::Error pushFunction(llvm::StringRef, llvm::Function *);
 };

@@ -1,7 +1,29 @@
 #include "IRGenerator/Scope.hpp"
 
+
+llvm::Value *Scope::lookupScope(llvm::StringRef searchValue) {
+    auto it = m_Values.find(searchValue);
+    if (it == m_Values.end()) {
+        return nullptr;
+    }
+
+    return it->second;
+}
+
+llvm::Function *Scope::lookupFunctionScope(llvm::StringRef searchFunction) {
+    auto it = m_Functions.find(searchFunction);
+
+    if (it == m_Functions.end()) {
+        return nullptr;
+    }
+
+    return it->second;
+}
+
 llvm::Value *Scope::lookup(llvm::StringRef searchValue) {
-    if (m_Values.find(searchValue) == m_Values.end()) {
+    auto it = m_Values.find(searchValue);
+
+    if (it == m_Values.end()) {
         if (m_ParentScope) {
             return m_ParentScope->lookup(searchValue);
         }
@@ -9,11 +31,12 @@ llvm::Value *Scope::lookup(llvm::StringRef searchValue) {
         return nullptr;
     }
     
-    return m_Functions[searchValue];
+    return it->second;
 }
 
 llvm::Function *Scope::lookupFunction(llvm::StringRef searchFunction) {
-    if (m_Functions.find(searchFunction) == m_Functions.end()) {
+    auto it = m_Functions.find(searchFunction);
+    if (it == m_Functions.end()) {
         if (m_ParentScope) {
             return m_ParentScope->lookupFunction(searchFunction);
         }
@@ -21,7 +44,7 @@ llvm::Function *Scope::lookupFunction(llvm::StringRef searchFunction) {
         return nullptr;
     }
     
-    return m_Functions[searchFunction];
+    return it->second;
 }
 
 llvm::Error Scope::pushValue(llvm::StringRef name, llvm::Value *value) {
