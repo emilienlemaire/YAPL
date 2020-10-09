@@ -1,4 +1,5 @@
 #include <iostream>
+#include <llvm/ADT/SmallVector.h>
 
 #include "AST/ASTExprNode.hpp"
 #include "IRGenerator/IRGenerator.hpp"
@@ -26,13 +27,6 @@ void IRGenerator::generate() {
             m_Module.get()
             );
     auto BB = llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
-
-    //llvm::GlobalVariable gVar(*m_Module.get(),
-            //llvm::Type::getInt32Ty(m_LLVMContext),
-            //false,
-            //llvm::GlobalVariable::PrivateLinkage,
-            //nullptr,
-            //"myGlobVar");
 
     m_Module->dump();
 
@@ -117,59 +111,59 @@ llvm::Value *IRGenerator::generateBinary(ASTBinaryNode *bin) {
 
     auto genOp = [this](llvm::Value* L, Operator op, llvm::Value *R) {
         switch (op) {
-        case Operator::plus:
-            return m_Builder.CreateAdd(L, R, "addtmp");
-        case Operator::minus:
-            return m_Builder.CreateSub(L, R, "subtemp");
-        case Operator::times:
-            if (L->getType()->isDoubleTy()) {
-                return m_Builder.CreateFMul(L, R, "multmp");
-            }
-            return m_Builder.CreateMul(L, R, "multmp");
-        case Operator::divide:
-            if (L->getType()->isDoubleTy()) {
-                return m_Builder.CreateFDiv(L, R, "divtmp");
-            }
-            return m_Builder.CreateSDiv(L, R, "divtmp");
-        case Operator::mod:
-            if (L->getType()->isDoubleTy()) {
-                return m_Builder.CreateFRem(L, R, "modtmp");
-            }
-            return m_Builder.CreateSRem(L, R, "modtmp");
-        case Operator::lth:
-            if (L->getType()->isDoubleTy()) {
-                return m_Builder.CreateFCmpOLT(L, R, "lthtmp");
-            }
-            return m_Builder.CreateICmpSLT(L, R, "lthtmp");
-        case Operator::mth:
-            if (L->getType()->isDoubleTy()) {
-               return m_Builder.CreateFCmpOGT(L, R, "gthtmp"); 
-            }
-            return m_Builder.CreateICmpSGE(L, R, "gthtmp");
-        case Operator::orsym:
-            return m_Builder.CreateOr(L, R, "ortmp");
-        case Operator::andsym:
-            return m_Builder.CreateAnd(L, R, "ortmp");
-        case Operator::eqcomp:
-            if (L->getType()->isDoubleTy()) {
-                return m_Builder.CreateFCmpOEQ(L, R, "eqtmp");
-            }
-            return m_Builder.CreateICmpEQ(L, R, "eqtmp");
-        case Operator::leq:
-            if (L->getType()->isDoubleTy()) {
-                return m_Builder.CreateFCmpOLE(L, R, "leqtmp");
-            }
-            return m_Builder.CreateICmpSLE(L, R, "leqtmp");
-        case Operator::meq:
-            if (L->getType()->isDoubleTy()) {
-                return m_Builder.CreateFCmpOGE(L, R, "geqtmp");
-            }
-            return m_Builder.CreateICmpSGE(L, R, "geqtmp");
-        case Operator::neq:
-            if (L->getType()->isDoubleTy()) {
-                return m_Builder.CreateFCmpONE(L, R, "neqtmp");
-            }
-            return m_Builder.CreateICmpNE(L, R, "neqtmp");
+            case Operator::plus:
+                return m_Builder.CreateAdd(L, R, "addtmp");
+            case Operator::minus:
+                return m_Builder.CreateSub(L, R, "subtemp");
+            case Operator::times:
+                if (L->getType()->isDoubleTy()) {
+                    return m_Builder.CreateFMul(L, R, "multmp");
+                }
+                return m_Builder.CreateMul(L, R, "multmp");
+            case Operator::divide:
+                if (L->getType()->isDoubleTy()) {
+                    return m_Builder.CreateFDiv(L, R, "divtmp");
+                }
+                return m_Builder.CreateSDiv(L, R, "divtmp");
+            case Operator::mod:
+                if (L->getType()->isDoubleTy()) {
+                    return m_Builder.CreateFRem(L, R, "modtmp");
+                }
+                return m_Builder.CreateSRem(L, R, "modtmp");
+            case Operator::lth:
+                if (L->getType()->isDoubleTy()) {
+                    return m_Builder.CreateFCmpOLT(L, R, "lthtmp");
+                }
+                return m_Builder.CreateICmpSLT(L, R, "lthtmp");
+            case Operator::mth:
+                if (L->getType()->isDoubleTy()) {
+                    return m_Builder.CreateFCmpOGT(L, R, "gthtmp"); 
+                }
+                return m_Builder.CreateICmpSGE(L, R, "gthtmp");
+            case Operator::orsym:
+                return m_Builder.CreateOr(L, R, "ortmp");
+            case Operator::andsym:
+                return m_Builder.CreateAnd(L, R, "ortmp");
+            case Operator::eqcomp:
+                if (L->getType()->isDoubleTy()) {
+                    return m_Builder.CreateFCmpOEQ(L, R, "eqtmp");
+                }
+                return m_Builder.CreateICmpEQ(L, R, "eqtmp");
+            case Operator::leq:
+                if (L->getType()->isDoubleTy()) {
+                    return m_Builder.CreateFCmpOLE(L, R, "leqtmp");
+                }
+                return m_Builder.CreateICmpSLE(L, R, "leqtmp");
+            case Operator::meq:
+                if (L->getType()->isDoubleTy()) {
+                    return m_Builder.CreateFCmpOGE(L, R, "geqtmp");
+                }
+                return m_Builder.CreateICmpSGE(L, R, "geqtmp");
+            case Operator::neq:
+                if (L->getType()->isDoubleTy()) {
+                    return m_Builder.CreateFCmpONE(L, R, "neqtmp");
+                }
+                return m_Builder.CreateICmpNE(L, R, "neqtmp");
         } 
     };
 
@@ -287,3 +281,57 @@ llvm::Value *IRGenerator::generateAssignment(ASTAssignmentNode *assignment) {
     llvm::Value *value = generateExpr(assignment->getValue());
     return m_Builder.CreateStore(value, variable);
 }
+
+llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *funcDef) {
+    auto llvmReturnType = ASTTypeToLLVM(funcDef->getType());
+    auto argsVector = funcDef->getArgs();
+    llvm::SmallVector<llvm::Type *, 10> argsType;
+
+    for ( const auto& arg: argsVector ) {
+        argsType.push_back(ASTTypeToLLVM(arg->getType()));
+    }
+
+    auto funcType = llvm::FunctionType::get(llvmReturnType, argsType, false);
+    auto func = llvm::Function::Create(funcType,
+            llvm::Function::PrivateLinkage,
+            funcDef->getName(),
+            m_Module.get());
+
+    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(funcDef->getName(), func));
+
+    m_YAPLContext->pushScope();
+
+    for ( const auto& arg: argsVector ) {
+        auto argDecl = generate(arg.get());
+        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(arg->getName(), argDecl));
+    }
+
+    auto entryBlock = llvm::BasicBlock::Create(m_LLVMContext, "entry", func);
+
+    auto parentBlock = m_Builder.GetInsertBlock();
+    m_Builder.SetInsertPoint(entryBlock);
+
+    if(generateBlock(funcDef->getBody())) {
+        return func;
+    }
+    
+    m_Builder.SetInsertPoint(parentBlock);
+
+    func->eraseFromParent();
+
+    return nullptr;
+}
+
+bool IRGenerator::generateBlock(ASTBlockNode *block) {
+
+    for( const auto& node : *block ) {
+        auto generatedNode = generate(node.get());
+
+        if (!generatedNode) {
+            return false;
+        }
+    }
+
+    return true;
+}
+

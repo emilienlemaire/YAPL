@@ -72,8 +72,17 @@ public:
 class ASTBlockNode: public ASTStatementNode {
 private:
     std::vector<std::unique_ptr<ASTNode>> m_Nodes;
+
+    typedef std::vector<std::unique_ptr<ASTNode>>::iterator baseIterator;
+    typedef std::vector<std::unique_ptr<ASTNode>>::const_iterator baseConstIterator;
 public:
     ASTBlockNode(std::vector<std::unique_ptr<ASTNode>> nodes);
+
+    baseIterator begin() { return m_Nodes.begin(); }
+    baseIterator end()   { return m_Nodes.end(); }
+    baseConstIterator cbegin() const { return m_Nodes.cbegin(); }
+    baseConstIterator cend() const   { return m_Nodes.cend(); }
+
 };
 
 class ASTIfNode: public ASTStatementNode {
@@ -115,6 +124,11 @@ public:
             ASTNode::TYPE returnType,
             std::unique_ptr<ASTBlockNode> body
             );
+
+    const std::string &getName() const { return m_Name; }
+    const std::vector<std::unique_ptr<ASTDeclarationNode>> &getArgs() const { return m_Args; }
+    const ASTNode::TYPE &getType() const { return m_ReturnType; }
+    ASTBlockNode *getBody() const { return m_Body.get(); }
 };
 
 class ASTStructDefinitionNode: public ASTStatementNode {

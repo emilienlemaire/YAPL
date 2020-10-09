@@ -49,6 +49,10 @@ private:
     llvm::Value *generateDeclaration(ASTDeclarationNode*);
     llvm::Value *generateInitialization(ASTInitializationNode*);
     llvm::Value *generateAssignment(ASTAssignmentNode*);
+    llvm::Value *generateFunctionDefinition(ASTFunctionDefinitionNode*);
+
+
+    bool generateBlock(ASTBlockNode *);
 
     static unsigned m_AnonCount;
 
