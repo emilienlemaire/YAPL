@@ -20,6 +20,8 @@ private:
     
     std::vector<std::shared_ptr<Scope>> m_ImportedScopes;
 
+    llvm::Function *m_CurrentFunction;
+
     phmap::parallel_node_hash_map<std::string, llvm::Value *> m_Values;
     phmap::parallel_node_hash_map<std::string, llvm::Value *> m_ImportedValues;
     phmap::parallel_node_hash_map<std::string, llvm::Function *> m_Functions;
@@ -32,6 +34,9 @@ public:
     }
 
     std::shared_ptr<Scope> getParentScope() { return m_ParentScope; }
+
+    void setCurrentFunction(llvm::Function *);
+    llvm::Function *getCurrentFunction();
 
     llvm::Value *lookupScope(llvm::StringRef);
     llvm::Function *lookupFunctionScope(llvm::StringRef);

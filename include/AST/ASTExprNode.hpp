@@ -85,6 +85,7 @@ private:
     std::string m_Identifier;
 public:
     ASTIdentifierNode(std::string identifier);
+    const std::string &getName() const { return m_Identifier; }
 };
 
 class ASTNamespaceIdentifierNode: public ASTIdentifierNode {

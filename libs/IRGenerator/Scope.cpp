@@ -47,6 +47,14 @@ llvm::Function *Scope::lookupFunction(llvm::StringRef searchFunction) {
     return it->second;
 }
 
+void Scope::setCurrentFunction(llvm::Function *func) {
+    m_CurrentFunction = func;
+}
+
+llvm::Function *Scope::getCurrentFunction() {
+    return m_CurrentFunction;
+}
+
 llvm::Error Scope::pushValue(llvm::StringRef name, llvm::Value *value) {
     if (m_Values.find(name) != m_Values.end()) {
         return llvm::make_error<llvm::StringError>(name, std::make_error_code(std::errc::executable_format_error));

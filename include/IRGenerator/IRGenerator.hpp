@@ -50,6 +50,7 @@ private:
     llvm::Value *generateInitialization(ASTInitializationNode*);
     llvm::Value *generateAssignment(ASTAssignmentNode*);
     llvm::Value *generateFunctionDefinition(ASTFunctionDefinitionNode*);
+    llvm::Value *generateReturn(ASTReturnNode*);
 
 
     bool generateBlock(ASTBlockNode *);

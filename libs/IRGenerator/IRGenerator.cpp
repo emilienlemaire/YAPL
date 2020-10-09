@@ -36,16 +36,16 @@ void IRGenerator::generate() {
 llvm::Value *IRGenerator::generate(ASTNode* node) {
     if (auto expr = dynamic_cast<ASTExprNode*>(node)) {
         auto genExpr = generateExpr(expr);
-        auto anonFuncType = llvm::FunctionType::get(genExpr->getType(), false);
-        auto anonFunc = llvm::Function::Create(
-                anonFuncType,
-                llvm::Function::InternalLinkage,
-                "__anon_expr",
-                m_Module.get()
-                );
-        auto BB = llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
-        m_Builder.SetInsertPoint(BB);
-        m_Builder.CreateRet(genExpr);
+        //auto anonFuncType = llvm::FunctionType::get(genExpr->getType(), false);
+        //auto anonFunc = llvm::Function::Create(
+                //anonFuncType,
+                //llvm::Function::InternalLinkage,
+                //"__anon_expr",
+                //m_Module.get()
+                //);
+        //auto BB = llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
+        //m_Builder.SetInsertPoint(BB);
+        //m_Builder.CreateRet(genExpr);
 
         //m_Logger.printInfo("Generated anon expr:");
         //anonFunc->print(llvm::errs());
@@ -58,7 +58,14 @@ llvm::Value *IRGenerator::generate(ASTNode* node) {
         }
 
         if (auto assignment = dynamic_cast<ASTAssignmentNode*>(node)) {
-            //return generateAssignement(assignment);
+            return generateAssignment(assignment);
+        }
+
+        if (auto returnStatement = dynamic_cast<ASTReturnNode*>(node)) {
+            return generateReturn(returnStatement);
+        }
+        if (auto funcDef = dynamic_cast<ASTFunctionDefinitionNode*>(node)) {
+            return generateFunctionDefinition(funcDef);
         }
     }
 
@@ -83,6 +90,10 @@ llvm::Value *IRGenerator::generateExpr(ASTExprNode *expr) {
         return generateLiteralBool(literalBool);
     }
 
+    if (auto identifier = dynamic_cast<ASTIdentifierNode*>(expr)) {
+        return generateIdentifier(identifier);
+    }
+
     m_Logger.printError("The code you wrote cannot be compiled yet :(");
     return nullptr;
 }
@@ -100,6 +111,16 @@ llvm::Value *IRGenerator::generateLiteralDouble(ASTLiteralNode<double> *literalD
 llvm::Value *IRGenerator::generateLiteralBool(ASTLiteralNode<bool> *literalBool) {
     auto val = llvm::ConstantInt::get(m_LLVMContext, llvm::APInt(sizeof(bool), literalBool->getValue()));
     return val;
+}
+
+llvm::Value *IRGenerator::generateIdentifier(ASTIdentifierNode *identifier) {
+    if (auto value = m_YAPLContext->getCurrentScope()->lookup(identifier->getName())) {
+        return m_Builder.CreateLoad(value);
+    }
+
+    m_Logger.printError("Symbol not found: '{}'", identifier->getName());
+
+    return nullptr;
 }
 
 llvm::Value *IRGenerator::generateBinary(ASTBinaryNode *bin) {
@@ -168,7 +189,6 @@ llvm::Value *IRGenerator::generateBinary(ASTBinaryNode *bin) {
     };
 
     if (!genLhs || !genRhs){
-        m_Logger.printError("Failed to generate code for a binary expr");
         return nullptr;
     }
 
@@ -221,7 +241,12 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
 
     auto llvmType = ASTTypeToLLVM(declaration->getType());
 
-    auto variable = m_Builder.CreateAlloca(llvmType, nullptr, declaration->getName());
+    auto currentFunction = m_YAPLContext->getCurrentScope()->getCurrentFunction();
+
+    llvm::IRBuilder<> tmpBuilder(&currentFunction->getEntryBlock(),
+            currentFunction->getEntryBlock().begin());
+
+    auto variable = tmpBuilder.CreateAlloca(llvmType, 0, declaration->getName());
 
     llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(declaration->getName(), variable));
 
@@ -284,7 +309,7 @@ llvm::Value *IRGenerator::generateAssignment(ASTAssignmentNode *assignment) {
 
 llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *funcDef) {
     auto llvmReturnType = ASTTypeToLLVM(funcDef->getType());
-    auto argsVector = funcDef->getArgs();
+    auto argsVector = std::move(funcDef->getArgs());
     llvm::SmallVector<llvm::Type *, 10> argsType;
 
     for ( const auto& arg: argsVector ) {
@@ -300,16 +325,20 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
     llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(funcDef->getName(), func));
 
     m_YAPLContext->pushScope();
-
-    for ( const auto& arg: argsVector ) {
-        auto argDecl = generate(arg.get());
-        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(arg->getName(), argDecl));
-    }
+    m_YAPLContext->getCurrentScope()->setCurrentFunction(func);
 
     auto entryBlock = llvm::BasicBlock::Create(m_LLVMContext, "entry", func);
 
     auto parentBlock = m_Builder.GetInsertBlock();
     m_Builder.SetInsertPoint(entryBlock);
+
+    uint32_t i = 0;
+    for ( const auto& arg: argsVector ) {
+        func->getArg(i)->setName(arg->getName());
+        auto argDecl = generateDeclaration(arg.get());
+        m_Builder.CreateStore(func->getArg(i), argDecl);
+        ++i;
+    }
 
     if(generateBlock(funcDef->getBody())) {
         return func;
@@ -335,3 +364,9 @@ bool IRGenerator::generateBlock(ASTBlockNode *block) {
     return true;
 }
 
+llvm::Value *IRGenerator::generateReturn(ASTReturnNode* returnNode) {
+    auto retExpr = returnNode->getExpr();
+    auto genExpr = generateExpr(retExpr);
+
+    return m_Builder.CreateRet(genExpr);
+}

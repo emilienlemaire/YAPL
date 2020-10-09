@@ -66,6 +66,7 @@ private:
     std::unique_ptr<ASTExprNode> m_ReturnExpr;
 public:
     ASTReturnNode(std::unique_ptr<ASTExprNode> returnExpr);
+    ASTExprNode *getExpr() const { return m_ReturnExpr.get(); }
 };
 
 
@@ -126,7 +127,7 @@ public:
             );
 
     const std::string &getName() const { return m_Name; }
-    const std::vector<std::unique_ptr<ASTDeclarationNode>> &getArgs() const { return m_Args; }
+    std::vector<std::unique_ptr<ASTDeclarationNode>> getArgs() { return std::move(m_Args); }
     const ASTNode::TYPE &getType() const { return m_ReturnType; }
     ASTBlockNode *getBody() const { return m_Body.get(); }
 };
