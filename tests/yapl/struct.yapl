@@ -1,0 +1,9 @@
+struct test {
+    int a;
+    int b;
+    func add() -> int {
+        return a + b;
+    }
+}
+
+test s(12, 5);

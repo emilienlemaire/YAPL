@@ -1,5 +1,7 @@
 #include <iostream>
+
 #include <llvm/ADT/SmallVector.h>
+#include <llvm/Support/Error.h>
 
 #include "AST/ASTExprNode.hpp"
 #include "IRGenerator/IRGenerator.hpp"
@@ -31,26 +33,13 @@ void IRGenerator::generate() {
     m_Module->dump();
 
     m_Module->dropAllReferences();
+
+    llvm::logAllUnhandledErrors(std::move(deferredErrors), llvm::errs(), "Unexpected errors: ");
 }
 
 llvm::Value *IRGenerator::generate(ASTNode* node) {
     if (auto expr = dynamic_cast<ASTExprNode*>(node)) {
         auto genExpr = generateExpr(expr);
-        //auto anonFuncType = llvm::FunctionType::get(genExpr->getType(), false);
-        //auto anonFunc = llvm::Function::Create(
-                //anonFuncType,
-                //llvm::Function::InternalLinkage,
-                //"__anon_expr",
-                //m_Module.get()
-                //);
-        //auto BB = llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
-        //m_Builder.SetInsertPoint(BB);
-        //m_Builder.CreateRet(genExpr);
-
-        //m_Logger.printInfo("Generated anon expr:");
-        //anonFunc->print(llvm::errs());
-        //fprintf(stderr, "\n");
-
         return genExpr;
     } else {
         if (auto declaration = dynamic_cast<ASTDeclarationNode*>(node)){
@@ -66,6 +55,12 @@ llvm::Value *IRGenerator::generate(ASTNode* node) {
         }
         if (auto funcDef = dynamic_cast<ASTFunctionDefinitionNode*>(node)) {
             return generateFunctionDefinition(funcDef);
+        }
+        if (auto structDef = dynamic_cast<ASTStructDefinitionNode*>(node)) {
+            return generateStructDefinition(structDef);
+        }
+        if (auto structInit = dynamic_cast<ASTStructInitializationNode*>(node)) {
+            return generateStructInitialization(structInit);
         }
     }
 
@@ -114,13 +109,15 @@ llvm::Value *IRGenerator::generateLiteralBool(ASTLiteralNode<bool> *literalBool)
 }
 
 llvm::Value *IRGenerator::generateIdentifier(ASTIdentifierNode *identifier) {
-    if (auto value = m_YAPLContext->getCurrentScope()->lookup(identifier->getName())) {
-        return m_Builder.CreateLoad(value);
+    auto valueOrErr = (m_YAPLContext->getCurrentScope()->lookup(identifier->getName()));
+
+    if (auto Err = valueOrErr.takeError()) {
+        m_Logger.printError("Symbol not found: '{}'", identifier->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(Err));
+        return nullptr;
     }
 
-    m_Logger.printError("Symbol not found: '{}'", identifier->getName());
-
-    return nullptr;
+    return *valueOrErr;
 }
 
 llvm::Value *IRGenerator::generateBinary(ASTBinaryNode *bin) {
@@ -221,7 +218,11 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
     if (m_YAPLContext->isAtTopLevelScope()) {
         if (auto var = m_YAPLContext->getCurrentScope()->lookup(declaration->getName())) {
             m_Logger.printError("Redefintion of {}.", declaration->getName());
+            deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+                    llvm::make_error<RedefinitionError>(declaration->getName()));
             return nullptr;
+        } else {
+            llvm::consumeError(var.takeError());
         }
 
         auto llvmType = ASTTypeToLLVM(declaration->getType());
@@ -234,9 +235,13 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
         return globalVar;
     }
 
-    if (m_YAPLContext->getCurrentScope()->lookupScope(declaration->getName())) {
+    if (auto val = m_YAPLContext->getCurrentScope()->lookupScope(declaration->getName())) {
         m_Logger.printError("Redefintion of {}", declaration->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+                llvm::make_error<RedefinitionError>(declaration->getName()));
         return nullptr;
+    } else {
+        llvm::consumeError(val.takeError());
     }
 
     auto llvmType = ASTTypeToLLVM(declaration->getType());
@@ -255,9 +260,13 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
 
 llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initialization) {
     if (m_YAPLContext->isAtTopLevelScope()) {
-        if (m_YAPLContext->getCurrentScope()->lookup(initialization->getName())) {
+        if (auto var = m_YAPLContext->getCurrentScope()->lookup(initialization->getName())) {
             m_Logger.printError("Redefintion of {}.", initialization->getName());
+            deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+                    llvm::make_error<RedefinitionError>(initialization->getName()));
             return nullptr;
+        } else {
+            llvm::consumeError(std::move(var.takeError()));
         }
 
         auto llvmType = ASTTypeToLLVM(initialization->getType());
@@ -279,9 +288,13 @@ llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initiali
         return globalVar;
     }
 
-    if (m_YAPLContext->getCurrentScope()->lookupScope(initialization->getName())) {
+    if (auto var = m_YAPLContext->getCurrentScope()->lookupScope(initialization->getName())) {
         m_Logger.printError("Redefintion of {}", initialization->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+                llvm::make_error<RedefinitionError>(initialization->getName()));
         return nullptr;
+    } else {
+        llvm::consumeError(std::move(var.takeError()));
     }
 
     auto llvmType = ASTTypeToLLVM(initialization->getType());
@@ -302,12 +315,27 @@ llvm::Value *IRGenerator::generateAssignment(ASTAssignmentNode *assignment) {
         return nullptr;
     }
 
-    llvm::Value *variable = m_YAPLContext->getCurrentScope()->lookup(assignment->getName());
-    llvm::Value *value = generateExpr(assignment->getValue());
-    return m_Builder.CreateStore(value, variable);
+    auto variable = m_YAPLContext->getCurrentScope()->lookup(assignment->getName());
+    if (variable) {
+        llvm::Value *value = generateExpr(assignment->getValue());
+        return m_Builder.CreateStore(value, *variable);
+    } else {
+        auto err = variable.takeError();
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        return nullptr;
+    }
 }
 
 llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *funcDef) {
+    if (auto var = m_YAPLContext->getCurrentScope()->lookupFunction(funcDef->getName())) {
+        m_Logger.printError("Redefintion of {}.", funcDef->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+                llvm::make_error<RedefinitionError>(funcDef->getName()));
+        return nullptr;
+    } else {
+        llvm::consumeError(std::move(var.takeError()));
+    }
+
     auto llvmReturnType = ASTTypeToLLVM(funcDef->getType());
     auto argsVector = std::move(funcDef->getArgs());
     llvm::SmallVector<llvm::Type *, 10> argsType;
@@ -369,4 +397,61 @@ llvm::Value *IRGenerator::generateReturn(ASTReturnNode* returnNode) {
     auto genExpr = generateExpr(retExpr);
 
     return m_Builder.CreateRet(genExpr);
+}
+
+// TODO:
+//  - Make a YAPLStruct which save methods and args and add method at each new struct init
+llvm::Value *IRGenerator::generateStructDefinition(ASTStructDefinitionNode* structDef) {
+    std::string name = structDef->getName();
+    auto attributes = structDef->getAttributes();
+    auto methods = structDef->getMethods();
+
+    llvm::SmallVector<llvm::Type *, 10> llvmTypes;
+
+    for ( const auto &attribute: attributes ) {
+        llvmTypes.push_back(ASTTypeToLLVM(attribute->getType()));
+    }
+    
+    for ( const auto &method: methods ) {
+        auto methodRet = ASTTypeToLLVM(method->getType());
+        auto argsVector = std::move(method->getArgs());
+        llvm::SmallVector<llvm::Type *, 10> argsType;
+
+        for ( const auto& arg: argsVector ) {
+            argsType.push_back(ASTTypeToLLVM(arg->getType()));
+        }
+
+        auto funcType = llvm::FunctionType::get(methodRet, argsType, false);
+        llvmTypes.push_back(funcType);
+    }
+
+    llvm::StructType *structType = llvm::StructType::create(m_LLVMContext, llvmTypes, "struct." + name);
+
+    return nullptr;
+}
+
+llvm::Value *IRGenerator::generateStructInitialization(ASTStructInitializationNode* structInit) {
+    auto structType = m_Module->getTypeByName("struct." + structInit->getStruct()->getName());
+    
+    if (!structType) {
+        m_Logger.printError("Unknown struct identifier: {}", structInit->getStruct()->getName());
+    }
+
+    m_Module->getOrInsertGlobal(structInit->getName(), structType);
+    llvm::GlobalVariable *globalVar = m_Module->getNamedGlobal(structInit->getName());
+    globalVar->setLinkage(llvm::GlobalValue::PrivateLinkage);
+    globalVar->setAlignment(llvm::MaybeAlign(4));
+    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(structInit->getName(), globalVar));
+
+    llvm::SmallVector<llvm::Constant *, 5> structVals;
+
+    for ( const auto& val:structInit->getAttributesValues() ) {
+        auto expr = generateExpr(val.get());
+        structVals.push_back((llvm::Constant *)expr);
+    }
+
+    llvm::ConstantStruct::get(structType, structVals);
+
+
+    return globalVar;
 }

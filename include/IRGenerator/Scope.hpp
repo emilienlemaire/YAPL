@@ -14,6 +14,38 @@
 #include "IRGenerator/YAPLValue.hpp"
 #include "IRGenerator/YAPLFunction.hpp"
 
+class UndefindSymbolError : public llvm::ErrorInfo<UndefindSymbolError> {
+public:
+    static char ID;
+    std::string symbol;
+
+    UndefindSymbolError(llvm::StringRef symbol) : symbol(symbol) {}
+
+    void log(llvm::raw_ostream &OS) const override {
+        OS << "Undefined symbol: " << symbol;
+    }
+
+    std::error_code convertToErrorCode() const override {
+        return llvm::object::make_error_code(llvm::object::object_error::invalid_symbol_index);
+    }
+};
+
+class RedefinitionError : public llvm::ErrorInfo<RedefinitionError> {
+public:
+    static char ID;
+    std::string symbol;
+
+    RedefinitionError(llvm::StringRef symbol) : symbol(symbol) {}
+
+    void log(llvm::raw_ostream &OS) const override {
+        OS << "Redefinition of symbol: " << symbol;
+    }
+
+    std::error_code convertToErrorCode() const override {
+        return llvm::object::make_error_code(llvm::object::object_error::invalid_symbol_index);
+    }
+};
+
 class Scope {
 private:
     std::shared_ptr<Scope> m_ParentScope;
@@ -38,11 +70,11 @@ public:
     void setCurrentFunction(llvm::Function *);
     llvm::Function *getCurrentFunction();
 
-    llvm::Value *lookupScope(llvm::StringRef);
-    llvm::Function *lookupFunctionScope(llvm::StringRef);
+    llvm::Expected<llvm::Value*> lookupScope(llvm::StringRef);
+    llvm::Expected<llvm::Function*> lookupFunctionScope(llvm::StringRef);
 
-    llvm::Value *lookup(llvm::StringRef);
-    llvm::Function *lookupFunction(llvm::StringRef);
+    llvm::Expected<llvm::Value*> lookup(llvm::StringRef);
+    llvm::Expected<llvm::Function*> lookupFunction(llvm::StringRef);
     
     llvm::Error pushValue(llvm::StringRef, llvm::Value *);
     llvm::Error pushFunction(llvm::StringRef, llvm::Function *);

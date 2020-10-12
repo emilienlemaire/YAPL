@@ -143,6 +143,9 @@ public:
             std::vector<std::unique_ptr<ASTDeclarationNode>> attributes,
             std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> methods
             );
+    const std::string &getName() const { return m_Name; }
+    std::vector<std::unique_ptr<ASTDeclarationNode>> getAttributes() { return std::move(m_Attributes); }
+    std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> getMethods() { return std::move(m_Methods); }
 };
 
 class ASTStructInitializationNode: public ASTStatementNode {
@@ -156,6 +159,9 @@ public:
             std::string name,
             std::vector<std::unique_ptr<ASTExprNode>> attributesValues
             );
+    ASTIdentifierNode *getStruct() const { return m_Struct.get(); }
+    const std::string &getName() const { return m_Name; }
+    std::vector<std::unique_ptr<ASTExprNode>> getAttributesValues() { return std::move(m_AttributesValues); }
 };
 
 class ASTStructAssignmentNode: public ASTStatementNode {

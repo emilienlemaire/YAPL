@@ -51,7 +51,16 @@ private:
     llvm::Value *generateAssignment(ASTAssignmentNode*);
     llvm::Value *generateFunctionDefinition(ASTFunctionDefinitionNode*);
     llvm::Value *generateReturn(ASTReturnNode*);
+    llvm::Value *generateStructDefinition(ASTStructDefinitionNode*);
+    llvm::Value *generateStructInitialization(ASTStructInitializationNode*);
+    llvm::Value *generateStructAssignement(ASTStructAssignmentNode*);
+    llvm::Value *generateAttributeAssignement(ASTAttributeAssignmentNode*);
+    llvm::Value *generateArrayDefinition(ASTArrayDefinitionNode*);
+    llvm::Value *generateArrayInitialization(ASTArrayInitializationNode*);
+    llvm::Value *generateArrayAssignment(ASTArrayAssignmentNode*);
+    llvm::Value *generateArrayMemberAssignment(ASTArrayMemeberAssignmentNode*);
 
+    llvm::Error deferredErrors = llvm::Error::success();
 
     bool generateBlock(ASTBlockNode *);
 

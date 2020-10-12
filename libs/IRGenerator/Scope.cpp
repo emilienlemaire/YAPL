@@ -1,26 +1,29 @@
 #include "IRGenerator/Scope.hpp"
+#include <llvm/Support/Error.h>
 
+char UndefindSymbolError::ID;
+char RedefinitionError::ID;
 
-llvm::Value *Scope::lookupScope(llvm::StringRef searchValue) {
+llvm::Expected<llvm::Value *> Scope::lookupScope(llvm::StringRef searchValue) {
     auto it = m_Values.find(searchValue);
     if (it == m_Values.end()) {
-        return nullptr;
+        return llvm::make_error<UndefindSymbolError>(searchValue);
     }
 
     return it->second;
 }
 
-llvm::Function *Scope::lookupFunctionScope(llvm::StringRef searchFunction) {
+llvm::Expected<llvm::Function*> Scope::lookupFunctionScope(llvm::StringRef searchFunction) {
     auto it = m_Functions.find(searchFunction);
 
     if (it == m_Functions.end()) {
-        return nullptr;
+        return llvm::make_error<UndefindSymbolError>(searchFunction);
     }
 
     return it->second;
 }
 
-llvm::Value *Scope::lookup(llvm::StringRef searchValue) {
+llvm::Expected<llvm::Value*> Scope::lookup(llvm::StringRef searchValue) {
     auto it = m_Values.find(searchValue);
 
     if (it == m_Values.end()) {
@@ -28,20 +31,20 @@ llvm::Value *Scope::lookup(llvm::StringRef searchValue) {
             return m_ParentScope->lookup(searchValue);
         }
 
-        return nullptr;
+        return llvm::make_error<UndefindSymbolError>(searchValue);
     }
     
     return it->second;
 }
 
-llvm::Function *Scope::lookupFunction(llvm::StringRef searchFunction) {
+llvm::Expected<llvm::Function*> Scope::lookupFunction(llvm::StringRef searchFunction) {
     auto it = m_Functions.find(searchFunction);
     if (it == m_Functions.end()) {
         if (m_ParentScope) {
             return m_ParentScope->lookupFunction(searchFunction);
         }
 
-        return nullptr;
+        return llvm::make_error<UndefindSymbolError>(searchFunction);
     }
     
     return it->second;
@@ -57,7 +60,7 @@ llvm::Function *Scope::getCurrentFunction() {
 
 llvm::Error Scope::pushValue(llvm::StringRef name, llvm::Value *value) {
     if (m_Values.find(name) != m_Values.end()) {
-        return llvm::make_error<llvm::StringError>(name, std::make_error_code(std::errc::executable_format_error));
+        return llvm::make_error<RedefinitionError>(name);
     }
 
     m_Values[name] = value;
@@ -67,7 +70,7 @@ llvm::Error Scope::pushValue(llvm::StringRef name, llvm::Value *value) {
 
 llvm::Error Scope::pushFunction(llvm::StringRef name, llvm::Function *value) {
     if (m_Functions.find(name) != m_Functions.end()) {
-        return llvm::make_error<llvm::StringError>(name, std::make_error_code(std::errc::executable_format_error));
+        return llvm::make_error<RedefinitionError>(name);
     }
 
     m_Functions[name] = value;
