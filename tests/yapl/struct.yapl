@@ -4,6 +4,17 @@ struct test {
     func add() -> int {
         return a + b;
     }
+    func addA(int c) -> int {
+        return a + c;
+    }
 }
 
 test s(12, 5);
+
+func f(int a, int b) -> int {
+    test t(9, 0);
+    t = {a, b};
+    t.b = 12;
+
+    return t.a;
+}

@@ -43,6 +43,7 @@ private:
     llvm::Value *generateLiteralDouble(ASTLiteralNode<double>*);
     llvm::Value *generateLiteralBool(ASTLiteralNode<bool>*);
     llvm::Value *generateIdentifier(ASTIdentifierNode*);
+    llvm::Value *generateAttributeAccess(ASTAttributeAccessNode*);
     llvm::Value *generateFunctionCall(ASTFunctionCallNode*);
     llvm::Value *generateMethodeCall(ASTMethodCallNode*);
 
@@ -53,12 +54,14 @@ private:
     llvm::Value *generateReturn(ASTReturnNode*);
     llvm::Value *generateStructDefinition(ASTStructDefinitionNode*);
     llvm::Value *generateStructInitialization(ASTStructInitializationNode*);
-    llvm::Value *generateStructAssignement(ASTStructAssignmentNode*);
-    llvm::Value *generateAttributeAssignement(ASTAttributeAssignmentNode*);
+    llvm::Value *generateStructAssignment(ASTStructAssignmentNode*);
+    llvm::Value *generateAttributeAssignment(ASTAttributeAssignmentNode*);
     llvm::Value *generateArrayDefinition(ASTArrayDefinitionNode*);
     llvm::Value *generateArrayInitialization(ASTArrayInitializationNode*);
     llvm::Value *generateArrayAssignment(ASTArrayAssignmentNode*);
     llvm::Value *generateArrayMemberAssignment(ASTArrayMemeberAssignmentNode*);
+
+    llvm::Value *generateMethod(llvm::StructType*, llvm::SmallVector<std::string, 10>, ASTFunctionDefinitionNode*);
 
     llvm::Error deferredErrors = llvm::Error::success();
 

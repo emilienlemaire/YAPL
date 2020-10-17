@@ -111,6 +111,8 @@ public:
     ASTAttributeAccessNode(std::string name, std::string attribute)
         : m_Name(std::move(name)), m_Attribute(std::move(attribute))
     {}
+    const std::string &getName() const { return m_Name; }
+    const std::string &getAttribute() const { return m_Attribute; }
 };
 
 class ASTMethodCallNode: public ASTAttributeAccessNode {

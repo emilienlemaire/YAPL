@@ -1,1 +1,1 @@
-add_library(lexer SHARED Lexer.cpp)
+add_library(lexer Lexer.cpp)

@@ -62,6 +62,12 @@ llvm::Value *IRGenerator::generate(ASTNode* node) {
         if (auto structInit = dynamic_cast<ASTStructInitializationNode*>(node)) {
             return generateStructInitialization(structInit);
         }
+        if (auto structAssignment = dynamic_cast<ASTStructAssignmentNode*>(node)) {
+            return generateStructAssignment(structAssignment);
+        }
+        if (auto attrAssignment = dynamic_cast<ASTAttributeAssignmentNode*>(node)) {
+            return generateAttributeAssignment(attrAssignment);
+        }
     }
 
     m_Logger.printError("The code you wrote cannot be compiled yet :(");
@@ -87,6 +93,10 @@ llvm::Value *IRGenerator::generateExpr(ASTExprNode *expr) {
 
     if (auto identifier = dynamic_cast<ASTIdentifierNode*>(expr)) {
         return generateIdentifier(identifier);
+    }
+
+    if (auto attrAccess = dynamic_cast<ASTAttributeAccessNode*>(expr)) {
+        return generateAttributeAccess(attrAccess);
     }
 
     m_Logger.printError("The code you wrote cannot be compiled yet :(");
@@ -117,7 +127,9 @@ llvm::Value *IRGenerator::generateIdentifier(ASTIdentifierNode *identifier) {
         return nullptr;
     }
 
-    return *valueOrErr;
+    auto value = m_Builder.CreateLoad(*valueOrErr, identifier->getName());
+
+    return value;
 }
 
 llvm::Value *IRGenerator::generateBinary(ASTBinaryNode *bin) {
@@ -304,7 +316,7 @@ llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initiali
     auto variableAlloc = m_Builder.CreateAlloca(llvmType, nullptr, initialization->getName());
     auto variableStore = m_Builder.CreateStore(value, variableAlloc);
 
-    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(initialization->getName(), variableStore));
+    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(initialization->getName(), variableAlloc));
 
     return variableStore;
 }
@@ -369,11 +381,13 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
     }
 
     if(generateBlock(funcDef->getBody())) {
+        m_YAPLContext->popScope();
         return func;
     }
-    
+
     m_Builder.SetInsertPoint(parentBlock);
 
+    m_YAPLContext->popScope();
     func->eraseFromParent();
 
     return nullptr;
@@ -400,58 +414,228 @@ llvm::Value *IRGenerator::generateReturn(ASTReturnNode* returnNode) {
 }
 
 // TODO:
-//  - Make a YAPLStruct which save methods and args and add method at each new struct init
+//      - Remove YAPLStruct, doesn't work.
+//      - Figure out a way to make methods work
 llvm::Value *IRGenerator::generateStructDefinition(ASTStructDefinitionNode* structDef) {
     std::string name = structDef->getName();
     auto attributes = structDef->getAttributes();
     auto methods = structDef->getMethods();
 
     llvm::SmallVector<llvm::Type *, 10> llvmTypes;
+    llvm::SmallVector<std::string, 10> argsName;
 
     for ( const auto &attribute: attributes ) {
         llvmTypes.push_back(ASTTypeToLLVM(attribute->getType()));
-    }
-    
-    for ( const auto &method: methods ) {
-        auto methodRet = ASTTypeToLLVM(method->getType());
-        auto argsVector = std::move(method->getArgs());
-        llvm::SmallVector<llvm::Type *, 10> argsType;
-
-        for ( const auto& arg: argsVector ) {
-            argsType.push_back(ASTTypeToLLVM(arg->getType()));
-        }
-
-        auto funcType = llvm::FunctionType::get(methodRet, argsType, false);
-        llvmTypes.push_back(funcType);
+        argsName.push_back(attribute->getName());
     }
 
     llvm::StructType *structType = llvm::StructType::create(m_LLVMContext, llvmTypes, "struct." + name);
+
+    uint32_t i = 0;
+    for ( const auto &attr : attributes ) {
+        m_YAPLContext->addAttributeOffset("struct." + name + "." + attr->getName(), i);
+        i++;
+    }
+
+    for ( const auto &method: methods ) {
+        generateMethod(structType, argsName, method.get());
+    }
 
     return nullptr;
 }
 
 llvm::Value *IRGenerator::generateStructInitialization(ASTStructInitializationNode* structInit) {
     auto structType = m_Module->getTypeByName("struct." + structInit->getStruct()->getName());
-    
+
     if (!structType) {
         m_Logger.printError("Unknown struct identifier: {}", structInit->getStruct()->getName());
     }
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        m_Module->getOrInsertGlobal(structInit->getName(), structType);
+        llvm::GlobalVariable *globalVar = m_Module->getNamedGlobal(structInit->getName());
+        globalVar->setLinkage(llvm::GlobalValue::PrivateLinkage);
+        globalVar->setAlignment(llvm::MaybeAlign(4));
+        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(structInit->getName(), globalVar));
 
-    m_Module->getOrInsertGlobal(structInit->getName(), structType);
-    llvm::GlobalVariable *globalVar = m_Module->getNamedGlobal(structInit->getName());
-    globalVar->setLinkage(llvm::GlobalValue::PrivateLinkage);
-    globalVar->setAlignment(llvm::MaybeAlign(4));
-    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(structInit->getName(), globalVar));
+        llvm::SmallVector<llvm::Constant *, 5> structVals;
+
+        for ( const auto& val:structInit->getAttributesValues() ) {
+            auto expr = generateExpr(val.get());
+            structVals.push_back((llvm::Constant *)expr);
+        }
+
+        globalVar->setInitializer(llvm::ConstantStruct::get(structType, structVals));
+
+        return globalVar;
+    }
+
+    if (auto var = m_YAPLContext->getCurrentScope()->lookupScope(structInit->getName())) {
+        m_Logger.printError("Redefintion of {}", structInit->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+                llvm::make_error<RedefinitionError>(structInit->getName()));
+        return nullptr;
+    } else {
+        llvm::consumeError(std::move(var.takeError()));
+    }
 
     llvm::SmallVector<llvm::Constant *, 5> structVals;
 
-    for ( const auto& val:structInit->getAttributesValues() ) {
-        auto expr = generateExpr(val.get());
-        structVals.push_back((llvm::Constant *)expr);
+    for ( const auto &elt: structInit->getAttributesValues() ) {
+        auto val = generateExpr(elt.get());
+        structVals.push_back((llvm::Constant *)val);
     }
 
-    llvm::ConstantStruct::get(structType, structVals);
+    auto variableAlloc = m_Builder.CreateAlloca(structType, nullptr, structInit->getName());
+    auto variableStore = m_Builder.CreateStore(llvm::ConstantStruct::get(structType, structVals), variableAlloc);
+
+    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(structInit->getName(), variableAlloc));
+
+    return variableStore;
+}
+
+llvm::Value *IRGenerator::generateMethod(llvm::StructType* structType,
+        llvm::SmallVector<std::string, 10> attrName,
+        ASTFunctionDefinitionNode *method) {
+    auto retType = ASTTypeToLLVM(method->getType());
+    auto args = method->getArgs();
+
+    llvm::SmallVector<llvm::Type *, 5> argsType;
+    argsType.push_back(structType);
+
+    for ( const auto &arg: args ) {
+        argsType.push_back(ASTTypeToLLVM(arg->getType()));
+    }
+
+    auto methodType = llvm::FunctionType::get(retType, argsType, false);
+    auto methodDef = llvm::Function::Create(
+            methodType,
+            llvm::Function::LinkOnceODRLinkage,
+            structType->getName() + "." + method->getName(),
+            m_Module.get());
+
+    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(method->getName(), methodDef));
+
+    m_YAPLContext->pushScope();
+    m_YAPLContext->getCurrentScope()->setCurrentFunction(methodDef);
+
+    auto entryBlock = llvm::BasicBlock::Create(m_LLVMContext, "entry", methodDef);
+
+    auto parentBlock = m_Builder.GetInsertBlock();
+    m_Builder.SetInsertPoint(entryBlock);
+
+    methodDef->getArg(0)->setName("this");
+    auto structDecl = m_Builder.CreateAlloca(structType, nullptr, "this");
+    m_Builder.CreateStore(methodDef->getArg(0), structDecl);
+    auto currentFunction = m_YAPLContext->getCurrentScope()->getCurrentFunction();
+
+    uint32_t i = 1;
+    for ( const auto& arg: args ) {
+        methodDef->getArg(i)->setName(arg->getName());
+        auto argDecl = generateDeclaration(arg.get());
+        m_Builder.CreateStore(methodDef->getArg(i), argDecl);
+        i++;
+    }
+
+    i = 0;
+    for ( const auto& attr: structType->elements() ) {
+        llvm::IRBuilder<> tmpBuilder(&currentFunction->getEntryBlock(),
+                currentFunction->getEntryBlock().begin());
+        auto attrDecl = tmpBuilder.CreateAlloca(attr, 0, attrName[i]);
+        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(attrName[i], attrDecl));
+        auto GEP = m_Builder.CreateStructGEP(structDecl, i, "gep." + attrName[i]);
+        auto load = m_Builder.CreateLoad(GEP, attrName[i]);
+        auto store = m_Builder.CreateStore(load, attrDecl);
+        i++;
+    }
 
 
-    return globalVar;
+    if(generateBlock(method->getBody())) {
+        m_YAPLContext->popScope();
+        return methodDef;
+    }
+
+    m_Builder.SetInsertPoint(parentBlock);
+
+    m_YAPLContext->popScope();
+    methodDef->eraseFromParent();
+
+    return nullptr;
+}
+
+llvm::Value *IRGenerator::generateStructAssignment(ASTStructAssignmentNode *structAssignment) {
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        m_Logger.printError("Assignment outside of a function.");
+        return nullptr;
+    } 
+
+    auto structValue = m_YAPLContext->getCurrentScope()->lookup(structAssignment->getName());
+
+    if (auto err = structValue.takeError()) {
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        return nullptr;
+    }
+
+    auto newValues = structAssignment->getAttributesValues();
+
+    auto structDebug = *structValue;
+
+    uint32_t numElts = (*structValue)->getType()->getPointerElementType()->getStructNumElements();
+    if (numElts != newValues.size()) {
+        m_Logger.printError("Struct assignment to '{}' expected {} values instead of {}",
+                structAssignment->getName(),
+                numElts,
+                newValues.size()
+                );
+        return nullptr;
+    }
+
+    uint32_t i = 0;
+    for (const auto &value: newValues) {
+        auto eltPtr = m_Builder.CreateStructGEP(*structValue, i, "elt" + llvm::itostr(i) + "ptr");
+        auto eltValue = generateExpr(newValues[i].get());
+        m_Builder.CreateStore(eltValue, eltPtr);
+        i++;
+    }
+
+    return *structValue;
+}
+
+llvm::Value *IRGenerator::generateAttributeAssignment(ASTAttributeAssignmentNode *attrAssignment) {
+    auto structPtrOrErr = m_YAPLContext->getCurrentScope()->lookup(attrAssignment->getStructName());
+
+    if (auto err = structPtrOrErr.takeError()) {
+        m_Logger.printError("Undefined symbol {}", attrAssignment->getStructName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+    }
+
+    auto structPtr = *structPtrOrErr;
+    std::string typeName = structPtr->getType()->getPointerElementType()->getStructName().str();
+
+    uint32_t offset = m_YAPLContext->getAttributeOffset(typeName + "." + attrAssignment->getAttributeName());
+
+    auto eltPtr = m_Builder.CreateStructGEP(structPtr, offset, attrAssignment->getAttributeName() + "gep");
+    auto expr = generateExpr(attrAssignment->getValue());
+    auto store = m_Builder.CreateStore(expr, eltPtr);
+
+    return structPtr;
+}
+
+llvm::Value *IRGenerator::generateAttributeAccess(ASTAttributeAccessNode *attrAccess) {
+    auto structPtrOrErr = m_YAPLContext->getCurrentScope()->lookup(attrAccess->getName());
+
+    if (auto err = structPtrOrErr.takeError()) {
+        m_Logger.printError("Undefined symbol: {}", attrAccess->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        return nullptr;
+    }
+
+    auto structPtr = *structPtrOrErr;
+    std::string typeName = structPtr->getType()->getPointerElementType()->getStructName().str();
+    
+    uint32_t offset = m_YAPLContext->getAttributeOffset(typeName + "." + attrAccess->getAttribute());
+    
+    auto eltPtr = m_Builder.CreateStructGEP(structPtr, offset, attrAccess->getAttribute() + "gep");
+    auto load = m_Builder.CreateLoad(eltPtr, attrAccess->getName() + "." + attrAccess->getAttribute());
+
+    return load;
 }

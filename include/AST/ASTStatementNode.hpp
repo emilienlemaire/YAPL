@@ -173,6 +173,8 @@ public:
             std::string name,
             std::vector<std::unique_ptr<ASTExprNode>> attributesValues
             );
+    std::vector<std::unique_ptr<ASTExprNode>> getAttributesValues() { return std::move(m_AttributesValues); }
+    const std::string &getName() const { return m_Name; }
 };
 
 class ASTAttributeAssignmentNode: public ASTStatementNode {
@@ -186,6 +188,9 @@ public:
             std::string attributeName,
             std::unique_ptr<ASTExprNode> value
             );
+    const std::string &getStructName() const { return m_StrcutName; }
+    const std::string &getAttributeName() const { return m_AttributeName; }
+    ASTExprNode *getValue() const { return m_Value.get(); }
 };
 
 class ASTArrayDefinitionNode: public ASTDeclarationNode {
