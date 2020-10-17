@@ -226,6 +226,9 @@ class ASTArrayAssignmentNode: public ASTStatementNode {
 private:
     std::string m_Name;
     std::vector<std::unique_ptr<ASTExprNode>> m_Values;
+    typedef std::vector<std::unique_ptr<ASTExprNode>> baseType;
+    typedef baseType::iterator baseIt;
+    typedef baseType::const_iterator baseConstIt;
 public:
     ASTArrayAssignmentNode(
             std::string name,
@@ -233,6 +236,12 @@ public:
             )
         : m_Name(std::move(name)), m_Values(std::move(values))
     {}
+    const std::string &getName() const { return m_Name; }
+    baseIt begin() { return m_Values.begin(); }
+    baseIt end()   { return m_Values.end(); }
+    const baseConstIt cbegin() const { return m_Values.cbegin(); }
+    const baseConstIt cend()   const { return m_Values.cend(); }
+    const size_t getSize() const { return m_Values.size(); }
 };
 
 class ASTArrayMemeberAssignmentNode: public ASTStatementNode {
@@ -245,5 +254,8 @@ public:
             std::string arrayName,
             size_t index,
             std::unique_ptr<ASTExprNode> value);
+    const std::string &getName() const { return m_ArrayName; }
+    const size_t &getIndex() const { return m_Index; }
+    ASTExprNode *getValue() const { return m_Value.get(); }
 };
 

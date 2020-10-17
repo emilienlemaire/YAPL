@@ -136,4 +136,6 @@ public:
     ASTArrayAccessNode(std::string name, size_t index)
         : m_Name(std::move(name)), m_Index(index)
     {}
+    const std::string &getName() const { return m_Name; }
+    const size_t &getIndex() const { return m_Index; }
 };

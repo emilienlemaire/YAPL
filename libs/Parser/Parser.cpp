@@ -405,6 +405,8 @@ std::unique_ptr<ASTBlockNode> Parser::parseBlock() {
         }
     }
 
+    m_CurrentToken = m_Lexer.getNextToken(); // Eat '}'
+
     return std::make_unique<ASTBlockNode>(std::move(nodes));
 }
 
@@ -700,19 +702,20 @@ std::unique_ptr<ASTArrayInitializationNode> Parser::parseArrayInitialization(AST
     m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
     std::vector<std::unique_ptr<ASTExprNode>> values;
 
-    for (int i = 0; i < size; i++) {
+    while(m_CurrentToken != token::iclose){
         auto expr = parseExpr();
         values.push_back(std::move(expr));
 
-        if (m_CurrentToken != token::comma && i != (size - 1)) {
-            return parseError<ASTArrayInitializationNode>("Syntax Error: Expecting ',' instead of {}", m_CurrentToken);
-        } else {
-            if (m_CurrentToken != token::iclose && i == (size - 1)) {
-                return parseError<ASTArrayInitializationNode>("Syntax Error: Expecting ']' instead of {}", m_CurrentToken);
-            }
+        if (m_CurrentToken != token::comma && m_CurrentToken != token::iclose) {
+            return parseError<ASTArrayInitializationNode>("Syntax Error: Expecting ']' or ',' instead of {}", m_CurrentToken);
+        }
+        
+        if (m_CurrentToken == token::comma) {
             m_CurrentToken = m_Lexer.getNextToken();
         }
     }
+
+    m_CurrentToken = m_Lexer.getNextToken(); //Eat ']'
 
     if (m_CurrentToken != token::semicolon) {
         return parseError<ASTArrayInitializationNode>("Syntax Error: Expecting ';' instead of {}", m_CurrentToken);
@@ -739,6 +742,8 @@ std::unique_ptr<ASTArrayAssignmentNode> Parser::parseArrayAssignment(std::string
             m_CurrentToken = m_Lexer.getNextToken();
         }
     }
+
+    m_CurrentToken = m_Lexer.getNextToken(); // eat ']'
 
     return std::make_unique<ASTArrayAssignmentNode>(name, std::move(values));
 }

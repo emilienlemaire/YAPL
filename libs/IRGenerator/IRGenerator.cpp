@@ -34,7 +34,7 @@ void IRGenerator::generate() {
 
     m_Module->dropAllReferences();
 
-    llvm::logAllUnhandledErrors(std::move(deferredErrors), llvm::errs(), "Unexpected errors: ");
+    llvm::logAllUnhandledErrors(std::move(deferredErrors), llvm::errs(), "Unexpected errors: \n");
 }
 
 llvm::Value *IRGenerator::generate(ASTNode* node) {
@@ -45,7 +45,6 @@ llvm::Value *IRGenerator::generate(ASTNode* node) {
         if (auto declaration = dynamic_cast<ASTDeclarationNode*>(node)){
             return generateDeclaration(declaration);
         }
-
         if (auto assignment = dynamic_cast<ASTAssignmentNode*>(node)) {
             return generateAssignment(assignment);
         }
@@ -67,6 +66,12 @@ llvm::Value *IRGenerator::generate(ASTNode* node) {
         }
         if (auto attrAssignment = dynamic_cast<ASTAttributeAssignmentNode*>(node)) {
             return generateAttributeAssignment(attrAssignment);
+        }
+        if (auto arrAssignment = dynamic_cast<ASTArrayAssignmentNode*>(node)) {
+            return generateArrayAssignment(arrAssignment);
+        }
+        if (auto arrMemAssignment = dynamic_cast<ASTArrayMemeberAssignmentNode*>(node)) {
+            return generateArrayMemberAssignment(arrMemAssignment);
         }
     }
 
@@ -97,6 +102,10 @@ llvm::Value *IRGenerator::generateExpr(ASTExprNode *expr) {
 
     if (auto attrAccess = dynamic_cast<ASTAttributeAccessNode*>(expr)) {
         return generateAttributeAccess(attrAccess);
+    }
+
+    if (auto arrAccess = dynamic_cast<ASTArrayAccessNode*>(expr)) {
+        return generateArrayAccess(arrAccess);
     }
 
     m_Logger.printError("The code you wrote cannot be compiled yet :(");
@@ -314,6 +323,9 @@ llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initiali
     auto llvmType = ASTTypeToLLVM(initialization->getType());
     auto valuePtr = initialization->getValue();
     auto value = generateExpr(valuePtr);
+
+    if (!value)
+        return nullptr;
 
     auto variableAlloc = m_Builder.CreateAlloca(llvmType, nullptr, initialization->getName());
     auto variableStore = m_Builder.CreateStore(value, variableAlloc);
@@ -692,9 +704,16 @@ llvm::Value *IRGenerator::generateArrayInitialization(ASTArrayInitializationNode
         std::vector<llvm::Constant *> arrVals;
         arrVals.reserve(arrInit->getSize());
 
+        uint32_t i = 0;
         for ( const auto &val: *arrInit ) {
             auto value = generateExpr(val.get());
             arrVals.push_back((llvm::Constant *)value);
+            i++;
+        }
+
+        if (i != arrInit->getSize()) {
+            m_Logger.printError("Array initialization of wrong size.");
+            return nullptr;
         }
 
         globalVar->setInitializer(llvm::ConstantArray::get(
@@ -715,12 +734,19 @@ llvm::Value *IRGenerator::generateArrayInitialization(ASTArrayInitializationNode
     auto arr = tmpBuilder.CreateAlloca(llvmType, 0, arrInit->getName());
     std::vector<llvm::Value *> arrVals;
 
+    uint32_t i = 0;
     for ( const auto &val: *arrInit ) {
         auto value = generateExpr(val.get());
         arrVals.push_back(value);
+        i++;
     }
 
-    uint32_t i = 0;
+    if (i != arrInit->getSize()) {
+        m_Logger.printError("Array initialization of wrong size.");
+        return nullptr;
+    }
+
+    i = 0;
     for ( const auto &val: arrVals ) {
         auto eltPtr = m_Builder.CreateConstGEP2_32(
                 llvmType,
@@ -737,3 +763,105 @@ llvm::Value *IRGenerator::generateArrayInitialization(ASTArrayInitializationNode
     return arr;
 }
 
+llvm::Value *IRGenerator::generateArrayAssignment(ASTArrayAssignmentNode *arrAssignment) {
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        m_Logger.printError("Assignment at top level scope is forbidden");
+        return nullptr;
+    }
+    auto arrOrErr = m_YAPLContext->getCurrentScope()->lookup(arrAssignment->getName());
+
+    if (auto err = arrOrErr.takeError()) {
+        m_Logger.printError("Undefined symbol: '{}'", arrAssignment->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        return nullptr;
+    }
+
+    auto arr = *arrOrErr;
+
+    if (arr->getType()->getPointerElementType()->getArrayNumElements() != arrAssignment->getSize()) {
+        m_Logger.printError("Unexpected array assignment: Expecting {} elements instead of {}",
+                arr->getType()->getPointerElementType()->getArrayNumElements(),
+                arrAssignment->getSize());
+        return nullptr;
+    }
+
+    uint32_t i = 0;
+    for (const auto &val : *arrAssignment) {
+        auto value = generateExpr(val.get());
+        auto eltPtr = m_Builder.CreateConstGEP2_32(
+                arr->getType()->getPointerElementType(),
+                arr,
+                0, i,
+                "elt" + llvm::itostr(i) + ".gep"
+                );
+        m_Builder.CreateStore(value, eltPtr);
+        i++;
+    }
+
+    return arr;
+}
+
+llvm::Value *IRGenerator::generateArrayMemberAssignment(ASTArrayMemeberAssignmentNode *arrMemAssignment) {
+    auto arrOrErr = m_YAPLContext->getCurrentScope()->lookup(arrMemAssignment->getName());
+
+    if (auto err = arrOrErr.takeError()) {
+        m_Logger.printError("Undefined symbol: '{}'", arrMemAssignment->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        return nullptr;
+    }
+
+    auto arr = *arrOrErr;
+
+    size_t arrSize = arr->getType()->getPointerElementType()->getArrayNumElements();
+    size_t index = arrMemAssignment->getIndex();
+
+    if (index >= arrSize) {
+        m_Logger.printError("Index out of bound {}: array '{}' has a size of {}",
+                index,
+                arrMemAssignment->getName(),
+                arr->getType()->getPointerElementType()->getArrayNumElements()
+                );
+        return nullptr;
+    }
+    auto eltPtr = m_Builder.CreateConstGEP2_32(
+            arr->getType()->getPointerElementType(),
+            arr,
+            0, arrMemAssignment->getIndex());
+
+    auto val = generateExpr(arrMemAssignment->getValue());
+
+    m_Builder.CreateStore(val, eltPtr);
+    
+    return arr;
+}
+
+llvm::Value *IRGenerator::generateArrayAccess(ASTArrayAccessNode *arrAccess) {
+    auto arrOrErr = m_YAPLContext->getCurrentScope()->lookup(arrAccess->getName());
+
+    if (auto err = arrOrErr.takeError()) {
+        m_Logger.printError("Undefined symbol: '{}'", arrAccess->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        return nullptr;
+    }
+
+    auto arr = *arrOrErr;
+
+    size_t arrSize = arr->getType()->getPointerElementType()->getArrayNumElements();
+    size_t index = arrAccess->getIndex();
+
+    if (index >= arrSize) {
+        m_Logger.printError("Index out of bound {}: array '{}' has a size of {}",
+                index,
+                arrAccess->getName(),
+                arr->getType()->getPointerElementType()->getArrayNumElements()
+                );
+        return nullptr;
+    }
+
+    auto GEP = m_Builder.CreateConstGEP2_32(
+            arr->getType()->getPointerElementType(),
+            arr,
+            0, arrAccess->getIndex());
+
+    return m_Builder.CreateLoad(GEP);
+}

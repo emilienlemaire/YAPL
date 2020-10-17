@@ -44,6 +44,7 @@ private:
     llvm::Value *generateLiteralBool(ASTLiteralNode<bool>*);
     llvm::Value *generateIdentifier(ASTIdentifierNode*);
     llvm::Value *generateAttributeAccess(ASTAttributeAccessNode*);
+    llvm::Value *generateArrayAccess(ASTArrayAccessNode*);
     llvm::Value *generateFunctionCall(ASTFunctionCallNode*);
     llvm::Value *generateMethodeCall(ASTMethodCallNode*);
 
