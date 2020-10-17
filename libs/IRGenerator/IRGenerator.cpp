@@ -219,11 +219,13 @@ llvm::Value *IRGenerator::generateBinary(ASTBinaryNode *bin) {
     return genOp(genLhs, bin->getOperator(), genRhs);
 }
 
-// TODO: Add to context, and make sure to delete the pointers in
-// the context at destruction
 llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
     if (auto initialization = dynamic_cast<ASTInitializationNode*>(declaration)) {
         return generateInitialization(initialization);
+    }
+
+    if (auto arrDef = dynamic_cast<ASTArrayDefinitionNode*>(declaration)) {
+        return generateArrayDefinition(arrDef);
     }
 
     // We are on top level scope so we want a global variable
@@ -639,3 +641,99 @@ llvm::Value *IRGenerator::generateAttributeAccess(ASTAttributeAccessNode *attrAc
 
     return load;
 }
+
+llvm::Value *IRGenerator::generateArrayDefinition(ASTArrayDefinitionNode *arrDef) {
+    if (auto var = m_YAPLContext->getCurrentScope()->lookup(arrDef->getName())) {
+        m_Logger.printError("Redefintion of {}.", arrDef->getName());
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+                llvm::make_error<RedefinitionError>(arrDef->getName()));
+        return nullptr;
+    } else {
+        llvm::consumeError(var.takeError());
+    }
+
+    if (auto arrInit = dynamic_cast<ASTArrayInitializationNode*>(arrDef)) {
+        return generateArrayInitialization(arrInit);
+    }
+
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        auto globalVar = (llvm::GlobalVariable *)m_Module->getOrInsertGlobal(arrDef->getName(),
+                llvm::ArrayType::get(ASTTypeToLLVM(arrDef->getType()), arrDef->getSize())
+                );
+        globalVar->setLinkage(llvm::GlobalVariable::PrivateLinkage);
+        globalVar->setAlignment(llvm::MaybeAlign(4));
+        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(arrDef->getName(), globalVar));
+        
+        return globalVar;
+    }
+
+    auto llvmType = llvm::ArrayType::get(ASTTypeToLLVM(arrDef->getType()), arrDef->getSize());
+
+    auto currentFunction = m_YAPLContext->getCurrentScope()->getCurrentFunction();
+
+    llvm::IRBuilder<> tmpBuilder(&currentFunction->getEntryBlock(),
+            currentFunction->getEntryBlock().begin());
+
+    auto arr = tmpBuilder.CreateAlloca(llvmType, 0, arrDef->getName());
+
+    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(arrDef->getName(), arr));
+
+    return arr;
+}
+
+llvm::Value *IRGenerator::generateArrayInitialization(ASTArrayInitializationNode *arrInit) {
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        auto globalVar = (llvm::GlobalVariable *)m_Module->getOrInsertGlobal(arrInit->getName(),
+                llvm::ArrayType::get(ASTTypeToLLVM(arrInit->getType()), arrInit->getSize())
+                );
+        globalVar->setLinkage(llvm::GlobalVariable::PrivateLinkage);
+        globalVar->setAlignment(llvm::MaybeAlign(4));
+
+        std::vector<llvm::Constant *> arrVals;
+        arrVals.reserve(arrInit->getSize());
+
+        for ( const auto &val: *arrInit ) {
+            auto value = generateExpr(val.get());
+            arrVals.push_back((llvm::Constant *)value);
+        }
+
+        globalVar->setInitializer(llvm::ConstantArray::get(
+                    llvm::ArrayType::get(ASTTypeToLLVM(arrInit->getType()), arrInit->getSize()),
+                    arrVals));
+        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(arrInit->getName(), globalVar));
+
+        return globalVar;
+    }
+
+    auto llvmType = llvm::ArrayType::get(ASTTypeToLLVM(arrInit->getType()), arrInit->getSize());
+
+    auto currentFunc = m_YAPLContext->getCurrentScope()->getCurrentFunction();
+
+    llvm::IRBuilder<> tmpBuilder(&currentFunc->getEntryBlock(),
+            currentFunc->getEntryBlock().begin());
+
+    auto arr = tmpBuilder.CreateAlloca(llvmType, 0, arrInit->getName());
+    std::vector<llvm::Value *> arrVals;
+
+    for ( const auto &val: *arrInit ) {
+        auto value = generateExpr(val.get());
+        arrVals.push_back(value);
+    }
+
+    uint32_t i = 0;
+    for ( const auto &val: arrVals ) {
+        auto eltPtr = m_Builder.CreateConstGEP2_32(
+                llvmType,
+                arr,
+                0, i,
+                "elt" + llvm::itostr(i) + ".gep"
+                );
+        auto store = m_Builder.CreateStore(val, eltPtr);
+        i++;
+    }
+
+    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(arrInit->getName(), arr));
+
+    return arr;
+}
+

@@ -195,16 +195,18 @@ public:
 
 class ASTArrayDefinitionNode: public ASTDeclarationNode {
 private:
-    std::string m_Name;
-    ASTNode::TYPE m_Type;
-    size_t m_Size;
+    const size_t m_Size;
 public:
     ASTArrayDefinitionNode(std::string name, size_t size, ASTNode::TYPE type);
+    const size_t &getSize() const { return m_Size; }
 };
 
 class ASTArrayInitializationNode: public ASTArrayDefinitionNode {
 private:
     std::vector<std::unique_ptr<ASTExprNode>> m_Values;
+    
+    typedef std::vector<std::unique_ptr<ASTExprNode>>::iterator baseIt;
+    typedef std::vector<std::unique_ptr<ASTExprNode>>::const_iterator baseConstIt;
 public:
     ASTArrayInitializationNode(
             std::string name,
@@ -214,6 +216,10 @@ public:
             )
         : ASTArrayDefinitionNode(std::move(name), size, type), m_Values(std::move(values))
     {}
+    baseIt begin() { return m_Values.begin(); }
+    baseIt end()   { return m_Values.end(); }
+    const baseConstIt cbegin() const { return m_Values.cbegin(); }
+    const baseConstIt cend()   const { return m_Values.cend(); }
 };
 
 class ASTArrayAssignmentNode: public ASTStatementNode {
