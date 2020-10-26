@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+//#define LOG_PARSER
+
 Parser::Parser(std::string filepath, CppLogger::Level level)
     : m_Logger(level, "Parser"), m_Lexer(filepath)
 {
@@ -77,7 +79,6 @@ std::unique_ptr<ASTProgramNode> Parser::getProgram() {
 
 std::unique_ptr<ASTNode> Parser::parseNext() {
     parseInfo("next");
-    m_CurrentToken = m_Lexer.getNextToken();
 
     if (m_CurrentToken == token::semicolon) {
         m_CurrentToken = m_Lexer.getNextToken();
@@ -412,17 +413,15 @@ std::unique_ptr<ASTBlockNode> Parser::parseBlock() {
 
 std::unique_ptr<ASTIfNode> Parser::parseIf() {
     parseInfo("if");
-    std::unique_ptr<ASTExprNode> condition = parseExpr();
-
     m_CurrentToken = m_Lexer.getNextToken();
+
+    std::unique_ptr<ASTExprNode> condition = parseExpr();
 
     if (m_CurrentToken != token::bopen) {
         return parseError<ASTIfNode>("Expecting '{' instead of {}", m_CurrentToken);
     }
 
     std::unique_ptr<ASTBlockNode> ifBlock = parseBlock();
-
-    m_CurrentToken = m_Lexer.getNextToken();
 
     if (m_CurrentToken == token::elselabel) {
         m_CurrentToken = m_Lexer.getNextToken();
@@ -587,12 +586,12 @@ std::unique_ptr<ASTStructDefinitionNode> Parser::parseStructDefintion() {
         if (m_CurrentToken == token::type) {
             std::unique_ptr<ASTDeclarationNode> attribute = parseDeclaration();
             attributes.push_back(std::move(attribute));
+            m_CurrentToken = m_Lexer.getNextToken();
         } else {
             std::unique_ptr<ASTFunctionDefinitionNode> method = parseFunctionDefinition();
             methods.push_back(std::move(method));
         }
 
-        m_CurrentToken = m_Lexer.getNextToken();
     }
 
     return std::make_unique<ASTStructDefinitionNode>(name, std::move(attributes), std::move(methods));

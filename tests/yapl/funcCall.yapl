@@ -1,0 +1,11 @@
+func f1() -> int {
+    return 1;
+}
+
+func f2(int i) -> int {
+    return i + f1();
+}
+
+func f3() -> int {
+    return f2(2);
+}

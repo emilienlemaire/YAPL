@@ -1,6 +1,8 @@
+#include <array>
 #include <iostream>
 
 #include <llvm/ADT/SmallVector.h>
+#include <llvm/IR/Verifier.h>
 #include <llvm/Support/Error.h>
 
 #include "AST/ASTExprNode.hpp"
@@ -73,6 +75,10 @@ llvm::Value *IRGenerator::generate(ASTNode* node) {
         if (auto arrMemAssignment = dynamic_cast<ASTArrayMemeberAssignmentNode*>(node)) {
             return generateArrayMemberAssignment(arrMemAssignment);
         }
+
+        if (auto ifNode = dynamic_cast<ASTIfNode*>(node)) {
+            return generateIf(ifNode);
+        }
     }
 
     m_Logger.printError("The code you wrote cannot be compiled yet :(");
@@ -100,12 +106,20 @@ llvm::Value *IRGenerator::generateExpr(ASTExprNode *expr) {
         return generateIdentifier(identifier);
     }
 
+    if (auto methodCall = dynamic_cast<ASTMethodCallNode*>(expr)) {
+        return generateMethodCall(methodCall);
+    }
+
     if (auto attrAccess = dynamic_cast<ASTAttributeAccessNode*>(expr)) {
         return generateAttributeAccess(attrAccess);
     }
 
     if (auto arrAccess = dynamic_cast<ASTArrayAccessNode*>(expr)) {
         return generateArrayAccess(arrAccess);
+    }
+
+    if (auto funcCall = dynamic_cast<ASTFunctionCallNode*>(expr)) {
+        return generateFunctionCall(funcCall);
     }
 
     m_Logger.printError("The code you wrote cannot be compiled yet :(");
@@ -376,8 +390,6 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
             funcDef->getName(),
             m_Module.get());
 
-    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(funcDef->getName(), func));
-
     m_YAPLContext->pushScope();
     m_YAPLContext->getCurrentScope()->setCurrentFunction(func);
 
@@ -396,6 +408,8 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
 
     if(generateBlock(funcDef->getBody())) {
         m_YAPLContext->popScope();
+        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(funcDef->getName(), func));
+        llvm::verifyFunction(*func, &llvm::errs());
         return func;
     }
 
@@ -527,7 +541,6 @@ llvm::Value *IRGenerator::generateMethod(llvm::StructType* structType,
             structType->getName() + "." + method->getName(),
             m_Module.get());
 
-    llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(method->getName(), methodDef));
 
     m_YAPLContext->pushScope();
     m_YAPLContext->getCurrentScope()->setCurrentFunction(methodDef);
@@ -565,6 +578,7 @@ llvm::Value *IRGenerator::generateMethod(llvm::StructType* structType,
 
     if(generateBlock(method->getBody())) {
         m_YAPLContext->popScope();
+        llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(methodDef->getName(), methodDef));
         return methodDef;
     }
 
@@ -864,4 +878,159 @@ llvm::Value *IRGenerator::generateArrayAccess(ASTArrayAccessNode *arrAccess) {
             0, arrAccess->getIndex());
 
     return m_Builder.CreateLoad(GEP);
+}
+
+llvm::Value *IRGenerator::generateFunctionCall(ASTFunctionCallNode *call) {
+    auto calleeIdentifier = call->getCallee();
+    auto args = call->getArgs();
+
+    std::string name = calleeIdentifier->getName();
+    llvm::SmallVector<llvm::Value *, 5> argsValue;
+
+    for(const auto &arg : args) {
+        auto val = generateExpr(arg.get());
+        argsValue.push_back(val);
+    }
+
+    auto funcOrErr = m_YAPLContext->getCurrentScope()->lookupFunction(name);
+
+    if (auto err = funcOrErr.takeError()) {
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        return nullptr;
+    }
+
+    llvm::Function *func = *funcOrErr;
+
+    auto callInst = m_Builder.CreateCall(
+            func->getFunctionType(),
+            func,
+            argsValue,
+            "call" + name);
+
+    return callInst;
+}
+
+llvm::Value *IRGenerator::generateMethodCall(ASTMethodCallNode *methodCall) {
+    auto structOrErr = m_YAPLContext->getCurrentScope()->lookup(methodCall->getName());
+    
+    if (auto err = structOrErr.takeError()) {
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        return nullptr;
+    }
+
+    auto structPtr = *structOrErr;
+
+    std::string typeName = structPtr->getType()->getPointerElementType()->getStructName().str();
+
+    auto structVar = m_Builder.CreateLoad(structPtr, "this");
+
+    auto methodOrErr = m_YAPLContext->getCurrentScope()->lookupFunction(
+            typeName + "." + methodCall->getAttribute()
+            );
+
+    if (auto err = methodOrErr.takeError()) {
+        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        return nullptr;
+    }
+
+    auto method = *methodOrErr;
+
+    auto args = methodCall->getArgs();
+    llvm::SmallVector<llvm::Value *, 5> argVals;
+
+    argVals.push_back(structVar);
+
+    for (const auto &arg : args) {
+        auto expr = generateExpr(arg.get());
+        argVals.push_back(expr);
+    }
+
+    auto callInst = m_Builder.CreateCall(
+            method,
+            argVals,
+            "call" + method->getName());
+
+    return callInst;
+}
+
+llvm::Value *IRGenerator::generateIf(ASTIfNode *ifNode) {
+    auto condExpr = ifNode->getCond();
+    auto condVal = generateExpr(condExpr);
+
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        m_Logger.printError("Cannot have an if statement in top level scope.");
+        return nullptr;
+    }
+    
+    uint8_t numRet = 0;
+
+    if (condVal->getType()->getTypeID() != llvm::Type::getDoubleTy(m_LLVMContext)->getTypeID()) {
+        condVal = m_Builder.CreateCast(
+                llvm::Instruction::CastOps::SIToFP,
+                condVal,
+                llvm::Type::getDoubleTy(m_LLVMContext),
+                "cast"
+                );
+    }
+
+    condVal = m_Builder.CreateFCmpOGT(
+            condVal,
+            llvm::ConstantFP::get(m_LLVMContext, llvm::APFloat(0.0)),
+            "ifcond"
+            );
+
+    llvm::Function *parentFunction = m_Builder.GetInsertBlock()->getParent();
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(m_LLVMContext, "then", parentFunction);
+    llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(m_LLVMContext, "else");
+    llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(m_LLVMContext, "merge");
+
+    m_Builder.CreateCondBr(condVal, thenBlock, elseBlock);
+
+    m_Builder.SetInsertPoint(thenBlock);
+
+    if (!generateBlock(ifNode->getThen())) {
+        m_Logger.printError("Failed to generate then block");
+        return nullptr;
+    } else {
+        numRet++;
+    }
+
+    llvm::BranchInst *mergeBr;
+
+    if (!m_Builder.GetInsertBlock()->getTerminator()) {
+        mergeBr = m_Builder.CreateBr(mergeBlock);
+    }
+    
+    parentFunction->getBasicBlockList().push_back(elseBlock);
+    m_Builder.SetInsertPoint(elseBlock);
+
+    if (!ifNode->getElse()) {
+        mergeBr = m_Builder.CreateBr(mergeBlock);
+        parentFunction->getBasicBlockList().push_back(mergeBlock);
+        m_Builder.SetInsertPoint(mergeBlock);
+        return mergeBr;
+    }
+
+
+    if(!generateBlock(ifNode->getElse())) {
+        m_Logger.printError("Failed to generate else block");
+        return nullptr;
+    }
+
+    if (!m_Builder.GetInsertBlock()->getTerminator()) {
+        mergeBr = m_Builder.CreateBr(mergeBlock);
+    } else {
+        numRet++;
+    }
+
+    parentFunction->getBasicBlockList().push_back(mergeBlock);
+
+    if (numRet == 2) {
+        mergeBlock->eraseFromParent();
+        return llvm::UndefValue::get(parentFunction->getReturnType());
+    }
+
+    m_Builder.SetInsertPoint(mergeBlock);
+
+    return mergeBr;
 }

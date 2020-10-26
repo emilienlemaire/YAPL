@@ -46,7 +46,7 @@ private:
     llvm::Value *generateAttributeAccess(ASTAttributeAccessNode*);
     llvm::Value *generateArrayAccess(ASTArrayAccessNode*);
     llvm::Value *generateFunctionCall(ASTFunctionCallNode*);
-    llvm::Value *generateMethodeCall(ASTMethodCallNode*);
+    llvm::Value *generateMethodCall(ASTMethodCallNode*);
 
     llvm::Value *generateDeclaration(ASTDeclarationNode*);
     llvm::Value *generateInitialization(ASTInitializationNode*);
@@ -61,6 +61,7 @@ private:
     llvm::Value *generateArrayInitialization(ASTArrayInitializationNode*);
     llvm::Value *generateArrayAssignment(ASTArrayAssignmentNode*);
     llvm::Value *generateArrayMemberAssignment(ASTArrayMemeberAssignmentNode*);
+    llvm::Value *generateIf(ASTIfNode*);
 
     llvm::Value *generateMethod(llvm::StructType*, llvm::SmallVector<std::string, 10>, ASTFunctionDefinitionNode*);
 

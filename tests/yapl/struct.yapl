@@ -18,3 +18,8 @@ func f(int a, int b) -> int {
 
     return t.a;
 }
+
+func f1(int a) -> int {
+    int b = s.add();
+    return b + s.addA(a);
+}

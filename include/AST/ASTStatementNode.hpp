@@ -97,6 +97,9 @@ public:
             std::unique_ptr<ASTBlockNode> ifBlock,
             std::unique_ptr<ASTBlockNode> elseBlock
             );
+    ASTExprNode *getCond() const { return m_Condition.get(); }
+    ASTBlockNode *getThen() const { return m_IfBlock.get(); }
+    ASTBlockNode *getElse() const { return m_ElseBlock.get(); }
 };
 
 class ASTForNode: public ASTStatementNode {

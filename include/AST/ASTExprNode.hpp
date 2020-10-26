@@ -101,6 +101,8 @@ private:
     std::vector<std::unique_ptr<ASTExprNode>> m_Args;
 public:
     ASTFunctionCallNode(std::unique_ptr<ASTIdentifierNode> name, std::vector<std::unique_ptr<ASTExprNode>> args);
+    ASTIdentifierNode *getCallee() const { return m_Name.get(); }
+    std::vector<std::unique_ptr<ASTExprNode>> getArgs() { return std::move(m_Args); }
 };
 
 class ASTAttributeAccessNode : public ASTExprNode {
@@ -117,8 +119,6 @@ public:
 
 class ASTMethodCallNode: public ASTAttributeAccessNode {
     private:
-        std::string m_StructIdentifier;
-        std::string m_MethodName;
         std::vector<std::unique_ptr<ASTExprNode>> m_Args;
     public:
         ASTMethodCallNode(
@@ -126,6 +126,7 @@ class ASTMethodCallNode: public ASTAttributeAccessNode {
                 std::string methodName,
                 std::vector<std::unique_ptr<ASTExprNode>> args
                 );
+        std::vector<std::unique_ptr<ASTExprNode>> getArgs() { return std::move(m_Args); }
 };
 
 class ASTArrayAccessNode : public ASTExprNode {
