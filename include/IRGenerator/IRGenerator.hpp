@@ -62,6 +62,7 @@ private:
     llvm::Value *generateArrayAssignment(ASTArrayAssignmentNode*);
     llvm::Value *generateArrayMemberAssignment(ASTArrayMemeberAssignmentNode*);
     llvm::Value *generateIf(ASTIfNode*);
+    llvm::Value *generateFor(ASTForNode*);
 
     llvm::Value *generateMethod(llvm::StructType*, llvm::SmallVector<std::string, 10>, ASTFunctionDefinitionNode*);
 
@@ -105,5 +106,7 @@ public:
     }
 
     void generate();
+
+    llvm::Module *getModule() const { return m_Module.get(); }
 };
 

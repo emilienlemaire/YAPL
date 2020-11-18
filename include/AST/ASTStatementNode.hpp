@@ -113,6 +113,9 @@ public:
             std::unique_ptr<ASTExprNode> condition,
             std::unique_ptr<ASTBlockNode> block
             );
+    ASTDeclarationNode *getDecl() const { return m_Iterator.get(); }
+    ASTExprNode *getCond() const { return m_Condition.get(); }
+    ASTBlockNode *getBlock() const { return m_Block.get(); }
 };
 
 class ASTFunctionDefinitionNode: public ASTStatementNode {

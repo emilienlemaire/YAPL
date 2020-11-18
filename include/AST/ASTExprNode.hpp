@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AST/ASTNode.hpp"
-#include <llvm/IR/Value.h>
 #include <memory>
 #include <string>
 #include <utility>
@@ -78,6 +77,9 @@ public:
         )
     : m_Start(std::move(start)), m_Operator(t_Operator), m_Stop(std::move(stop))
     {}
+    ASTExprNode *getStart() const { return m_Start.get(); }
+    const RangeOperator &getOp() const { return m_Operator; }
+    ASTExprNode *getStop() const { return m_Stop.get(); }
 };
 
 class ASTIdentifierNode: public ASTExprNode {

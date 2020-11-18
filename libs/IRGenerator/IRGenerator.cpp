@@ -32,7 +32,7 @@ void IRGenerator::generate() {
             );
     auto BB = llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
 
-    m_Module->dump();
+    m_Module->print(llvm::errs(), nullptr);
 
     m_Module->dropAllReferences();
 
@@ -78,6 +78,10 @@ llvm::Value *IRGenerator::generate(ASTNode* node) {
 
         if (auto ifNode = dynamic_cast<ASTIfNode*>(node)) {
             return generateIf(ifNode);
+        }
+
+        if (auto forNode = dynamic_cast<ASTForNode*>(node)) {
+            return generateFor(forNode);
         }
     }
 
@@ -1033,4 +1037,99 @@ llvm::Value *IRGenerator::generateIf(ASTIfNode *ifNode) {
     m_Builder.SetInsertPoint(mergeBlock);
 
     return mergeBr;
+}
+
+llvm::Value *IRGenerator::generateFor(ASTForNode *forNode) {
+    if (m_YAPLContext->isAtTopLevelScope()) {
+        m_Logger.printError("For loop cannot be at top level scope");
+        return nullptr;
+    }
+
+    auto currFunc = m_YAPLContext->getCurrentScope()->getCurrentFunction();
+
+    m_YAPLContext->pushScope();
+
+    m_YAPLContext->getCurrentScope()->setCurrentFunction(currFunc);
+
+    auto it = generateDeclaration(forNode->getDecl());
+
+    if (auto range = dynamic_cast<ASTRangeNode*>(forNode->getCond())) {
+        auto startVal = generateExpr(range->getStart());
+        auto stopVal = generateExpr(range->getStop());
+        auto store = m_Builder.CreateStore(startVal, it);
+        auto func = m_Builder.GetInsertBlock()->getParent();
+        auto loopBB = llvm::BasicBlock::Create(m_LLVMContext, "loop", func);
+        auto afterLoopBB = llvm::BasicBlock::Create(m_LLVMContext, "afterLoop");
+        m_Builder.CreateBr(loopBB);
+        m_Builder.SetInsertPoint(loopBB);
+        if(!generateBlock(forNode->getBlock())) {
+            m_Logger.printError("Failed to generate for loop body");
+            return nullptr;
+        }
+
+        llvm::Value *brLoopCond;
+
+        RangeOperator op = range->getOp();
+        switch (op) {
+            case RangeOperator::ft: { 
+                auto one = llvm::ConstantInt::get(
+                        m_LLVMContext,
+                        llvm::APInt(llvm::Type::getInt32Ty(m_LLVMContext)->getScalarSizeInBits(), 1)
+                        );
+                auto itVal = m_Builder.CreateLoad(it);
+                auto nextVal = m_Builder.CreateAdd(itVal, one, "nextval");
+                store = m_Builder.CreateStore(nextVal, it);
+                auto cond = m_Builder.CreateICmpSGT(nextVal, stopVal);
+                brLoopCond = m_Builder.CreateCondBr(cond, afterLoopBB, loopBB);
+                break;
+            }
+            case RangeOperator::fmt: {
+                auto one = llvm::ConstantInt::get(
+                        m_LLVMContext,
+                        llvm::APInt(llvm::Type::getInt32Ty(m_LLVMContext)->getScalarSizeInBits(), 1)
+                        );
+                auto itVal = m_Builder.CreateLoad(it);
+                auto nextVal = m_Builder.CreateAdd(itVal, one, "nextval");
+                store = m_Builder.CreateStore(nextVal, it);
+                auto cond = m_Builder.CreateICmpSGT(nextVal, stopVal);
+                brLoopCond = m_Builder.CreateCondBr(cond, afterLoopBB, loopBB);
+                break;
+            }
+            case RangeOperator::ftl: {
+                auto one = llvm::ConstantInt::get(
+                        m_LLVMContext,
+                        llvm::APInt(llvm::Type::getInt32Ty(m_LLVMContext)->getScalarSizeInBits(), 1)
+                        );
+                auto itVal = m_Builder.CreateLoad(it);
+                auto nextVal = m_Builder.CreateAdd(itVal, one, "nextval");
+                store = m_Builder.CreateStore(nextVal, it);
+                auto cond = m_Builder.CreateICmpSGE(startVal, stopVal);
+                brLoopCond = m_Builder.CreateCondBr(cond, afterLoopBB, loopBB);
+                break;
+            }
+            case RangeOperator::ftm: {
+                auto one = llvm::ConstantInt::get(
+                        m_LLVMContext,
+                        llvm::APInt(llvm::Type::getInt32Ty(m_LLVMContext)->getScalarSizeInBits(), 1)
+                        );
+                auto itVal = m_Builder.CreateLoad(it);
+                auto nextVal = m_Builder.CreateSub(itVal, one, "nextval");
+                store = m_Builder.CreateStore(nextVal, it);
+                stopVal = m_Builder.CreateNeg(stopVal, "neg_stop");
+                auto cond = m_Builder.CreateICmpSGE(nextVal, stopVal);
+                brLoopCond = m_Builder.CreateCondBr(cond, afterLoopBB, loopBB);
+                break;
+            }
+        }
+
+        func->getBasicBlockList().push_back(afterLoopBB);
+        m_Builder.SetInsertPoint(afterLoopBB);
+
+        m_YAPLContext->popScope();
+
+        return brLoopCond;
+    }
+
+    m_Logger.printError("For condition is expected to be a range");
+    return nullptr;
 }

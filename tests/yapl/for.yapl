@@ -1,0 +1,19 @@
+func main() -> int {
+    int b = 0;
+    for(int i in 0 ... 4) {
+        b = b + i;
+    }
+
+    for(int i in 0 ..< 4) {
+        b = b + i;
+    }
+
+    for(int i in 0 ..- 4) {
+        b = b + i;
+    }
+
+    for(int i in 0 <.. 4) {
+        b = b + i;
+    }
+    return 0;
+}
