@@ -52,3 +52,17 @@ void YAPLContext::addAttributeOffset(llvm::StringRef name, uint32_t offset) {
 uint32_t YAPLContext::getAttributeOffset(llvm::StringRef name) {
     return m_AttributeOffset[name];
 }
+
+void YAPLContext::resetReturnHelper() {
+    m_ReturnHelper.returnBlock = nullptr;
+    m_ReturnHelper.returnNode = nullptr;
+}
+
+void YAPLContext::setReturnHelper(llvm::BasicBlock* returnBlock, llvm::PHINode* returnNode) {
+    m_ReturnHelper.returnBlock = returnBlock;
+    m_ReturnHelper.returnNode = returnNode;
+}
+
+void YAPLContext::addPhiNodeIncomming(llvm::BasicBlock* incomingBlock, llvm::Value* phiValue) {
+    m_ReturnHelper.returnNode->addIncoming(phiValue, incomingBlock);
+}

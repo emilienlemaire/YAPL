@@ -394,12 +394,21 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
             funcDef->getName(),
             m_Module.get());
 
+    auto parentBlock = m_Builder.GetInsertBlock();
+    llvm::BasicBlock* returnBlock = llvm::BasicBlock::Create(m_LLVMContext, "return");
+    m_Builder.SetInsertPoint(returnBlock);
+    llvm::PHINode* returnNode = m_Builder.CreatePHI(llvmReturnType, 1, "returnNode");
+    if (funcDef->getType() != ASTNode::VOID) {
+        m_YAPLContext->setReturnHelper(returnBlock, returnNode);
+        m_Builder.CreateRet(returnNode);
+    }
+    m_Builder.SetInsertPoint(parentBlock);
+
     m_YAPLContext->pushScope();
     m_YAPLContext->getCurrentScope()->setCurrentFunction(func);
 
     auto entryBlock = llvm::BasicBlock::Create(m_LLVMContext, "entry", func);
 
-    auto parentBlock = m_Builder.GetInsertBlock();
     m_Builder.SetInsertPoint(entryBlock);
 
     uint32_t i = 0;
@@ -413,6 +422,9 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
     if(generateBlock(funcDef->getBody())) {
         m_YAPLContext->popScope();
         llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(funcDef->getName(), func));
+        if (funcDef->getType() != ASTNode::VOID)
+            func->getBasicBlockList().push_back(m_YAPLContext->getReturnBlock());
+        m_YAPLContext->resetReturnHelper();
         llvm::verifyFunction(*func, &llvm::errs());
         return func;
     }
@@ -442,7 +454,11 @@ llvm::Value *IRGenerator::generateReturn(ASTReturnNode* returnNode) {
     auto retExpr = returnNode->getExpr();
     auto genExpr = generateExpr(retExpr);
 
-    return m_Builder.CreateRet(genExpr);
+    llvm::BasicBlock* incomingBlock = m_Builder.GetInsertBlock();
+    
+    m_YAPLContext->addPhiNodeIncomming(incomingBlock, genExpr);
+
+    return m_Builder.CreateBr(m_YAPLContext->getReturnBlock());
 }
 
 // TODO:
