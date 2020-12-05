@@ -36,7 +36,7 @@ void IRGenerator::generate() {
 
     m_Module->dropAllReferences();
 
-    llvm::logAllUnhandledErrors(std::move(deferredErrors), llvm::errs(), "Unexpected errors: \n");
+    llvm::logAllUnhandledErrors(std::move(m_DeferredErrors), llvm::errs(), "Unexpected errors: \n");
 }
 
 llvm::Value *IRGenerator::generate(ASTNode* node) {
@@ -150,7 +150,7 @@ llvm::Value *IRGenerator::generateIdentifier(ASTIdentifierNode *identifier) {
 
     if (auto Err = valueOrErr.takeError()) {
         m_Logger.printError("Symbol not found: '{}'", identifier->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(Err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(Err));
         return nullptr;
     }
 
@@ -259,7 +259,7 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
     if (m_YAPLContext->isAtTopLevelScope()) {
         if (auto var = m_YAPLContext->getCurrentScope()->lookup(declaration->getName())) {
             m_Logger.printError("Redefintion of {}.", declaration->getName());
-            deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+            m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors),
                     llvm::make_error<RedefinitionError>(declaration->getName()));
             return nullptr;
         } else {
@@ -278,7 +278,7 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
 
     if (auto val = m_YAPLContext->getCurrentScope()->lookupScope(declaration->getName())) {
         m_Logger.printError("Redefintion of {}", declaration->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors),
                 llvm::make_error<RedefinitionError>(declaration->getName()));
         return nullptr;
     } else {
@@ -303,7 +303,7 @@ llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initiali
     if (m_YAPLContext->isAtTopLevelScope()) {
         if (auto var = m_YAPLContext->getCurrentScope()->lookup(initialization->getName())) {
             m_Logger.printError("Redefintion of {}.", initialization->getName());
-            deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+            m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors),
                     llvm::make_error<RedefinitionError>(initialization->getName()));
             return nullptr;
         } else {
@@ -331,7 +331,7 @@ llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initiali
 
     if (auto var = m_YAPLContext->getCurrentScope()->lookupScope(initialization->getName())) {
         m_Logger.printError("Redefintion of {}", initialization->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors),
                 llvm::make_error<RedefinitionError>(initialization->getName()));
         return nullptr;
     } else {
@@ -365,7 +365,7 @@ llvm::Value *IRGenerator::generateAssignment(ASTAssignmentNode *assignment) {
         return m_Builder.CreateStore(value, *variable);
     } else {
         auto err = variable.takeError();
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
         return nullptr;
     }
 }
@@ -373,7 +373,7 @@ llvm::Value *IRGenerator::generateAssignment(ASTAssignmentNode *assignment) {
 llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *funcDef) {
     if (auto var = m_YAPLContext->getCurrentScope()->lookupFunction(funcDef->getName())) {
         m_Logger.printError("Redefintion of {}.", funcDef->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors),
                 llvm::make_error<RedefinitionError>(funcDef->getName()));
         return nullptr;
     } else {
@@ -519,7 +519,7 @@ llvm::Value *IRGenerator::generateStructInitialization(ASTStructInitializationNo
 
     if (auto var = m_YAPLContext->getCurrentScope()->lookupScope(structInit->getName())) {
         m_Logger.printError("Redefintion of {}", structInit->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors),
                 llvm::make_error<RedefinitionError>(structInit->getName()));
         return nullptr;
     } else {
@@ -619,7 +619,7 @@ llvm::Value *IRGenerator::generateStructAssignment(ASTStructAssignmentNode *stru
     auto structValue = m_YAPLContext->getCurrentScope()->lookup(structAssignment->getName());
 
     if (auto err = structValue.takeError()) {
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
         return nullptr;
     }
 
@@ -653,7 +653,7 @@ llvm::Value *IRGenerator::generateAttributeAssignment(ASTAttributeAssignmentNode
 
     if (auto err = structPtrOrErr.takeError()) {
         m_Logger.printError("Undefined symbol {}", attrAssignment->getStructName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
     }
 
     auto structPtr = *structPtrOrErr;
@@ -673,7 +673,7 @@ llvm::Value *IRGenerator::generateAttributeAccess(ASTAttributeAccessNode *attrAc
 
     if (auto err = structPtrOrErr.takeError()) {
         m_Logger.printError("Undefined symbol: {}", attrAccess->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
         return nullptr;
     }
 
@@ -691,7 +691,7 @@ llvm::Value *IRGenerator::generateAttributeAccess(ASTAttributeAccessNode *attrAc
 llvm::Value *IRGenerator::generateArrayDefinition(ASTArrayDefinitionNode *arrDef) {
     if (auto var = m_YAPLContext->getCurrentScope()->lookup(arrDef->getName())) {
         m_Logger.printError("Redefintion of {}.", arrDef->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors),
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors),
                 llvm::make_error<RedefinitionError>(arrDef->getName()));
         return nullptr;
     } else {
@@ -806,7 +806,7 @@ llvm::Value *IRGenerator::generateArrayAssignment(ASTArrayAssignmentNode *arrAss
 
     if (auto err = arrOrErr.takeError()) {
         m_Logger.printError("Undefined symbol: '{}'", arrAssignment->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
         return nullptr;
     }
 
@@ -840,7 +840,7 @@ llvm::Value *IRGenerator::generateArrayMemberAssignment(ASTArrayMemeberAssignmen
 
     if (auto err = arrOrErr.takeError()) {
         m_Logger.printError("Undefined symbol: '{}'", arrMemAssignment->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
         return nullptr;
     }
 
@@ -874,7 +874,7 @@ llvm::Value *IRGenerator::generateArrayAccess(ASTArrayAccessNode *arrAccess) {
 
     if (auto err = arrOrErr.takeError()) {
         m_Logger.printError("Undefined symbol: '{}'", arrAccess->getName());
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
         return nullptr;
     }
 
@@ -915,7 +915,7 @@ llvm::Value *IRGenerator::generateFunctionCall(ASTFunctionCallNode *call) {
     auto funcOrErr = m_YAPLContext->getCurrentScope()->lookupFunction(name);
 
     if (auto err = funcOrErr.takeError()) {
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
         return nullptr;
     }
 
@@ -934,7 +934,7 @@ llvm::Value *IRGenerator::generateMethodCall(ASTMethodCallNode *methodCall) {
     auto structOrErr = m_YAPLContext->getCurrentScope()->lookup(methodCall->getName());
     
     if (auto err = structOrErr.takeError()) {
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
         return nullptr;
     }
 
@@ -949,7 +949,7 @@ llvm::Value *IRGenerator::generateMethodCall(ASTMethodCallNode *methodCall) {
             );
 
     if (auto err = methodOrErr.takeError()) {
-        deferredErrors = llvm::joinErrors(std::move(deferredErrors), std::move(err));
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors), std::move(err));
         return nullptr;
     }
 
@@ -982,7 +982,6 @@ llvm::Value *IRGenerator::generateIf(ASTIfNode *ifNode) {
         return nullptr;
     }
     
-    uint8_t numRet = 0;
 
     if (condVal->getType()->getTypeID() != llvm::Type::getDoubleTy(m_LLVMContext)->getTypeID()) {
         condVal = m_Builder.CreateCast(
@@ -992,6 +991,8 @@ llvm::Value *IRGenerator::generateIf(ASTIfNode *ifNode) {
                 "cast"
                 );
     }
+
+    uint8_t numRet = 0;
 
     condVal = m_Builder.CreateFCmpOGT(
             condVal,

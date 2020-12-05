@@ -66,7 +66,7 @@ private:
 
     llvm::Value *generateMethod(llvm::StructType*, llvm::SmallVector<std::string, 10>, ASTFunctionDefinitionNode*);
 
-    llvm::Error deferredErrors = llvm::Error::success();
+    llvm::Error m_DeferredErrors = llvm::Error::success();
 
     bool generateBlock(ASTBlockNode *);
 
