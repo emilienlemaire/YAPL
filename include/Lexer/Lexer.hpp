@@ -22,6 +22,12 @@ struct Token{
     }
 };
 
+struct Position {
+    uint32_t line;
+    uint32_t column;
+    uint32_t character;
+};
+
 class Lexer
 {
 private:
@@ -29,6 +35,7 @@ private:
     int m_CurrentChar = '\0';
     std::string m_CurrentIdentifier = "";
     CppLogger::CppLogger m_Logger;
+    Position m_Pos;
 
     FILE* pFile;
 
@@ -39,5 +46,6 @@ public:
     Token peekToken();
     [[nodiscard]] Token getNextToken();
     int getNextChar();
+    const Position getCurrentPos() const { return m_Pos; }
 };
 

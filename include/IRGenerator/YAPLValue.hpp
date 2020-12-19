@@ -21,6 +21,6 @@ private:
 public:
     static YAPLType AstTypeToYAPLType(ASTNode::TYPE);
     YAPLValue(llvm::StringRef name, YAPLType type)
-        : m_Name(name.str()), m_Type(type)
+        : m_Type(type), m_Name(name.str()) 
     {}
 };

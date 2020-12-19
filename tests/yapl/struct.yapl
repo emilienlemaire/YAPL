@@ -23,3 +23,8 @@ func f1(int a) -> int {
     int b = s.add();
     return b + s.addA(a);
 }
+
+func t(int a) -> test {
+    test s(a, 2);
+    return s;
+}

@@ -1,2 +1,2 @@
-add_library(compiler SHARED Compiler.cpp)
+add_library(compiler STATIC Compiler.cpp)
 target_link_libraries(compiler PUBLIC irgenerator)

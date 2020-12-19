@@ -17,5 +17,5 @@ add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(llvm_libs core support irreader mcjit native)
 
-add_library(irgenerator SHARED IRGenerator.cpp Scope.cpp YAPLContext.cpp YAPLValue.cpp)
+add_library(irgenerator STATIC IRGenerator.cpp Scope.cpp YAPLContext.cpp YAPLValue.cpp)
 target_link_libraries(irgenerator PUBLIC ast parser ${llvm_libs})

@@ -1,3 +1,3 @@
-add_library(parser Parser.cpp)
+add_library(parser STATIC Parser.cpp)
 
 target_link_libraries(parser PUBLIC ast lexer cpplogger)

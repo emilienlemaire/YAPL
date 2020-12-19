@@ -46,7 +46,13 @@ Token Lexer::peekToken() {
 
 int Lexer::getNextChar(){
     m_CurrentChar = getc(pFile);
-
+    if (m_CurrentChar == '\n') {
+        m_Pos.line++;
+        m_Pos.column = 0;
+    } else {
+        m_Pos.column++;
+    }
+    m_Pos.character++;
     return m_CurrentChar;
 }
 
@@ -71,7 +77,7 @@ Token Lexer::getNextToken(){
         identifier = m_CurrentChar;
         getNextChar();
 
-        while (std::isalnum(m_CurrentChar)) {
+        while (std::isalnum(m_CurrentChar) || m_CurrentChar == '_') {
             identifier += m_CurrentChar;
             getNextChar();
         }
@@ -327,7 +333,8 @@ Token Lexer::getNextToken(){
                 m_CurrentToken = {token::neq, ""};
                 return m_CurrentToken;
             }
-            m_Logger.printWarn("Unary operation not yet supported please avoid using them.");
+            m_Logger.printWarn("Unary operation not yet supported please avoid using them."
+                    "At position: {}:{}", m_Pos.line, m_Pos.column);
             m_CurrentToken = {token::notsym, ""};
             return m_CurrentToken;
         }

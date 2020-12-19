@@ -30,13 +30,19 @@ void IRGenerator::generate() {
             "__anon_expr",
             m_Module.get()
             );
-    auto BB = llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
+    llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
 
     m_Module->print(llvm::errs(), nullptr);
 
     m_Module->dropAllReferences();
 
-    llvm::logAllUnhandledErrors(std::move(m_DeferredErrors), llvm::errs(), "Unexpected errors: \n");
+    if (m_DeferredErrors) {
+        std::string str;
+        llvm::raw_string_ostream os(str);
+        os << m_DeferredErrors;
+        m_Logger.printError("Unhandled errors:\n  {}", os.str());
+    }
+
 }
 
 llvm::Value *IRGenerator::generate(ASTNode* node) {
@@ -160,8 +166,8 @@ llvm::Value *IRGenerator::generateIdentifier(ASTIdentifierNode *identifier) {
 }
 
 llvm::Value *IRGenerator::generateBinary(ASTBinaryNode *bin) {
-    auto lhs = std::move(bin->getLeftOperrand());
-    auto rhs = std::move(bin->getRightOperrand());
+    auto lhs = bin->getLeftOperrand();
+    auto rhs = bin->getRightOperrand();
 
     auto genLhs = generateExpr(lhs.get());
     auto genRhs = generateExpr(rhs.get());
@@ -307,7 +313,7 @@ llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initiali
                     llvm::make_error<RedefinitionError>(initialization->getName()));
             return nullptr;
         } else {
-            llvm::consumeError(std::move(var.takeError()));
+            llvm::consumeError(var.takeError());
         }
 
         auto llvmType = ASTTypeToLLVM(initialization->getType());
@@ -317,11 +323,6 @@ llvm::Value *IRGenerator::generateInitialization(ASTInitializationNode *initiali
         llvm::GlobalVariable *globalVar = m_Module->getNamedGlobal(initialization->getName());
         globalVar->setLinkage(llvm::GlobalValue::PrivateLinkage);
         globalVar->setAlignment(llvm::MaybeAlign(4));
-        if (static_cast<llvm::Constant *>(value)) {
-            m_Logger.printInfo("It is a constant");
-        } else {
-            m_Logger.printError("It is not a constant");
-        }
 
         globalVar->setInitializer(static_cast<llvm::Constant *>(value));
         llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(initialization->getName(), globalVar));
@@ -546,6 +547,13 @@ llvm::Value *IRGenerator::generateMethod(llvm::StructType* structType,
         ASTFunctionDefinitionNode *method) {
     auto retType = ASTTypeToLLVM(method->getType());
     auto args = method->getArgs();
+    auto methodMangledName = structType->getName() + "." + method->getName();
+
+    if(auto var = m_YAPLContext->getCurrentScope()->lookupFunction(methodMangledName.str())) {
+        m_Logger.printError("Redefinition of {}", methodMangledName.str());
+        m_DeferredErrors = llvm::joinErrors(std::move(m_DeferredErrors),
+                llvm::make_error<RedefinitionError>(methodMangledName.str()));
+    }
 
     llvm::SmallVector<llvm::Type *, 5> argsType;
     argsType.push_back(structType);
@@ -562,12 +570,21 @@ llvm::Value *IRGenerator::generateMethod(llvm::StructType* structType,
             m_Module.get());
 
 
+    auto parentBlock = m_Builder.GetInsertBlock();
+    auto returnBlock = llvm::BasicBlock::Create(m_LLVMContext, "return");
+    m_Builder.SetInsertPoint(returnBlock);
+    auto returnNode = m_Builder.CreatePHI(retType, 1, "returnNode");
+    if (method->getType() != ASTNode::VOID) {
+        m_YAPLContext->setReturnHelper(returnBlock, returnNode);
+        m_Builder.CreateRet(returnNode);
+    }
+
+    m_Builder.SetInsertPoint(parentBlock);
+
     m_YAPLContext->pushScope();
     m_YAPLContext->getCurrentScope()->setCurrentFunction(methodDef);
 
     auto entryBlock = llvm::BasicBlock::Create(m_LLVMContext, "entry", methodDef);
-
-    auto parentBlock = m_Builder.GetInsertBlock();
     m_Builder.SetInsertPoint(entryBlock);
 
     methodDef->getArg(0)->setName("this");
@@ -591,7 +608,7 @@ llvm::Value *IRGenerator::generateMethod(llvm::StructType* structType,
         llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(attrName[i], attrDecl));
         auto GEP = m_Builder.CreateStructGEP(structDecl, i, "gep." + attrName[i]);
         auto load = m_Builder.CreateLoad(GEP, attrName[i]);
-        auto store = m_Builder.CreateStore(load, attrDecl);
+        m_Builder.CreateStore(load, attrDecl);
         i++;
     }
 
@@ -599,6 +616,10 @@ llvm::Value *IRGenerator::generateMethod(llvm::StructType* structType,
     if(generateBlock(method->getBody())) {
         m_YAPLContext->popScope();
         llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(methodDef->getName(), methodDef));
+        if (method->getType() != ASTNode::VOID)
+            methodDef->getBasicBlockList().push_back(m_YAPLContext->getReturnBlock());
+        m_YAPLContext->resetReturnHelper();
+        llvm::verifyFunction(*methodDef, &llvm::errs());
         return methodDef;
     }
 
