@@ -36,6 +36,19 @@ Lexer::Lexer(const std::string& filepath)
     }
 }
 
+Lexer::Lexer(FILE* file)
+    :m_Logger(CppLogger::Level::Trace, "Lexer")
+{
+
+    CppLogger::Format format({
+            CppLogger::FormatAttribute::Name,
+            CppLogger::FormatAttribute::Message
+    });
+
+    m_Logger.setFormat(format);
+
+    pFile = file;
+}
 Lexer::~Lexer(){
     fclose(pFile);
 }
@@ -166,7 +179,7 @@ Token Lexer::getNextToken(){
             m_CurrentToken = {token::returnlabel, ""};
             return m_CurrentToken;
         }
-        m_CurrentToken = {token::label, identifier};
+        m_CurrentToken = {token::identifier, identifier};
         return m_CurrentToken;
     }
 

@@ -120,7 +120,7 @@ std::unique_ptr<ASTNode> Parser::parseNext() {
         return parseReturn();
     }
 
-    if (m_CurrentToken == token::label) {
+    if (m_CurrentToken == token::identifier) {
         return parseLabel(m_CurrentToken.identifier);
     }
 
@@ -170,7 +170,7 @@ std::unique_ptr<ASTNode> Parser::parseNextBlock() {
         return parseReturn();
     }
 
-    if (m_CurrentToken == token::label) {
+    if (m_CurrentToken == token::identifier) {
         return parseLabel(m_CurrentToken.identifier);
     }
 
@@ -206,7 +206,7 @@ std::unique_ptr<ASTExprNode> Parser::parseExpr() {
     }
 
 
-    if (m_CurrentToken == token::label) {
+    if (m_CurrentToken == token::identifier) {
         // Handles Warn: has array member assignment until better parsing
         // Identifier, NamespaceIdentifier, FunctionCall, MethodCall
         tmpExpr = parseLabelExpr();
@@ -243,7 +243,7 @@ std::unique_ptr<ASTExprNode> Parser::parseExpr() {
 std::unique_ptr<ASTImportNode> Parser::parseImport() {
     parseInfo("import");
     m_CurrentToken = m_Lexer.getNextToken();
-    if (m_CurrentToken.token != token::label) {
+    if (m_CurrentToken.token != token::identifier) {
         return std::move(parseError<ASTImportNode>(
                     "Syntax error: expected label instead of {}",
                     tokenToString(m_CurrentToken.token)
@@ -269,7 +269,7 @@ std::unique_ptr<ASTImportNode> Parser::parseImport() {
 
         m_CurrentToken = m_Lexer.getNextToken();
 
-        if (m_CurrentToken != token::label) {
+        if (m_CurrentToken != token::identifier) {
             return std::move(parseError<ASTImportNode>(
                         "Syntax error: Expected a label instead of {}", m_CurrentToken));
         }
@@ -283,7 +283,7 @@ std::unique_ptr<ASTImportNode> Parser::parseImport() {
         while (m_CurrentToken == token::comma) {
             m_CurrentToken = m_Lexer.getNextToken();
 
-            if (m_CurrentToken != token::label) {
+            if (m_CurrentToken != token::identifier) {
                 return std::move(parseError<ASTImportNode>(
                             "Syntax error: Expected a label instead of {}",
                             m_CurrentToken
@@ -341,7 +341,7 @@ std::unique_ptr<ASTDeclarationNode> Parser::parseDeclaration() {
 
     m_CurrentToken = m_Lexer.getNextToken();
 
-    if (m_CurrentToken != token::label) {
+    if (m_CurrentToken != token::identifier) {
         return parseError<ASTDeclarationNode>(
                 "Syntax error: expecting a label instead of {}", m_CurrentToken);
     }
@@ -496,7 +496,7 @@ std::unique_ptr<ASTFunctionDefinitionNode> Parser::parseFunctionDefinition() {
     parseInfo("function definition");
     m_CurrentToken = m_Lexer.getNextToken();
 
-    if (m_CurrentToken != token::label) {
+    if (m_CurrentToken != token::identifier) {
         return parseError<ASTFunctionDefinitionNode>("Syntax Error: Expecting a label instead of {}", m_CurrentToken);
     }
 
@@ -515,7 +515,7 @@ std::unique_ptr<ASTFunctionDefinitionNode> Parser::parseFunctionDefinition() {
     while (m_CurrentToken == token::type) {
         ASTNode::TYPE type = ASTNode::stringToType(m_CurrentToken.identifier);
         m_CurrentToken = m_Lexer.getNextToken();
-        if (m_CurrentToken != token::label) {
+        if (m_CurrentToken != token::identifier) {
             return parseError<ASTFunctionDefinitionNode>(
                     "Syntax Error: Expecting a label instead of {}",
                     m_CurrentToken
@@ -565,7 +565,7 @@ std::unique_ptr<ASTStructDefinitionNode> Parser::parseStructDefintion() {
     parseInfo("struct definition");
     m_CurrentToken = m_Lexer.getNextToken();
 
-    if (m_CurrentToken != token::label) {
+    if (m_CurrentToken != token::identifier) {
         return parseError<ASTStructDefinitionNode>("Sybtax Error: Expecting a label instead of {}", m_CurrentToken);
     }
 
@@ -803,7 +803,7 @@ std::unique_ptr<ASTNode> Parser::parseLabel(std::string identifier) {
             return parseFunctionCall(std::move(namespaceIdentifier));
         }
 
-        if (m_CurrentToken == token::label) {
+        if (m_CurrentToken == token::identifier) {
             return parseStructInitialization(std::move(namespaceIdentifier));
         }
 
@@ -819,7 +819,7 @@ std::unique_ptr<ASTNode> Parser::parseLabel(std::string identifier) {
         return parseArrayAccessNode(identifier);
     }
 
-    if (m_CurrentToken == token::label) {
+    if (m_CurrentToken == token::identifier) {
         auto structIdentifier = std::make_unique<ASTIdentifierNode>(identifier);
         return parseStructInitialization(std::move(structIdentifier));
     }
@@ -901,7 +901,7 @@ std::unique_ptr<ASTNamespaceIdentifierNode> Parser::parseNamespaceIdentifier(std
     parseInfo("namespace identifier");
     m_CurrentToken = m_Lexer.getNextToken();
 
-    if (m_CurrentToken != token::label) {
+    if (m_CurrentToken != token::identifier) {
         return parseError<ASTNamespaceIdentifierNode>("Syntax Error: Expecting a label instead of {}", m_CurrentToken);
     }
 
@@ -962,7 +962,7 @@ std::unique_ptr<ASTAttributeAccessNode> Parser::parseAttributeAccess(std::string
     parseInfo("attribute access");
     m_CurrentToken = m_Lexer.getNextToken();
 
-    if (m_CurrentToken != token::label) {
+    if (m_CurrentToken != token::identifier) {
         return parseError<ASTAttributeAccessNode>("Syntax Error: Expecting a label instead of {}", m_CurrentToken);
     }
 
@@ -1059,7 +1059,7 @@ std::unique_ptr<ASTNode> Parser::parseAttributeAccessNode(std::string structIden
     parseInfo("attribute access node");
     m_CurrentToken = m_Lexer.getNextToken();
 
-    if (m_CurrentToken != token::label) {
+    if (m_CurrentToken != token::identifier) {
         return parseError<ASTAttributeAccessNode>("Syntax Error: Expecting a label instead of {}", m_CurrentToken);
     }
 

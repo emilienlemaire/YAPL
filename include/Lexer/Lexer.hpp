@@ -17,8 +17,12 @@ struct Token{
         return token != tok;
     }
 
-    bool operator==(int tok) {
+    const bool operator==(int tok) const {
         return token == tok;
+    }
+
+    const bool operator==(const Token other) const {
+        return (this->token == other.token) && (this->identifier == other.identifier);
     }
 };
 
@@ -41,6 +45,7 @@ private:
 
 public:
     Lexer(const std::string& filepath="");
+    Lexer(FILE* file);
     ~Lexer();
 
     Token peekToken();

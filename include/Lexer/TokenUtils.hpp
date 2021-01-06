@@ -117,7 +117,7 @@ enum token{
 
   type         = -3,
   func         = -4,
-  label        = -5,
+  identifier   = -5,
 
   paropen      = -6,
   parclose     = -7,
