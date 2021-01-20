@@ -72,7 +72,7 @@ private:
 
     static unsigned m_AnonCount;
 
-    llvm::Type *ASTTypeToLLVM(ASTNode::TYPE type) {
+    llvm::Type *ASTTypeToLLVM(ASTNode::TYPE type, const std::string &structName = "") {
         switch (type) {
             case ASTNode::TYPE::INT:
                 return llvm::Type::getInt32Ty(m_LLVMContext);
@@ -82,6 +82,8 @@ private:
                 return llvm::Type::getInt1Ty(m_LLVMContext);
             case ASTNode::TYPE::VOID:
                 return llvm::Type::getVoidTy(m_LLVMContext);
+            case ASTNode::TYPE::STRUCT:
+                return m_Module->getTypeByName("struct." + structName);
             case ASTNode::TYPE::STRING:
             case ASTNode::TYPE::NONE:
                 llvm::llvm_unreachable_internal();

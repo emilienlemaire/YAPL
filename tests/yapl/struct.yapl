@@ -28,3 +28,9 @@ func t(int a) -> test {
     test s(a, 2);
     return s;
 }
+
+func copy(test t) -> test {
+    test r(t.a, t.b);
+
+    return r;
+}

@@ -8,7 +8,7 @@
 class ASTNode {
 public:
     enum TYPE {
-        NONE, INT, DOUBLE, BOOL, STRING, VOID
+        NONE, INT, DOUBLE, BOOL, STRING, STRUCT, VOID
     };
 
     static TYPE stringToType(std::string str) {

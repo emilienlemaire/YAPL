@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <unordered_set>
 
 class Parser {
 private:
@@ -17,6 +18,8 @@ private:
     std::unique_ptr<ASTProgramNode> m_Program;
 
     Token m_CurrentToken;
+
+    std::unordered_set<std::string> m_StructNames;
 
     template<typename Ptr, typename... T>
     std::unique_ptr<Ptr> parseError(std::string msg, T... var) {

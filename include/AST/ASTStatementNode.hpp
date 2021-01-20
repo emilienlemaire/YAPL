@@ -32,10 +32,12 @@ class ASTDeclarationNode : public ASTStatementNode {
 private:
     std::string m_Name;
     ASTNode::TYPE m_Type;
+    std::string m_StructName;
 public:
-    ASTDeclarationNode(std::string &name, ASTNode::TYPE type);
+    ASTDeclarationNode(std::string &name, ASTNode::TYPE type, const std::string &strcutName = "");
     [[nodiscard]] const std::string &getName() const { return m_Name; }
     [[nodiscard]] const ASTNode::TYPE &getType() const { return m_Type; }
+    [[nodiscard]] const std::string &getStructName() const { return m_StructName; }
 };
 
 class ASTInitializationNode : public ASTDeclarationNode {
@@ -124,18 +126,21 @@ private:
     std::vector<std::unique_ptr<ASTDeclarationNode>> m_Args;
     ASTNode::TYPE m_ReturnType;
     std::unique_ptr<ASTBlockNode> m_Body;
+    std::string m_ReturnStruct;
 public:
     ASTFunctionDefinitionNode(
             std::string &name,
             std::vector<std::unique_ptr<ASTDeclarationNode>> args,
             ASTNode::TYPE returnType,
-            std::unique_ptr<ASTBlockNode> body
+            std::unique_ptr<ASTBlockNode> body,
+            std::string returnStruct = ""
             );
 
     [[nodiscard]] const std::string &getName() const { return m_Name; }
     [[nodiscard]] std::vector<std::unique_ptr<ASTDeclarationNode>> getArgs() { return std::move(m_Args); }
     [[nodiscard]] const ASTNode::TYPE &getType() const { return m_ReturnType; }
     [[nodiscard]] ASTBlockNode *getBody() const { return m_Body.get(); }
+    [[nodiscard]] const std::string &getReturnStructName() const { return m_ReturnStruct; }
 };
 
 class ASTStructDefinitionNode: public ASTStatementNode {

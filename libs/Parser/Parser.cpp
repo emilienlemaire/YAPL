@@ -90,6 +90,7 @@ std::unique_ptr<ASTNode> Parser::parseNext() {
     }
 
     if (m_CurrentToken == token::bopen) {
+        m_Logger.printError("A block must be inside a function");
         return parseBlock();
     }
 
@@ -505,23 +506,52 @@ std::unique_ptr<ASTFunctionDefinitionNode> Parser::parseFunctionDefinition() {
 
     std::vector<std::unique_ptr<ASTDeclarationNode>> args;
 
-    while (m_CurrentToken == token::type) {
-        ASTNode::TYPE type = ASTNode::stringToType(m_CurrentToken.identifier);
-        m_CurrentToken = m_Lexer.getNextToken();
-        if (m_CurrentToken != token::identifier) {
-            return parseError<ASTFunctionDefinitionNode>(
-                    "Syntax Error: Expecting a label instead of {}",
-                    m_CurrentToken
-                    );
-        }
-        std::string argName = m_CurrentToken.identifier;
-
-        m_CurrentToken = m_Lexer.getNextToken();
-
-        args.push_back(std::make_unique<ASTDeclarationNode>(argName, type));
-
-        if (m_CurrentToken == token::comma) {
+    while (m_CurrentToken == token::type || m_CurrentToken == token::identifier) {
+        if (m_CurrentToken == token::type) {
+            ASTNode::TYPE type = ASTNode::stringToType(m_CurrentToken.identifier);
             m_CurrentToken = m_Lexer.getNextToken();
+            if (m_CurrentToken != token::identifier) {
+                return parseError<ASTFunctionDefinitionNode>(
+                        "Syntax Error: Expecting a label instead of {}",
+                        m_CurrentToken
+                        );
+            }
+            std::string argName = m_CurrentToken.identifier;
+
+            m_CurrentToken = m_Lexer.getNextToken();
+
+            args.push_back(std::make_unique<ASTDeclarationNode>(argName, type));
+
+            if (m_CurrentToken == token::comma) {
+                m_CurrentToken = m_Lexer.getNextToken();
+            }
+        } else if (m_CurrentToken == token::identifier) {
+            if (m_StructNames.find(m_CurrentToken.identifier) == m_StructNames.end()) {
+                return parseError<ASTFunctionDefinitionNode>(
+                        "Type Error: unknown struct: {}",
+                        m_CurrentToken.identifier
+                        );
+            }
+    
+            ASTNode::TYPE type = ASTNode::STRUCT;
+            std::string structName = m_CurrentToken.identifier;
+
+            m_CurrentToken = m_Lexer.getNextToken();
+            if (m_CurrentToken != token::identifier) {
+                return parseError<ASTFunctionDefinitionNode>(
+                        "Syntax Error: Expecting a label instead of {}",
+                        m_CurrentToken
+                        );
+            }
+            std::string argName = m_CurrentToken.identifier;
+
+            m_CurrentToken = m_Lexer.getNextToken();
+
+            args.push_back(std::make_unique<ASTDeclarationNode>(argName, type, structName));
+
+            if (m_CurrentToken == token::comma) {
+                m_CurrentToken = m_Lexer.getNextToken();
+            }
         }
     }
 
@@ -537,11 +567,20 @@ std::unique_ptr<ASTFunctionDefinitionNode> Parser::parseFunctionDefinition() {
 
     m_CurrentToken = m_Lexer.getNextToken();
 
-    if (m_CurrentToken != token::type) {
+    if (m_CurrentToken != token::type &&
+            m_StructNames.find(m_CurrentToken.identifier) == m_StructNames.end()) {
         return parseError<ASTFunctionDefinitionNode>("Sybtax Error: Expecting a type instead of {}", m_CurrentToken);
     }
 
     ASTNode::TYPE returnType = ASTNode::stringToType(m_CurrentToken.identifier);
+    std::string returnStruct = "";
+
+    if (returnType == ASTNode::TYPE::NONE) {
+        if (m_StructNames.find(m_CurrentToken.identifier) != m_StructNames.end()) {
+            returnType = ASTNode::TYPE::STRUCT;
+            returnStruct = m_CurrentToken.identifier;
+        }
+    }
 
     m_CurrentToken = m_Lexer.getNextToken();
 
@@ -551,7 +590,7 @@ std::unique_ptr<ASTFunctionDefinitionNode> Parser::parseFunctionDefinition() {
 
     std::unique_ptr<ASTBlockNode> body = parseBlock();
 
-    return std::make_unique<ASTFunctionDefinitionNode>(name, std::move(args), returnType, std::move(body));
+    return std::make_unique<ASTFunctionDefinitionNode>(name, std::move(args), returnType, std::move(body), returnStruct);
 }
 
 std::unique_ptr<ASTStructDefinitionNode> Parser::parseStructDefintion() {
@@ -586,6 +625,8 @@ std::unique_ptr<ASTStructDefinitionNode> Parser::parseStructDefintion() {
         }
 
     }
+
+    m_StructNames.insert(name);
 
     return std::make_unique<ASTStructDefinitionNode>(name, std::move(attributes), std::move(methods));
 }

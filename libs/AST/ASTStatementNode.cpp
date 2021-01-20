@@ -19,8 +19,9 @@ ASTExportNode::ASTExportNode(std::unique_ptr<ASTStatementNode> module)
     : m_Module(std::move(module))
 {}
 
-ASTDeclarationNode::ASTDeclarationNode(std::string &name, ASTNode::TYPE type)
-    : m_Name(std::move(name)), m_Type(type)
+ASTDeclarationNode::ASTDeclarationNode(std::string &name, ASTNode::TYPE type,
+        const std::string &structName)
+    : m_Name(std::move(name)), m_Type(type), m_StructName(std::move(structName))
 {}
 
 ASTReturnNode::ASTReturnNode(std::unique_ptr<ASTExprNode> returnExpr)
@@ -53,8 +54,10 @@ ASTFunctionDefinitionNode::ASTFunctionDefinitionNode(
         std::string &name,
         std::vector<std::unique_ptr<ASTDeclarationNode>> args,
         ASTNode::TYPE returnType,
-        std::unique_ptr<ASTBlockNode> body)
-    : m_Name(std::move(name)), m_Args(std::move(args)), m_ReturnType(returnType), m_Body(std::move(body))
+        std::unique_ptr<ASTBlockNode> body,
+        std::string structReturn)
+    : m_Name(std::move(name)), m_Args(std::move(args)), m_ReturnType(returnType),
+        m_Body(std::move(body)), m_ReturnStruct(structReturn)
 {}
 
 ASTStructDefinitionNode::ASTStructDefinitionNode(

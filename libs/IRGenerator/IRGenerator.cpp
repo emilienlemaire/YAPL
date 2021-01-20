@@ -36,6 +36,7 @@ void IRGenerator::generate() {
 
     m_Module->dropAllReferences();
 
+
     if (m_DeferredErrors) {
         std::string str;
         llvm::raw_string_ostream os(str);
@@ -272,7 +273,7 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
             llvm::consumeError(var.takeError());
         }
 
-        auto llvmType = ASTTypeToLLVM(declaration->getType());
+        auto llvmType = ASTTypeToLLVM(declaration->getType(), declaration->getStructName());
         m_Module->getOrInsertGlobal(declaration->getName(), llvmType);
         llvm::GlobalVariable *globalVar = m_Module->getNamedGlobal(declaration->getName());
         globalVar->setLinkage(llvm::GlobalValue::PrivateLinkage);
@@ -291,7 +292,7 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
         llvm::consumeError(val.takeError());
     }
 
-    auto llvmType = ASTTypeToLLVM(declaration->getType());
+    auto llvmType = ASTTypeToLLVM(declaration->getType(), declaration->getStructName());
 
     auto currentFunction = m_YAPLContext->getCurrentScope()->getCurrentFunction();
 
@@ -381,12 +382,12 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
         llvm::consumeError(std::move(var.takeError()));
     }
 
-    auto llvmReturnType = ASTTypeToLLVM(funcDef->getType());
+    auto llvmReturnType = ASTTypeToLLVM(funcDef->getType(), funcDef->getReturnStructName());
     auto argsVector = std::move(funcDef->getArgs());
     llvm::SmallVector<llvm::Type *, 10> argsType;
 
     for ( const auto& arg: argsVector ) {
-        argsType.push_back(ASTTypeToLLVM(arg->getType()));
+        argsType.push_back(ASTTypeToLLVM(arg->getType(), arg->getStructName()));
     }
 
     auto funcType = llvm::FunctionType::get(llvmReturnType, argsType, false);
@@ -426,7 +427,10 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
         if (funcDef->getType() != ASTNode::VOID)
             func->getBasicBlockList().push_back(m_YAPLContext->getReturnBlock());
         m_YAPLContext->resetReturnHelper();
-        llvm::verifyFunction(*func, &llvm::errs());
+        if (!llvm::verifyFunction(*func, &llvm::errs())) {
+            m_Logger.printError("Bad function: {}", func->getName().str());
+            func->print(llvm::errs());
+        }
         return func;
     }
 
