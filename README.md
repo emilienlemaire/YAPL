@@ -12,13 +12,15 @@ func add(int x, int y) -> int {
     return x + y;
 }
 
-for(int i in 0 ... 4) {
-    int a = i;
+func doStuff() -> void {
+    for(int i in 0 ... 4) {
+        int a = i;
+    }
+
+    int x[3] = [0, 1, 2];
+
+    x = [2, 3, 4];
 }
-
-int x[3] = [0, 1, 2];
-
-x = [2, 3, 4];
 
 struct exampleStruct {
     int a;
