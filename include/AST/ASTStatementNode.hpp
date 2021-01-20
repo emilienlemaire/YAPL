@@ -17,8 +17,8 @@ private:
     std::string m_Module;
     std::vector<std::string> m_SubModules;
 public:
-    ASTImportNode(std::string module, std::vector<std::string> subModules);
-    ASTImportNode(std::string module);
+    ASTImportNode(std::string &module, std::vector<std::string> &subModules);
+    ASTImportNode(std::string &module);
 };
 
 class ASTExportNode : public ASTStatementNode {
@@ -33,7 +33,7 @@ private:
     std::string m_Name;
     ASTNode::TYPE m_Type;
 public:
-    ASTDeclarationNode(std::string name, ASTNode::TYPE type);
+    ASTDeclarationNode(std::string &name, ASTNode::TYPE type);
     [[nodiscard]] const std::string &getName() const { return m_Name; }
     [[nodiscard]] const ASTNode::TYPE &getType() const { return m_Type; }
 };
@@ -126,7 +126,7 @@ private:
     std::unique_ptr<ASTBlockNode> m_Body;
 public:
     ASTFunctionDefinitionNode(
-            std::string name,
+            std::string &name,
             std::vector<std::unique_ptr<ASTDeclarationNode>> args,
             ASTNode::TYPE returnType,
             std::unique_ptr<ASTBlockNode> body
@@ -145,7 +145,7 @@ private:
     std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> m_Methods;
 public:
     ASTStructDefinitionNode(
-            std::string name,
+            std::string &name,
             std::vector<std::unique_ptr<ASTDeclarationNode>> attributes,
             std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> methods
             );
@@ -162,7 +162,7 @@ private:
 public:
     ASTStructInitializationNode(
             std::unique_ptr<ASTIdentifierNode> t_Struct,
-            std::string name,
+            std::string &name,
             std::vector<std::unique_ptr<ASTExprNode>> attributesValues
             );
     [[nodiscard]] ASTIdentifierNode *getStruct() const { return m_Struct.get(); }
@@ -176,7 +176,7 @@ private:
     std::vector<std::unique_ptr<ASTExprNode>> m_AttributesValues;
 public:
     ASTStructAssignmentNode(
-            std::string name,
+            std::string &name,
             std::vector<std::unique_ptr<ASTExprNode>> attributesValues
             );
     [[nodiscard]] std::vector<std::unique_ptr<ASTExprNode>> getAttributesValues() { return std::move(m_AttributesValues); }
@@ -190,8 +190,8 @@ private:
     std::unique_ptr<ASTExprNode> m_Value;
 public:
     ASTAttributeAssignmentNode(
-            std::string strcutName,
-            std::string attributeName,
+            std::string &strcutName,
+            std::string &attributeName,
             std::unique_ptr<ASTExprNode> value
             );
     [[nodiscard]] const std::string &getStructName() const { return m_StrcutName; }
@@ -203,7 +203,7 @@ class ASTArrayDefinitionNode: public ASTDeclarationNode {
 private:
     const size_t m_Size;
 public:
-    ASTArrayDefinitionNode(std::string name, size_t size, ASTNode::TYPE type);
+    ASTArrayDefinitionNode(std::string &name, size_t size, ASTNode::TYPE type);
     [[nodiscard]] const size_t &getSize() const { return m_Size; }
 };
 
@@ -215,12 +215,12 @@ private:
     using baseConstIt = std::vector<std::unique_ptr<ASTExprNode>>::const_iterator;
 public:
     ASTArrayInitializationNode(
-            std::string name,
+            std::string &name,
             ASTNode::TYPE type,
             size_t size,
             std::vector<std::unique_ptr<ASTExprNode>> values
             )
-        : ASTArrayDefinitionNode(std::move(name), size, type), m_Values(std::move(values))
+        : ASTArrayDefinitionNode(name, size, type), m_Values(std::move(values))
     {}
     [[nodiscard]] baseIt begin() { return m_Values.begin(); }
     [[nodiscard]] baseIt end()   { return m_Values.end(); }
@@ -237,7 +237,7 @@ private:
     using baseConstIt = baseType::const_iterator;
 public:
     ASTArrayAssignmentNode(
-            std::string name,
+            std::string &name,
             std::vector<std::unique_ptr<ASTExprNode>> values
             )
         : m_Name(std::move(name)), m_Values(std::move(values))
@@ -257,7 +257,7 @@ private:
     std::unique_ptr<ASTExprNode> m_Value;
 public:
     ASTArrayMemeberAssignmentNode(
-            std::string arrayName,
+            std::string &arrayName,
             size_t index,
             std::unique_ptr<ASTExprNode> value);
     [[nodiscard]] const std::string &getName() const { return m_ArrayName; }

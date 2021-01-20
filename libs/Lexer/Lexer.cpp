@@ -25,7 +25,7 @@ Lexer::Lexer(const std::string& filepath)
 
     m_Logger.setFormat(format);
 
-    if (filepath.empty()) {
+    if (!filepath.empty()) {
         pFile = fopen(filepath.c_str(), "r");
         if (pFile == nullptr) {
             m_Logger.printError("Cannot open file: {}\nExiting!!", filepath);

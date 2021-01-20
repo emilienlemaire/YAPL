@@ -7,11 +7,11 @@
 #include <string>
 #include <vector>
 
-ASTImportNode::ASTImportNode(std::string module, std::vector<std::string> subModules)
-    : m_Module(module), m_SubModules(subModules)
+ASTImportNode::ASTImportNode(std::string &module, std::vector<std::string> &subModules)
+    : m_Module(std::move(module)), m_SubModules(std::move(subModules))
 {}
 
-ASTImportNode::ASTImportNode(std::string module)
+ASTImportNode::ASTImportNode(std::string &module)
     : m_Module(std::move(module))
 {}
 
@@ -19,8 +19,8 @@ ASTExportNode::ASTExportNode(std::unique_ptr<ASTStatementNode> module)
     : m_Module(std::move(module))
 {}
 
-ASTDeclarationNode::ASTDeclarationNode(std::string name, ASTNode::TYPE type)
-    : m_Name(name), m_Type(type)
+ASTDeclarationNode::ASTDeclarationNode(std::string &name, ASTNode::TYPE type)
+    : m_Name(std::move(name)), m_Type(type)
 {}
 
 ASTReturnNode::ASTReturnNode(std::unique_ptr<ASTExprNode> returnExpr)
@@ -50,51 +50,51 @@ ASTForNode::ASTForNode(
 {}
 
 ASTFunctionDefinitionNode::ASTFunctionDefinitionNode(
-        std::string name,
+        std::string &name,
         std::vector<std::unique_ptr<ASTDeclarationNode>> args,
         ASTNode::TYPE returnType,
         std::unique_ptr<ASTBlockNode> body)
-    : m_Name(name), m_Args(std::move(args)), m_ReturnType(returnType), m_Body(std::move(body))
+    : m_Name(std::move(name)), m_Args(std::move(args)), m_ReturnType(returnType), m_Body(std::move(body))
 {}
 
 ASTStructDefinitionNode::ASTStructDefinitionNode(
-        std::string name,
+        std::string &name,
         std::vector<std::unique_ptr<ASTDeclarationNode>> attributes,
         std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> methods)
-    : m_Name(name), m_Attributes(std::move(attributes)), m_Methods(std::move(methods))
+    : m_Name(std::move(name)), m_Attributes(std::move(attributes)), m_Methods(std::move(methods))
 {}
 
 ASTStructInitializationNode::ASTStructInitializationNode(
         std::unique_ptr<ASTIdentifierNode> t_Struct,
-        std::string name,
+        std::string &name,
         std::vector<std::unique_ptr<ASTExprNode>> attributesValues)
-    : m_Struct(std::move(t_Struct)), m_Name(name), m_AttributesValues(std::move(attributesValues))
+    : m_Struct(std::move(t_Struct)), m_Name(std::move(name)), m_AttributesValues(std::move(attributesValues))
 {}
 
 ASTStructAssignmentNode::ASTStructAssignmentNode(
-        std::string name,
+        std::string &name,
         std::vector<std::unique_ptr<ASTExprNode>> attributesValues)
-    : m_Name(name), m_AttributesValues(std::move(attributesValues))
+    : m_Name(std::move(name)), m_AttributesValues(std::move(attributesValues))
 {}
 
 ASTAttributeAssignmentNode::ASTAttributeAssignmentNode(
-        std::string structName,
-        std::string attributeName,
+        std::string &structName,
+        std::string &attributeName,
         std::unique_ptr<ASTExprNode> value)
     : m_StrcutName(std::move(structName)),
       m_AttributeName(std::move(attributeName)),
       m_Value(std::move(value))
 {}
 
-ASTArrayDefinitionNode::ASTArrayDefinitionNode(std::string name, size_t size, ASTNode::TYPE type)
+ASTArrayDefinitionNode::ASTArrayDefinitionNode(std::string &name, size_t size, ASTNode::TYPE type)
     : ASTDeclarationNode(name, type), m_Size(size)
 {}
 
 ASTArrayMemeberAssignmentNode::ASTArrayMemeberAssignmentNode(
-        std::string name,
+        std::string &name,
         size_t index,
         std::unique_ptr<ASTExprNode> value
         )
-    : m_ArrayName(name), m_Index(index), m_Value(std::move(value))
+    : m_ArrayName(std::move(name)), m_Index(index), m_Value(std::move(value))
 {}
 
