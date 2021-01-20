@@ -34,8 +34,8 @@ private:
     ASTNode::TYPE m_Type;
 public:
     ASTDeclarationNode(std::string name, ASTNode::TYPE type);
-    const std::string &getName() const { return m_Name; }
-    const ASTNode::TYPE &getType() const { return m_Type; }
+    [[nodiscard]] const std::string &getName() const { return m_Name; }
+    [[nodiscard]] const ASTNode::TYPE &getType() const { return m_Type; }
 };
 
 class ASTInitializationNode : public ASTDeclarationNode {
@@ -45,7 +45,7 @@ public:
     ASTInitializationNode(std::string name, ASTNode::TYPE type, std::unique_ptr<ASTExprNode> value)
         : ASTDeclarationNode(name, type), m_Value(std::move(value))
     {}
-    ASTExprNode *getValue() const { return m_Value.get(); }
+    [[nodiscard]] ASTExprNode *getValue() const { return m_Value.get(); }
 };
 
 class ASTAssignmentNode: public ASTStatementNode {
@@ -57,8 +57,8 @@ public:
         : m_Name(std::move(name)), m_Value(std::move(value))
     {}
 
-    const std::string &getName() const { return m_Name; }
-    ASTExprNode *getValue() const { return m_Value.get(); }
+    [[nodiscard]] const std::string &getName() const { return m_Name; }
+    [[nodiscard]] ASTExprNode *getValue() const { return m_Value.get(); }
 };
 
 class ASTReturnNode: public ASTStatementNode {
@@ -66,7 +66,7 @@ private:
     std::unique_ptr<ASTExprNode> m_ReturnExpr;
 public:
     ASTReturnNode(std::unique_ptr<ASTExprNode> returnExpr);
-    ASTExprNode *getExpr() const { return m_ReturnExpr.get(); }
+    [[nodiscard]] ASTExprNode *getExpr() const { return m_ReturnExpr.get(); }
 };
 
 
@@ -74,15 +74,15 @@ class ASTBlockNode: public ASTStatementNode {
 private:
     std::vector<std::unique_ptr<ASTNode>> m_Nodes;
 
-    typedef std::vector<std::unique_ptr<ASTNode>>::iterator baseIterator;
-    typedef std::vector<std::unique_ptr<ASTNode>>::const_iterator baseConstIterator;
+    using baseIterator = std::vector<std::unique_ptr<ASTNode>>::iterator;
+    using baseConstIterator = std::vector<std::unique_ptr<ASTNode>>::const_iterator;
 public:
     ASTBlockNode(std::vector<std::unique_ptr<ASTNode>> nodes);
 
-    baseIterator begin() { return m_Nodes.begin(); }
-    baseIterator end()   { return m_Nodes.end(); }
-    baseConstIterator cbegin() const { return m_Nodes.cbegin(); }
-    baseConstIterator cend() const   { return m_Nodes.cend(); }
+    [[nodiscard]] baseIterator begin() { return m_Nodes.begin(); }
+    [[nodiscard]] baseIterator end()   { return m_Nodes.end(); }
+    [[nodiscard]] baseConstIterator cbegin() const { return m_Nodes.cbegin(); }
+    [[nodiscard]] baseConstIterator cend() const   { return m_Nodes.cend(); }
 
 };
 
@@ -97,9 +97,9 @@ public:
             std::unique_ptr<ASTBlockNode> ifBlock,
             std::unique_ptr<ASTBlockNode> elseBlock
             );
-    ASTExprNode *getCond() const { return m_Condition.get(); }
-    ASTBlockNode *getThen() const { return m_IfBlock.get(); }
-    ASTBlockNode *getElse() const { return m_ElseBlock.get(); }
+    [[nodiscard]] ASTExprNode *getCond() const { return m_Condition.get(); }
+    [[nodiscard]] ASTBlockNode *getThen() const { return m_IfBlock.get(); }
+    [[nodiscard]] ASTBlockNode *getElse() const { return m_ElseBlock.get(); }
 };
 
 class ASTForNode: public ASTStatementNode {
@@ -113,9 +113,9 @@ public:
             std::unique_ptr<ASTExprNode> condition,
             std::unique_ptr<ASTBlockNode> block
             );
-    ASTDeclarationNode *getDecl() const { return m_Iterator.get(); }
-    ASTExprNode *getCond() const { return m_Condition.get(); }
-    ASTBlockNode *getBlock() const { return m_Block.get(); }
+    [[nodiscard]] ASTDeclarationNode *getDecl() const { return m_Iterator.get(); }
+    [[nodiscard]] ASTExprNode *getCond() const { return m_Condition.get(); }
+    [[nodiscard]] ASTBlockNode *getBlock() const { return m_Block.get(); }
 };
 
 class ASTFunctionDefinitionNode: public ASTStatementNode {
@@ -132,10 +132,10 @@ public:
             std::unique_ptr<ASTBlockNode> body
             );
 
-    const std::string &getName() const { return m_Name; }
-    std::vector<std::unique_ptr<ASTDeclarationNode>> getArgs() { return std::move(m_Args); }
-    const ASTNode::TYPE &getType() const { return m_ReturnType; }
-    ASTBlockNode *getBody() const { return m_Body.get(); }
+    [[nodiscard]] const std::string &getName() const { return m_Name; }
+    [[nodiscard]] std::vector<std::unique_ptr<ASTDeclarationNode>> getArgs() { return std::move(m_Args); }
+    [[nodiscard]] const ASTNode::TYPE &getType() const { return m_ReturnType; }
+    [[nodiscard]] ASTBlockNode *getBody() const { return m_Body.get(); }
 };
 
 class ASTStructDefinitionNode: public ASTStatementNode {
@@ -149,9 +149,9 @@ public:
             std::vector<std::unique_ptr<ASTDeclarationNode>> attributes,
             std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> methods
             );
-    const std::string &getName() const { return m_Name; }
-    std::vector<std::unique_ptr<ASTDeclarationNode>> getAttributes() { return std::move(m_Attributes); }
-    std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> getMethods() { return std::move(m_Methods); }
+    [[nodiscard]] const std::string &getName() const { return m_Name; }
+    [[nodiscard]] std::vector<std::unique_ptr<ASTDeclarationNode>> getAttributes() { return std::move(m_Attributes); }
+    [[nodiscard]] std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> getMethods() { return std::move(m_Methods); }
 };
 
 class ASTStructInitializationNode: public ASTStatementNode {
@@ -165,9 +165,9 @@ public:
             std::string name,
             std::vector<std::unique_ptr<ASTExprNode>> attributesValues
             );
-    ASTIdentifierNode *getStruct() const { return m_Struct.get(); }
-    const std::string &getName() const { return m_Name; }
-    std::vector<std::unique_ptr<ASTExprNode>> getAttributesValues() { return std::move(m_AttributesValues); }
+    [[nodiscard]] ASTIdentifierNode *getStruct() const { return m_Struct.get(); }
+    [[nodiscard]] const std::string &getName() const { return m_Name; }
+    [[nodiscard]] std::vector<std::unique_ptr<ASTExprNode>> getAttributesValues() { return std::move(m_AttributesValues); }
 };
 
 class ASTStructAssignmentNode: public ASTStatementNode {
@@ -179,8 +179,8 @@ public:
             std::string name,
             std::vector<std::unique_ptr<ASTExprNode>> attributesValues
             );
-    std::vector<std::unique_ptr<ASTExprNode>> getAttributesValues() { return std::move(m_AttributesValues); }
-    const std::string &getName() const { return m_Name; }
+    [[nodiscard]] std::vector<std::unique_ptr<ASTExprNode>> getAttributesValues() { return std::move(m_AttributesValues); }
+    [[nodiscard]] const std::string &getName() const { return m_Name; }
 };
 
 class ASTAttributeAssignmentNode: public ASTStatementNode {
@@ -194,9 +194,9 @@ public:
             std::string attributeName,
             std::unique_ptr<ASTExprNode> value
             );
-    const std::string &getStructName() const { return m_StrcutName; }
-    const std::string &getAttributeName() const { return m_AttributeName; }
-    ASTExprNode *getValue() const { return m_Value.get(); }
+    [[nodiscard]] const std::string &getStructName() const { return m_StrcutName; }
+    [[nodiscard]] const std::string &getAttributeName() const { return m_AttributeName; }
+    [[nodiscard]] ASTExprNode *getValue() const { return m_Value.get(); }
 };
 
 class ASTArrayDefinitionNode: public ASTDeclarationNode {
@@ -204,15 +204,15 @@ private:
     const size_t m_Size;
 public:
     ASTArrayDefinitionNode(std::string name, size_t size, ASTNode::TYPE type);
-    const size_t &getSize() const { return m_Size; }
+    [[nodiscard]] const size_t &getSize() const { return m_Size; }
 };
 
 class ASTArrayInitializationNode: public ASTArrayDefinitionNode {
 private:
     std::vector<std::unique_ptr<ASTExprNode>> m_Values;
     
-    typedef std::vector<std::unique_ptr<ASTExprNode>>::iterator baseIt;
-    typedef std::vector<std::unique_ptr<ASTExprNode>>::const_iterator baseConstIt;
+    using baseIt = std::vector<std::unique_ptr<ASTExprNode>>::iterator;
+    using baseConstIt = std::vector<std::unique_ptr<ASTExprNode>>::const_iterator;
 public:
     ASTArrayInitializationNode(
             std::string name,
@@ -222,19 +222,19 @@ public:
             )
         : ASTArrayDefinitionNode(std::move(name), size, type), m_Values(std::move(values))
     {}
-    baseIt begin() { return m_Values.begin(); }
-    baseIt end()   { return m_Values.end(); }
-    const baseConstIt cbegin() const { return m_Values.cbegin(); }
-    const baseConstIt cend()   const { return m_Values.cend(); }
+    [[nodiscard]] baseIt begin() { return m_Values.begin(); }
+    [[nodiscard]] baseIt end()   { return m_Values.end(); }
+    [[nodiscard]] const baseConstIt cbegin() const { return m_Values.cbegin(); }
+    [[nodiscard]] const baseConstIt cend()   const { return m_Values.cend(); }
 };
 
 class ASTArrayAssignmentNode: public ASTStatementNode {
 private:
     std::string m_Name;
     std::vector<std::unique_ptr<ASTExprNode>> m_Values;
-    typedef std::vector<std::unique_ptr<ASTExprNode>> baseType;
-    typedef baseType::iterator baseIt;
-    typedef baseType::const_iterator baseConstIt;
+    using baseType = std::vector<std::unique_ptr<ASTExprNode>>;
+    using baseIt = baseType::iterator;
+    using baseConstIt = baseType::const_iterator;
 public:
     ASTArrayAssignmentNode(
             std::string name,
@@ -242,12 +242,12 @@ public:
             )
         : m_Name(std::move(name)), m_Values(std::move(values))
     {}
-    const std::string &getName() const { return m_Name; }
-    baseIt begin() { return m_Values.begin(); }
-    baseIt end()   { return m_Values.end(); }
-    const baseConstIt cbegin() const { return m_Values.cbegin(); }
-    const baseConstIt cend()   const { return m_Values.cend(); }
-    const size_t getSize() const { return m_Values.size(); }
+    [[nodiscard]] const std::string &getName() const { return m_Name; }
+    [[nodiscard]] baseIt begin() { return m_Values.begin(); }
+    [[nodiscard]] baseIt end()   { return m_Values.end(); }
+    [[nodiscard]] const baseConstIt cbegin() const { return m_Values.cbegin(); }
+    [[nodiscard]] const baseConstIt cend()   const { return m_Values.cend(); }
+    [[nodiscard]] const size_t getSize() const { return m_Values.size(); }
 };
 
 class ASTArrayMemeberAssignmentNode: public ASTStatementNode {
@@ -260,8 +260,8 @@ public:
             std::string arrayName,
             size_t index,
             std::unique_ptr<ASTExprNode> value);
-    const std::string &getName() const { return m_ArrayName; }
-    const size_t &getIndex() const { return m_Index; }
-    ASTExprNode *getValue() const { return m_Value.get(); }
+    [[nodiscard]] const std::string &getName() const { return m_ArrayName; }
+    [[nodiscard]] const size_t &getIndex() const { return m_Index; }
+    [[nodiscard]] ASTExprNode *getValue() const { return m_Value.get(); }
 };
 

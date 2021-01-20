@@ -35,31 +35,24 @@ void Parser::parseInfo(std::string info) {
 int Parser::getOpPrecedence(Operator t_Operator){
     switch (t_Operator) {
         case Operator::plus:
-            return 6;
         case Operator::minus:
             return 6;
         case Operator::times:
-            return 5;
         case Operator::divide:
-            return 5;
         case Operator::mod:
             return 5;
         case Operator::lth:
-            return 9;
         case Operator::mth:
-            return 9;
-        case Operator::orsym:
-            return 15;
-        case Operator::andsym:
-            return 14;
-        case Operator::eqcomp:
-            return 10;
         case Operator::leq:
-            return 9;
         case Operator::meq:
             return 9;
+        case Operator::eqcomp:
         case Operator::neq:
             return 10;
+        case Operator::andsym:
+            return 14;
+        case Operator::orsym:
+            return 15;
     }
 }
 
@@ -669,7 +662,7 @@ std::unique_ptr<ASTArrayDefinitionNode> Parser::parseArrayDefinition(ASTNode::TY
         return parseError<ASTArrayDefinitionNode>("Syntax Error: Expected an int instead of {}", m_CurrentToken);
     }
 
-    const size_t size = (size_t)std::stoi(m_CurrentToken.identifier);
+    const auto size = (size_t)std::stoi(m_CurrentToken.identifier);
 
     m_CurrentToken = m_Lexer.getNextToken();
 
@@ -1013,7 +1006,7 @@ std::unique_ptr<ASTExprNode> Parser::parseArrayAccess(std::string name) {
         return parseError<ASTArrayAccessNode>("Syntax Error: Expecting an int instead of {}", m_CurrentToken);
     }
 
-    size_t index = (size_t)std::stoi(m_CurrentToken.identifier);
+    auto index = (size_t)std::stoi(m_CurrentToken.identifier);
 
     m_CurrentToken = m_Lexer.getNextToken();
 
@@ -1038,7 +1031,7 @@ std::unique_ptr<ASTNode> Parser::parseArrayAccessNode(std::string name) {
         return parseError<ASTArrayAccessNode>("Syntax Error: Expecting an int instead of {}", m_CurrentToken);
     }
 
-    size_t index = (size_t)std::stoi(m_CurrentToken.identifier);
+    auto index = (size_t)std::stoi(m_CurrentToken.identifier);
 
     m_CurrentToken = m_Lexer.getNextToken();
 

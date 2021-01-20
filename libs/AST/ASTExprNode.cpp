@@ -18,10 +18,10 @@ ASTIdentifierNode::ASTIdentifierNode(std::string identifier)
 {}
 
 ASTNamespaceIdentifierNode::ASTNamespaceIdentifierNode(
-        std::string t_Namespace,
-        std::string identifier
+        std::string &t_Namespace,
+        std::string &identifier
         )
-    : m_Namespace(t_Namespace), ASTIdentifierNode(identifier)
+    : m_Namespace(std::move(t_Namespace)), ASTIdentifierNode(std::move(identifier))
 {}
 
 ASTFunctionCallNode::ASTFunctionCallNode(

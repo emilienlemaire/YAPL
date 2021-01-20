@@ -42,7 +42,7 @@ public:
     ASTLiteralNode(T value)
         : m_Value(value)
     {}
-    T getValue() const { return m_Value; }
+    [[nodiscard]] T getValue() const { return m_Value; }
 };
 
 class ASTBinaryNode: public ASTExprNode {
@@ -59,9 +59,9 @@ public:
             std::unique_ptr<ASTExprNode> rightOperrand
             );
 
-    std::unique_ptr<ASTExprNode> getLeftOperrand() { return std::move(m_LeftOperrand); }
-    std::unique_ptr<ASTExprNode> getRightOperrand() { return std::move(m_RightOperrand); }
-    Operator getOperator() const { return m_Operator; }
+    [[nodiscard]] std::unique_ptr<ASTExprNode> getLeftOperrand() { return std::move(m_LeftOperrand); }
+    [[nodiscard]] std::unique_ptr<ASTExprNode> getRightOperrand() { return std::move(m_RightOperrand); }
+    [[nodiscard]] Operator getOperator() const { return m_Operator; }
 };
 
 class ASTRangeNode: public ASTExprNode {
@@ -77,9 +77,9 @@ public:
         )
     : m_Start(std::move(start)), m_Operator(t_Operator), m_Stop(std::move(stop))
     {}
-    ASTExprNode *getStart() const { return m_Start.get(); }
-    const RangeOperator &getOp() const { return m_Operator; }
-    ASTExprNode *getStop() const { return m_Stop.get(); }
+    [[nodiscard]] ASTExprNode *getStart() const { return m_Start.get(); }
+    [[nodiscard]] const RangeOperator &getOp() const { return m_Operator; }
+    [[nodiscard]] ASTExprNode *getStop() const { return m_Stop.get(); }
 };
 
 class ASTIdentifierNode: public ASTExprNode {
@@ -87,14 +87,14 @@ private:
     std::string m_Identifier;
 public:
     ASTIdentifierNode(std::string identifier);
-    const std::string &getName() const { return m_Identifier; }
+    [[nodiscard]] const std::string &getName() const { return m_Identifier; }
 };
 
 class ASTNamespaceIdentifierNode: public ASTIdentifierNode {
 private:
     std::string m_Namespace;
 public:
-    ASTNamespaceIdentifierNode(std::string t_Namespace, std::string identifier);
+    ASTNamespaceIdentifierNode(std::string &t_Namespace, std::string &identifier);
 };
 
 class ASTFunctionCallNode: public ASTExprNode {
@@ -103,8 +103,8 @@ private:
     std::vector<std::unique_ptr<ASTExprNode>> m_Args;
 public:
     ASTFunctionCallNode(std::unique_ptr<ASTIdentifierNode> name, std::vector<std::unique_ptr<ASTExprNode>> args);
-    ASTIdentifierNode *getCallee() const { return m_Name.get(); }
-    std::vector<std::unique_ptr<ASTExprNode>> getArgs() { return std::move(m_Args); }
+    [[nodiscard]] ASTIdentifierNode *getCallee() const { return m_Name.get(); }
+    [[nodiscard]] std::vector<std::unique_ptr<ASTExprNode>> getArgs() { return std::move(m_Args); }
 };
 
 class ASTAttributeAccessNode : public ASTExprNode {
@@ -115,8 +115,8 @@ public:
     ASTAttributeAccessNode(std::string name, std::string attribute)
         : m_Name(std::move(name)), m_Attribute(std::move(attribute))
     {}
-    const std::string &getName() const { return m_Name; }
-    const std::string &getAttribute() const { return m_Attribute; }
+    [[nodiscard]] const std::string &getName() const { return m_Name; }
+    [[nodiscard]] const std::string &getAttribute() const { return m_Attribute; }
 };
 
 class ASTMethodCallNode: public ASTAttributeAccessNode {
@@ -128,7 +128,7 @@ class ASTMethodCallNode: public ASTAttributeAccessNode {
                 std::string methodName,
                 std::vector<std::unique_ptr<ASTExprNode>> args
                 );
-        std::vector<std::unique_ptr<ASTExprNode>> getArgs() { return std::move(m_Args); }
+        [[nodiscard]] std::vector<std::unique_ptr<ASTExprNode>> getArgs() { return std::move(m_Args); }
 };
 
 class ASTArrayAccessNode : public ASTExprNode {
@@ -139,6 +139,6 @@ public:
     ASTArrayAccessNode(std::string name, size_t index)
         : m_Name(std::move(name)), m_Index(index)
     {}
-    const std::string &getName() const { return m_Name; }
-    const size_t &getIndex() const { return m_Index; }
+    [[nodiscard]] const std::string &getName() const { return m_Name; }
+    [[nodiscard]] const size_t &getIndex() const { return m_Index; }
 };

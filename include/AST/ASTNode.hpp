@@ -39,12 +39,12 @@ public:
     {};
     void addNode(std::unique_ptr<ASTNode> node);
 
-    typedef typename std::vector<std::unique_ptr<ASTNode>> vec_type;
-    typedef typename vec_type::iterator iterator;
-    typedef typename vec_type::const_iterator const_iterator;
+    using vec_type = std::vector<std::unique_ptr<ASTNode>>;
+    using iterator = vec_type::iterator;
+    using const_iterator = vec_type::const_iterator;
 
-    inline iterator begin() noexcept { return m_Nodes.begin(); }
-    inline const_iterator cbegin() const noexcept { return m_Nodes.cbegin(); }
-    inline iterator end() noexcept { return m_Nodes.end(); }
-    inline const_iterator cend() const noexcept { return m_Nodes.cend(); }
+    [[nodiscard]] inline iterator begin() noexcept { return m_Nodes.begin(); }
+    [[nodiscard]] inline const_iterator cbegin() const noexcept { return m_Nodes.cbegin(); }
+    [[nodiscard]] inline iterator end() noexcept { return m_Nodes.end(); }
+    [[nodiscard]] inline const_iterator cend() const noexcept { return m_Nodes.cend(); }
 };

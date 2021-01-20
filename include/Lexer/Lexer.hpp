@@ -51,6 +51,6 @@ public:
     Token peekToken();
     [[nodiscard]] Token getNextToken();
     int getNextChar();
-    const Position getCurrentPos() const { return m_Pos; }
+    [[nodiscard]] const Position getCurrentPos() const { return m_Pos; }
 };
 

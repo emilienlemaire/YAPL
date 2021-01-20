@@ -25,7 +25,7 @@ Lexer::Lexer(const std::string& filepath)
 
     m_Logger.setFormat(format);
 
-    if (filepath != "") {
+    if (filepath.empty()) {
         pFile = fopen(filepath.c_str(), "r");
         if (pFile == nullptr) {
             m_Logger.printError("Cannot open file: {}\nExiting!!", filepath);
@@ -87,11 +87,11 @@ Token Lexer::getNextToken(){
     }
 
     if (std::isalpha(m_CurrentChar)) {
-        identifier = m_CurrentChar;
+        identifier = (char)m_CurrentChar;
         getNextChar();
 
         while (std::isalnum(m_CurrentChar) || m_CurrentChar == '_') {
-            identifier += m_CurrentChar;
+            identifier += (char)m_CurrentChar;
             getNextChar();
         }
 
@@ -185,13 +185,13 @@ Token Lexer::getNextToken(){
 
     if (std::isdigit(m_CurrentChar)) {
         bool isFloat = false;
-        numVal += m_CurrentChar;
+        numVal += (char)m_CurrentChar;
         getNextChar();
         while (std::isdigit(m_CurrentChar) || (!isFloat && m_CurrentChar == '.')) {
             if (m_CurrentChar == '.') {
                 isFloat = true;
             }
-            numVal += m_CurrentChar;
+            numVal += (char)m_CurrentChar;
             getNextChar();
         }
 
@@ -202,7 +202,7 @@ Token Lexer::getNextToken(){
     }
 
     if (std::ispunct(m_CurrentChar)) {
-        identifier = m_CurrentChar;
+        identifier = (char)m_CurrentChar;
 
         getNextChar();
 
@@ -259,10 +259,10 @@ Token Lexer::getNextToken(){
             } else if (std::isdigit(m_CurrentChar)) {
                 bool isFloat = false;
                 std::string numVal = "-";
-                numVal += m_CurrentChar;
+                numVal += (char)m_CurrentChar;
                 getNextChar();
                 while (std::isdigit(m_CurrentChar) || (!isFloat && m_CurrentChar == '.')) {
-                    numVal += m_CurrentChar;
+                    numVal += (char)m_CurrentChar;
                     if (m_CurrentChar == '.') {
                         isFloat = true;
                     }
@@ -322,7 +322,7 @@ Token Lexer::getNextToken(){
                     return m_CurrentToken;
                 }
                 identifier += ".";
-                identifier += m_CurrentChar;
+                identifier += (char)m_CurrentChar;
                 m_CurrentToken = {token::unknown, identifier};
                 return m_CurrentToken;
             }
@@ -365,10 +365,10 @@ Token Lexer::getNextToken(){
         if (identifier == ".") {
             if (std::isdigit(m_CurrentChar)) {
                 std::string numVal = ".";
-                numVal += m_CurrentChar;
+                numVal += (char)m_CurrentChar;
                 getNextChar();
                 while (std::isdigit(m_CurrentChar)) {
-                    numVal += m_CurrentChar;
+                    numVal += (char)m_CurrentChar;
                     getNextChar();
                 }
                 m_CurrentToken = {token::float_value, numVal};
@@ -392,7 +392,7 @@ Token Lexer::getNextToken(){
                     return m_CurrentToken;
                 }
                 identifier += ".";
-                identifier += m_CurrentChar;
+                identifier += (char)m_CurrentChar;
                 return {token::unknown, identifier};
             }
             m_CurrentToken = {token::point, ""};

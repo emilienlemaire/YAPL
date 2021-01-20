@@ -298,7 +298,7 @@ llvm::Value *IRGenerator::generateDeclaration(ASTDeclarationNode *declaration) {
     llvm::IRBuilder<> tmpBuilder(&currentFunction->getEntryBlock(),
             currentFunction->getEntryBlock().begin());
 
-    auto variable = tmpBuilder.CreateAlloca(llvmType, 0, declaration->getName());
+    auto variable = tmpBuilder.CreateAlloca(llvmType, nullptr, declaration->getName());
 
     llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(declaration->getName(), variable));
 
@@ -604,7 +604,7 @@ llvm::Value *IRGenerator::generateMethod(llvm::StructType* structType,
     for ( const auto& attr: structType->elements() ) {
         llvm::IRBuilder<> tmpBuilder(&currentFunction->getEntryBlock(),
                 currentFunction->getEntryBlock().begin());
-        auto attrDecl = tmpBuilder.CreateAlloca(attr, 0, attrName[i]);
+        auto attrDecl = tmpBuilder.CreateAlloca(attr, nullptr, attrName[i]);
         llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(attrName[i], attrDecl));
         auto GEP = m_Builder.CreateStructGEP(structDecl, i, "gep." + attrName[i]);
         auto load = m_Builder.CreateLoad(GEP, attrName[i]);

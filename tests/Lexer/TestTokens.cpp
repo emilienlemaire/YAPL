@@ -11,7 +11,7 @@ void generateFile(std::string name, std::string content) {
     file.close();
 }
 
-TEST_CASE("Can lex identifier", "[lexer_tokens]") {
+TEST_CASE("Can lex identifier", "[lexer][identifier]") {
     SECTION("with lower case") {
         generateFile("LowerCaseIdentifier.yapl", "lowercaseidentifier");
         auto lexer = Lexer("LowerCaseIdentifier.yapl");
@@ -41,3 +41,50 @@ TEST_CASE("Can lex identifier", "[lexer_tokens]") {
 
     }
 }
+
+TEST_CASE("Can lex punctuation", "[lexer][punctuation]") {
+    SECTION("opening parenthesis") {
+
+    }
+
+    SECTION("closing parenthesis") {
+
+    }
+
+    SECTION("opening curly bracket") {
+
+    }
+
+    SECTION("closing curly bracket") {
+
+    }
+
+    SECTION("opening square braket") {
+
+    }
+
+    SECTION("closing square bracket") {
+
+    }
+
+    // semi_colon
+    // comma
+    // point
+    // colon
+    // squote
+    // dquote
+    // access_sym
+}
+
+TEST_CASE("Can lex operators", "[lexer][operators]") {
+
+}
+
+TEST_CASE("Can lex literals", "[lexer][literals]") {
+
+}
+
+TEST_CASE("Can lex keywords", "[lexer][keywords]") {
+
+}
+
