@@ -29,13 +29,17 @@ struct exampleStruct {
     }
 }
 
-exampleStruct example(1, 2.5);
+func main() -> int {
+    exampleStruct example(1, 2.5);
 
-int test = example.addA(12);
+    int test = example.addA(12);
 
-example = {3, 1.5};
+    example = {3, 1.5};
 
-example.a = 8;
+    example.a = 8;
 
-int b = example.a;
+    int b = example.a;
+    
+    return 0;
+}
 ```
