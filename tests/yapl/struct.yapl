@@ -25,8 +25,14 @@ func f1(int a) -> int {
 }
 
 func t(int a) -> test {
-    test s(a, 2);
-    return s;
+    test s1(a, 2);
+    return s1;
+}
+
+func t1(test t) -> test {
+    test t1(1, 2);
+    t1 = t;
+    return t1;
 }
 
 func copy(test t) -> test {

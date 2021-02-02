@@ -23,19 +23,18 @@ void IRGenerator::generate() {
     }
 
 
-    auto anonFuncType = llvm::FunctionType::get(llvm::Type::getInt32Ty(m_LLVMContext), false);
-    auto anonFunc = llvm::Function::Create(
-            anonFuncType,
-            llvm::Function::InternalLinkage,
-            "__anon_expr",
-            m_Module.get()
-            );
-    llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
+    //auto anonFuncType = llvm::FunctionType::get(llvm::Type::getInt32Ty(m_LLVMContext), false);
+    //auto anonFunc = llvm::Function::Create(
+            //anonFuncType,
+            //llvm::Function::ExternalLinkage,
+            //"__anon_expr",
+            //m_Module.get()
+            //);
+    //llvm::BasicBlock::Create(m_LLVMContext, "entry", anonFunc);
 
     m_Module->print(llvm::errs(), nullptr);
 
     m_Module->dropAllReferences();
-
 
     if (m_DeferredErrors) {
         std::string str;
@@ -392,7 +391,7 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
 
     auto funcType = llvm::FunctionType::get(llvmReturnType, argsType, false);
     auto func = llvm::Function::Create(funcType,
-            llvm::Function::PrivateLinkage,
+            llvm::Function::ExternalLinkage,
             funcDef->getName(),
             m_Module.get());
 
@@ -426,10 +425,12 @@ llvm::Value *IRGenerator::generateFunctionDefinition(ASTFunctionDefinitionNode *
         llvm::cantFail(m_YAPLContext->getCurrentScope()->pushFunction(funcDef->getName(), func));
         if (funcDef->getType() != ASTNode::VOID)
             func->getBasicBlockList().push_back(m_YAPLContext->getReturnBlock());
+        else
+            m_Builder.CreateRetVoid();
         m_YAPLContext->resetReturnHelper();
-        if (!llvm::verifyFunction(*func, &llvm::errs())) {
+        if (llvm::verifyFunction(*func, &llvm::outs())) {
             m_Logger.printError("Bad function: {}", func->getName().str());
-            func->print(llvm::errs());
+            //func->print(llvm::errs());
         }
         return func;
     }
@@ -532,18 +533,19 @@ llvm::Value *IRGenerator::generateStructInitialization(ASTStructInitializationNo
     }
 
     llvm::SmallVector<llvm::Constant *, 5> structVals;
+    auto variableAlloc = m_Builder.CreateAlloca(structType, nullptr, structInit->getName());
 
+    int i = 0;
     for ( const auto &elt: structInit->getAttributesValues() ) {
         auto val = generateExpr(elt.get());
-        structVals.push_back((llvm::Constant *)val);
+        auto gep = m_Builder.CreateConstGEP2_32(structType, variableAlloc, 0, i, "gep" + std::to_string(i));
+        auto store = m_Builder.CreateStore(val, gep);
+        i++;
     }
-
-    auto variableAlloc = m_Builder.CreateAlloca(structType, nullptr, structInit->getName());
-    auto variableStore = m_Builder.CreateStore(llvm::ConstantStruct::get(structType, structVals), variableAlloc);
 
     llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(structInit->getName(), variableAlloc));
 
-    return variableStore;
+    return variableAlloc;
 }
 
 llvm::Value *IRGenerator::generateMethod(llvm::StructType* structType,
@@ -731,7 +733,7 @@ llvm::Value *IRGenerator::generateArrayDefinition(ASTArrayDefinitionNode *arrDef
         auto globalVar = (llvm::GlobalVariable *)m_Module->getOrInsertGlobal(arrDef->getName(),
                 llvm::ArrayType::get(ASTTypeToLLVM(arrDef->getType()), arrDef->getSize())
                 );
-        globalVar->setLinkage(llvm::GlobalVariable::PrivateLinkage);
+        globalVar->setLinkage(llvm::GlobalVariable::ExternalLinkage);
         globalVar->setAlignment(llvm::MaybeAlign(4));
         llvm::cantFail(m_YAPLContext->getCurrentScope()->pushValue(arrDef->getName(), globalVar));
         

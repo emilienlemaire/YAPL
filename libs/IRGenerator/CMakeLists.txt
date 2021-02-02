@@ -15,7 +15,10 @@ endif()
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-llvm_map_components_to_libnames(llvm_libs core support irreader mcjit native)
+llvm_map_components_to_libnames(llvm_libs core support irreader mcjit native codegen executionengine
+    interpreter mc nativecodegen)
+
+message(STATUS "Found llvmLibs: ${llvm_libs}")
 
 add_library(irgenerator STATIC IRGenerator.cpp Scope.cpp YAPLContext.cpp YAPLValue.cpp)
-target_link_libraries(irgenerator PUBLIC ast parser ${llvm_libs})
+target_link_libraries(irgenerator PUBLIC ast parser ${llvm_libs} )
