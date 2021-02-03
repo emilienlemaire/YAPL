@@ -2,6 +2,9 @@
 
 Yet Another Progamming Language
 
+## Warning
+**This branch will most likely not compile, please check `master` for a working branch**
+
 ### Build Dependencies
 
 * [LLVM 11.0.0 or Higher](https://github.com/llvm/llvm-project)
