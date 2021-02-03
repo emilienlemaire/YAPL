@@ -4,13 +4,21 @@
 #include <ostream>
 #include <string>
 #include <cstdio>
-#include <string_view>
 
 #include <CppLogger2/CppLogger2.h>
+
+struct Position {
+    uint32_t line;
+    uint32_t column;
+    uint32_t character;
+
+    friend std::ostream& operator<<(std::ostream& os, const Position& token);
+};
 
 struct Token{
     int token;
     std::string identifier;
+    Position pos;
 
     friend std::ostream& operator<<(std::ostream& os, const Token& token);
     bool operator!=(int tok){
@@ -24,12 +32,6 @@ struct Token{
     const bool operator==(const Token other) const {
         return (this->token == other.token) && (this->identifier == other.identifier);
     }
-};
-
-struct Position {
-    uint32_t line;
-    uint32_t column;
-    uint32_t character;
 };
 
 class Lexer
