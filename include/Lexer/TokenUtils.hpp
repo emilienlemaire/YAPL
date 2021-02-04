@@ -2,6 +2,66 @@
 
 #include <string>
 
+enum class token{
+    NONE,
+    IDENT,
+
+    FOR,
+    WHILE,
+    IF,
+    ELSE,
+    IN,
+    STRUCT,
+    TRUE,
+    FALSE,
+    IMPORT,
+    EXPORT,
+    RETURN,
+    FUNC,
+
+    INT_LIT,
+    FLOAT_LIT,
+
+    PAR_O,
+    PAR_C,
+    BRA_O,
+    BRA_C,
+    ACC_O,
+    ACC_C,
+
+    DOT,
+    COLON,
+    S_QUOTE,
+    D_QUOTE,
+    D_COLON,
+    ARROW,
+    SEMI,
+    COMMA,
+
+    ASSIGN,
+    PLUS,
+    MINUS,
+    TIMES,
+    BY,
+    MOD,
+
+    LTH,
+    MTH,
+    EQ,
+    LEQ,
+    MEQ,
+    NEQ,
+
+    NOT,
+    OR,
+    AND,
+
+    FROM_TO,
+
+    EOF_, // avoid conflicts with existing EOF
+    EOL
+};
+
 inline std::string tokenToString(int token){
     switch (token) {
         case -1:
