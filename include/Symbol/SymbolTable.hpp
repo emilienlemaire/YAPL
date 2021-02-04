@@ -14,11 +14,11 @@ namespace yapl {
         phmap::node_hash_map<std::string, std::shared_ptr<Value>> m_Symbols;
 
     public:
-        bool insert(Value val);
+        bool insert(std::shared_ptr<Value> val);
         std::shared_ptr<Value> lookup(std::string);
-        std::shared_ptr<SymbolTable> pushScope();
+        std::shared_ptr<SymbolTable> pushScope(std::shared_ptr<SymbolTable>);
         std::shared_ptr<SymbolTable> popScope();
 
-        static SymbolTable InitTopSymTab();
+        static std::shared_ptr<SymbolTable> InitTopSymTab();
     };
 }
