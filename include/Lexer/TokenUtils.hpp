@@ -2,6 +2,8 @@
 
 #include <string>
 
+#define STRINGIFY(tok) #tok
+
 enum class token{
     NONE,
     IDENT,
@@ -62,179 +64,103 @@ enum class token{
     EOL
 };
 
-inline std::string tokenToString(int token){
-    switch (token) {
-        case -1:
-            return "EOF";
-        case -2:
+inline std::string tokToString(token tok) {
+    switch (tok) {
+        case token::NONE:
+            return "NONE";
+        case token::IDENT:
+            return "IDENT";
+        case token::FOR:
+            return "FOR";
+        case token::WHILE:
+            return "WHILE";
+        case token::IF:
+            return "IF";
+        case token::ELSE:
+            return "ELSE";
+        case token::IN:
+            return "IN";
+        case token::STRUCT:
+            return "STRUCT";
+        case token::TRUE:
+            return "TRUE";
+        case token::FALSE:
+            return "FALSE";
+        case token::IMPORT:
+            return "IMPORT";
+        case token::EXPORT:
+            return "EXPORT";
+        case token::RETURN:
+            return "RETURN";
+        case token::FUNC:
+            return "FUNC";
+        case token::INT_LIT:
+            return "INT_LIT";
+        case token::FLOAT_LIT:
+            return "FLOAT_LIT";
+        case token::PAR_O:
+            return "PAR_O";
+        case token::PAR_C:
+            return "PAR_C";
+        case token::BRA_O:
+            return "BRA_O";
+        case token::BRA_C:
+            return "BRA_C";
+        case token::ACC_O:
+            return "ACC_O";
+        case token::ACC_C:
+            return "ACC_C";
+        case token::DOT:
+            return "DOT";
+        case token::COLON:
+            return "COLON";
+        case token::S_QUOTE:
+            return "S_QUOTE";
+        case token::D_QUOTE:
+            return "D_QUOTE";
+        case token::D_COLON:
+            return "D_COLON";
+        case token::ARROW:
+            return "ARROW";
+        case token::SEMI:
+            return "SEMI";
+        case token::COMMA:
+            return "COMMA";
+        case token::ASSIGN:
+            return "ASSIGN";
+        case token::PLUS:
+            return "PLUS";
+        case token::MINUS:
+            return "MINUS";
+        case token::TIMES:
+            return "TIMES";
+        case token::BY:
+            return "BY";
+        case token::MOD:
+            return "MOD";
+        case token::LTH:
+            return "LTH";
+        case token::MTH:
+            return "MTH";
+        case token::EQ:
+            return "EQ";
+        case token::LEQ:
+            return "LEQ";
+        case token::MEQ:
+            return "MEQ";
+        case token::NEQ:
+            return "NEQ";
+        case token::NOT:
+            return "NOT";
+        case token::OR:
+            return "OR";
+        case token::AND:
+            return "AND";
+        case token::FROM_TO:
+            return "FROM_TO";
+        case token::EOF_: // avoid conflicts with existing EOF
+            return "EOF_";
+        case token::EOL:
             return "EOL";
-        case -3:
-            return "type";
-        case -4:
-            return "func";
-        case -5:
-            return "label";
-        case -6:
-            return "popen";
-        case -7:
-            return "pclose";
-        case -8:
-            return "bopen";
-        case -9:
-            return "bclose";
-        case -10:
-            return "iopen";
-        case -11:
-            return "iclose";
-        case -12:
-            return "eq";
-        case -13:
-            return "plus";
-        case -14:
-            return "minus";
-        case -15:
-            return "divide";
-        case -16:
-            return "times";
-        case -17:
-            return "mod";
-        case -18:
-            return "lth";
-        case -19:
-            return "mth";
-        case -20:
-            return "forlabel";
-        case -21:
-            return "whilelabel";
-        case -22:
-            return "iflabel";
-        case -23:
-            return "elselabel";
-        case -24:
-            return "inlabel";
-        case -25:
-            return "structlabel";
-        case -26:
-            return "truelalbel";
-        case -27:
-            return "falselabel";
-        case -28:
-            return "importlabel";
-        case -29:
-            return "exportlabel";
-        case -30:
-            return "int_value";
-        case -31:
-            return "float_value";
-        case -32:
-            return "semicolon";
-        case -33:
-            return "comma";
-        case -34:
-            return "notsym";
-        case -35:
-            return "orsym";
-        case -36:
-            return "andsym";
-        case -37:
-            return "point";
-        case -38:
-            return "colon";
-        case -39:
-            return "squote";
-        case -40:
-            return "dquote";
-        case -41:
-            return "access_sym";
-        case -42:
-            return "fromto";
-        case -43:
-            return "fromtol";
-        case -44:
-            return "fromtominus";
-        case -45:
-            return "fromoreto";
-        case -46:
-            return "eqcomp";
-        case -47:
-            return "leq";
-        case -48:
-            return "meq";
-        case -49:
-            return "neq";
-        case -50:
-            return "arrow_op";
-        case -51:
-            return "returnlabel";
-        default:
-            return std::string(1, (char)token);
     }
 }
-
-enum token{
-  eof          = -1,
-  eol          = -2,
-
-  type         = -3,
-  func         = -4,
-  identifier   = -5,
-
-  paropen      = -6,
-  parclose     = -7,
-  bopen        = -8,
-  bclose       = -9,
-  iopen        = -10,
-  iclose       = -11,
-
-  eq           = -12,
-  plus         = -13,
-  minus        = -14,
-  divide       = -15,
-  times        = -16,
-  mod          = -17,
-  lth          = -18,
-  mth          = -19,
-
-  forlabel     = -20,
-  whilelabel   = -21,
-  iflabel      = -22,
-  elselabel    = -23,
-  inlabel      = -24,
-  structlabel  = -25,
-  truelabel    = -26,
-  falselabel   = -27,
-  importlabel  = -28,
-  exportlalbel = -29,
-
-  int_value    = -30,
-  float_value  = -31,
-
-  semicolon    = -32,
-  comma        = -33,
-
-  notsym       = -34,
-  orsym        = -35,
-  andsym       = -36,
-
-  point        = -37,
-  colon        = -38,
-  squote       = -39,
-  dquote       = -40,
-
-  access_sym   = -41,
-  fromto       = -42,
-  fromtol      = -43,
-  fromtominus  = -44,
-  fromoreto    = -45,
-
-  eqcomp       = -46,
-  leq          = -47,
-  meq          = -48,
-  neq          = -49,
-  arrow_op     = -50,
-
-  returnlabel = -51,
-
-  unknown      =-100
-};
-
