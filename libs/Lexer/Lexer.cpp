@@ -1,13 +1,13 @@
-#include "Lexer/Lexer.hpp"
-#include "CppLogger2/include/CppLogger.h"
-#include "CppLogger2/include/Format.h"
-#include "Lexer/TokenUtils.hpp"
-
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <ostream>
 #include <string>
+
+#include "Lexer/Lexer.hpp"
+#include "CppLogger2/include/CppLogger.h"
+#include "CppLogger2/include/Format.h"
+#include "Lexer/TokenUtils.hpp"
 
 std::ostream& operator<<(std::ostream& os, const Position& pos){
     os << pos.line << ":" << pos.column;
@@ -15,7 +15,7 @@ std::ostream& operator<<(std::ostream& os, const Position& pos){
 }
 
 std::ostream& operator<<(std::ostream& os, const Token& token){
-    os << "Token: " << tokenToString(token.token) << " / Identifier: " << token.identifier;
+    os << "Token: " << tokToString(token.token) << " / Identifier: " << token.identifier;
     return os;
 }
 
@@ -33,7 +33,7 @@ Lexer::Lexer(const std::string& filepath)
     if (!filepath.empty()) {
         pFile = fopen(filepath.c_str(), "r");
         if (pFile == nullptr) {
-            m_Logger.printError("Cannot open file: {}\nExiting!!", filepath);
+            m_Logger.printError("Cannot open file: {}\n", filepath);
             exit(EXIT_FAILURE);
         }
     } else {
@@ -87,7 +87,7 @@ Token Lexer::getNextToken(){
     }
 
     if(m_CurrentChar == EOF) {
-        m_CurrentToken = {token::eof, "", m_Pos};
+        m_CurrentToken = {token::EOF_, "", m_Pos};
         return m_CurrentToken;
     }
 
@@ -100,91 +100,66 @@ Token Lexer::getNextToken(){
             getNextChar();
         }
 
-        if(identifier == "int") {
-            m_CurrentToken = {token::type, "int", m_Pos};
-            return m_CurrentToken;
-        }
-
-        if (identifier == "float" || identifier == "double") {
-            m_CurrentToken = {token::type, "double", m_Pos};
-            return m_CurrentToken;
-        }
-
-        if (identifier == "void") {
-            m_CurrentToken = {token::type, "void", m_Pos};
-            return m_CurrentToken;
-        }
-
-        if (identifier == "bool") {
-            m_CurrentToken = {token::type, "bool", m_Pos};
-            return m_CurrentToken;
-        }
-
-        if (identifier == "string") {
-            m_CurrentToken = {token::type, "string", m_Pos};
-            return m_CurrentToken;
-        }
-
         if (identifier == "struct") {
-            m_CurrentToken = {token::structlabel, "", m_Pos};
+            m_CurrentToken = {token::STRUCT, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "func") {
-            m_CurrentToken = {token::func, "", m_Pos};
+            m_CurrentToken = {token::FUNC, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "for") {
-            m_CurrentToken = {token::forlabel, "", m_Pos};
+            m_CurrentToken = {token::FOR, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "while") {
-            m_CurrentToken = {token::whilelabel, "", m_Pos};
+            m_CurrentToken = {token::WHILE, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "if") {
-            m_CurrentToken = {token::iflabel, "", m_Pos};
+            m_CurrentToken = {token::IF, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "else") {
-            m_CurrentToken = {token::elselabel, "", m_Pos};
+            m_CurrentToken = {token::ELSE, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "in") {
-            m_CurrentToken = {token::inlabel, "", m_Pos};
+            m_CurrentToken = {token::IN, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "true") {
-            m_CurrentToken = {token::truelabel, "", m_Pos};
+            m_CurrentToken = {token::TRUE, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "false") {
-            m_CurrentToken = {token::falselabel, "", m_Pos};
+            m_CurrentToken = {token::FALSE, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "import") {
-            m_CurrentToken = {token::importlabel, "", m_Pos};
+            m_CurrentToken = {token::IMPORT, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "export") {
-            m_CurrentToken = {token::exportlalbel, "", m_Pos};
+            m_CurrentToken = {token::EXPORT, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "return") {
-            m_CurrentToken = {token::returnlabel, "", m_Pos};
+            m_CurrentToken = {token::RETURN, identifier, m_Pos};
             return m_CurrentToken;
         }
-        m_CurrentToken = {token::identifier, identifier, m_Pos};
+        m_CurrentToken = {token::IDENT, identifier, m_Pos};
         return m_CurrentToken;
     }
 
@@ -200,8 +175,8 @@ Token Lexer::getNextToken(){
             getNextChar();
         }
 
-        m_CurrentToken = isFloat ? Token{token::float_value, numVal} :
-            Token{token::int_value, numVal, m_Pos};
+        m_CurrentToken = isFloat ? Token{token::FLOAT_LIT, numVal} :
+            Token{token::INT_LIT, numVal, m_Pos};
 
         return m_CurrentToken;
     }
@@ -212,55 +187,56 @@ Token Lexer::getNextToken(){
         getNextChar();
 
         if (identifier  == "(") {
-            m_CurrentToken = {token::paropen, "", m_Pos};
+            m_CurrentToken = {token::PAR_O, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == ")" ) {
-            m_CurrentToken = {token::parclose, "", m_Pos};
+            m_CurrentToken = {token::PAR_C, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "{") {
-            m_CurrentToken = {token::bopen, "", m_Pos};
+            m_CurrentToken = {token::BRA_O, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "}") {
-            m_CurrentToken = {token::bclose, "", m_Pos};
+            m_CurrentToken = {token::BRA_C, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "[") {
-            m_CurrentToken = {token::iopen, "", m_Pos};
+            m_CurrentToken = {token::ACC_O, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "]") {
-            m_CurrentToken = {token::iclose, "", m_Pos};
+            m_CurrentToken = {token::ACC_C, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "=") {
             if (m_CurrentChar == '=') {
                 getNextChar();
-                m_CurrentToken = {token::eqcomp, "", m_Pos};
+                m_CurrentToken = {token::EQ, identifier, m_Pos};
                 return m_CurrentToken;
             }
-            m_CurrentToken = {token::eq, "", m_Pos};
+            m_CurrentToken = {token::ASSIGN, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "+") {
-            m_CurrentToken = {token::plus, "", m_Pos};
+            m_CurrentToken = {token::PLUS, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "-") {
             if (m_CurrentChar == '>') {
                 getNextChar();
-                m_CurrentToken = {token::arrow_op, "", m_Pos};
+                m_CurrentToken = {token::ARROW, identifier, m_Pos};
                 return m_CurrentToken;
+
             } else if (std::isdigit(m_CurrentChar)) {
                 bool isFloat = false;
                 std::string numVal = "-";
@@ -273,10 +249,10 @@ Token Lexer::getNextToken(){
                     }
                     getNextChar();
                 }
-                m_CurrentToken = {isFloat ? token::float_value : token:: int_value, numVal, m_Pos};
+                m_CurrentToken = {isFloat ? token::FLOAT_LIT : token:: INT_LIT, numVal, m_Pos};
                 return m_CurrentToken;
             }
-            m_CurrentToken = {token::minus, "", m_Pos};
+            m_CurrentToken = {token::MINUS, identifier, m_Pos};
             return m_CurrentToken;
         }
 
@@ -300,70 +276,63 @@ Token Lexer::getNextToken(){
                     getNextChar();
                 }
             }
-            m_CurrentToken = {token::divide, "", m_Pos};
+            m_CurrentToken = {token::BY, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "*") {
-            m_CurrentToken = {token::times, "", m_Pos};
+            m_CurrentToken = {token::TIMES, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "%") {
-            m_CurrentToken = {token::mod, "", m_Pos};
+            m_CurrentToken = {token::MOD, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "<") {
             if (m_CurrentChar == '=') {
                 getNextChar();
-                m_CurrentToken = {token::leq, "", m_Pos};
-                return m_CurrentToken;
-            } else if (m_CurrentChar == '.') {
-                getNextChar();
-                if (m_CurrentChar == '.') {
-                    getNextChar();
-                    m_CurrentToken = {token::fromoreto, "", m_Pos};
-                    return m_CurrentToken;
-                }
-                identifier += ".";
-                identifier += (char)m_CurrentChar;
-                m_CurrentToken = {token::unknown, identifier, m_Pos};
+                identifier += "=";
+                m_CurrentToken = {token::LEQ, identifier, m_Pos};
                 return m_CurrentToken;
             }
-            m_CurrentToken = {token::lth, "", m_Pos};
+
+            m_CurrentToken = {token::LTH, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == ">") {
             if (m_CurrentChar == '=') {
                 getNextChar();
-                m_CurrentToken = {token::meq, "", m_Pos};
+                identifier += "=";
+                m_CurrentToken = {token::MEQ, identifier, m_Pos};
                 return m_CurrentToken;
             }
-            m_CurrentToken = {token::mth, "", m_Pos};
+            m_CurrentToken = {token::MTH, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "!") {
             if (m_CurrentChar == '=') {
                 getNextChar();
-                m_CurrentToken = {token::neq, "", m_Pos};
+                identifier += "=";
+                m_CurrentToken = {token::NEQ, identifier, m_Pos};
                 return m_CurrentToken;
             }
             m_Logger.printWarn("Unary operation not yet supported please avoid using them."
                     "At position: {}:{}", m_Pos.line, m_Pos.column);
-            m_CurrentToken = {token::notsym, "", m_Pos};
+            m_CurrentToken = {token::NOT, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == ";") {
-            m_CurrentToken = {token::semicolon, "", m_Pos};
+            m_CurrentToken = {token::SEMI, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == ",") {
-            m_CurrentToken = {token::comma, "", m_Pos};
+            m_CurrentToken = {token::COMMA, identifier, m_Pos};
             return m_CurrentToken;
         }
 
@@ -376,66 +345,58 @@ Token Lexer::getNextToken(){
                     numVal += (char)m_CurrentChar;
                     getNextChar();
                 }
-                m_CurrentToken = {token::float_value, numVal, m_Pos};
+                m_CurrentToken = {token::FLOAT_LIT, numVal, m_Pos};
                 return m_CurrentToken;
             }
             if (m_CurrentChar == '.') {
+                identifier += ".";
                 getNextChar();
                 if (m_CurrentChar == '.') {
+                    identifier += ".";
                     getNextChar();
-                    m_CurrentToken = {token::fromto, "", m_Pos};
+                    m_CurrentToken = {token::FROM_TO, identifier, m_Pos};
                     return m_CurrentToken;
                 }
-                if (m_CurrentChar == '<') {
-                    getNextChar();
-                    m_CurrentToken = {token::fromtol, "", m_Pos};
-                    return m_CurrentToken;
-                }
-                if (m_CurrentChar == '-') {
-                    getNextChar();
-                    m_CurrentToken = {token::fromtominus, "", m_Pos};
-                    return m_CurrentToken;
-                }
-                identifier += ".";
                 identifier += (char)m_CurrentChar;
-                return {token::unknown, identifier, m_Pos};
+                return {token::NONE, identifier, m_Pos};
             }
-            m_CurrentToken = {token::point, "", m_Pos};
+            m_CurrentToken = {token::DOT, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == ":") {
             if (m_CurrentChar == ':') {
+                identifier += ":";
                 getNextChar();
-                m_CurrentToken = {token::access_sym, "", m_Pos};
+                m_CurrentToken = {token::D_COLON, identifier, m_Pos};
                 return m_CurrentToken;
             }
-            m_CurrentToken = {token::colon, "", m_Pos};
+            m_CurrentToken = {token::COLON, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "|") {
-            m_CurrentToken = {token::orsym, "", m_Pos};
+            m_CurrentToken = {token::OR, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "&") {
-            m_CurrentToken = {token::andsym, "", m_Pos};
+            m_CurrentToken = {token::AND, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "\"") {
-            m_CurrentToken = {token::dquote, "", m_Pos};
+            m_CurrentToken = {token::D_QUOTE, identifier, m_Pos};
             return m_CurrentToken;
         }
 
         if (identifier == "'") {
-            m_CurrentToken = {token::squote, "", m_Pos};
+            m_CurrentToken = {token::S_QUOTE, identifier, m_Pos};
             return m_CurrentToken;
         }
     }
 
-    m_CurrentToken = {m_CurrentChar, "", m_Pos};
+    m_CurrentToken = {token::NONE, identifier, m_Pos};
     return m_CurrentToken;
 }
 

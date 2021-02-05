@@ -16,16 +16,16 @@ struct Position {
 };
 
 struct Token{
-    int token;
+    token token;
     std::string identifier;
     Position pos;
 
     friend std::ostream& operator<<(std::ostream& os, const Token& token);
-    bool operator!=(int tok){
+    bool operator!=(enum token tok){
         return token != tok;
     }
 
-    const bool operator==(int tok) const {
+    const bool operator==(enum token tok) const {
         return token == tok;
     }
 
@@ -37,7 +37,7 @@ struct Token{
 class Lexer
 {
 private:
-    Token m_CurrentToken = {token::unknown, ""};
+    Token m_CurrentToken = {token::NONE, ""};
     int m_CurrentChar = '\0';
     std::string m_CurrentIdentifier = "";
     CppLogger::CppLogger m_Logger;
