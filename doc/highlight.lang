@@ -1,0 +1,32 @@
+Description = "YAPL"
+
+Keywords = {
+    {
+        Id = 1,
+        List = {
+            "func", "for", "in", "struct", "if", "else"
+        }
+    },
+    {
+        Id = 2,
+        List = {
+            "int", "float", "double", "bool", "void"
+        }
+    }
+}
+
+Comments = {
+    {
+        Block = true,
+        Nested = false,
+        Delimiter = { [[\/\*]], [[\*\/]] }
+    },
+    {
+        Block = false,
+        Delimiter = { [[//]] }
+    }
+}
+
+IgnoreCase = false
+
+Operators = [[\(|\)|\[|\]|\{|\}|\,|\;|\.|\:|\&|<|>|\!|\=|\/|\*|\%|\+|\-|\~]]
