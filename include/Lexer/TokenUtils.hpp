@@ -21,8 +21,7 @@ enum class token{
     RETURN,
     FUNC,
 
-    INT_LIT,
-    FLOAT_LIT,
+    NUMBER,
 
     PAR_O,
     PAR_C,

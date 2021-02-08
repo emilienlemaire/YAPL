@@ -164,20 +164,14 @@ Token Lexer::getNextToken(){
     }
 
     if (std::isdigit(m_CurrentChar)) {
-        bool isFloat = false;
         numVal += (char)m_CurrentChar;
         getNextChar();
-        while (std::isdigit(m_CurrentChar) || (!isFloat && m_CurrentChar == '.')) {
-            if (m_CurrentChar == '.') {
-                isFloat = true;
-            }
+        while (std::isdigit(m_CurrentChar)) {
             numVal += (char)m_CurrentChar;
             getNextChar();
         }
 
-        m_CurrentToken = isFloat ? Token{token::FLOAT_LIT, numVal} :
-            Token{token::INT_LIT, numVal, m_Pos};
-
+        m_CurrentToken = {token::NUMBER, numVal, m_Pos};
         return m_CurrentToken;
     }
 
@@ -237,20 +231,6 @@ Token Lexer::getNextToken(){
                 m_CurrentToken = {token::ARROW, identifier, m_Pos};
                 return m_CurrentToken;
 
-            } else if (std::isdigit(m_CurrentChar)) {
-                bool isFloat = false;
-                std::string numVal = "-";
-                numVal += (char)m_CurrentChar;
-                getNextChar();
-                while (std::isdigit(m_CurrentChar) || (!isFloat && m_CurrentChar == '.')) {
-                    numVal += (char)m_CurrentChar;
-                    if (m_CurrentChar == '.') {
-                        isFloat = true;
-                    }
-                    getNextChar();
-                }
-                m_CurrentToken = {isFloat ? token::FLOAT_LIT : token:: INT_LIT, numVal, m_Pos};
-                return m_CurrentToken;
             }
             m_CurrentToken = {token::MINUS, identifier, m_Pos};
             return m_CurrentToken;
@@ -337,17 +317,6 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == ".") {
-            if (std::isdigit(m_CurrentChar)) {
-                std::string numVal = ".";
-                numVal += (char)m_CurrentChar;
-                getNextChar();
-                while (std::isdigit(m_CurrentChar)) {
-                    numVal += (char)m_CurrentChar;
-                    getNextChar();
-                }
-                m_CurrentToken = {token::FLOAT_LIT, numVal, m_Pos};
-                return m_CurrentToken;
-            }
             if (m_CurrentChar == '.') {
                 identifier += ".";
                 getNextChar();
