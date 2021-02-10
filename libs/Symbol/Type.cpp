@@ -1,7 +1,8 @@
-#include "Symbol/Type.hpp"
 #include <exception>
 #include <memory>
 #include <string>
+
+#include "Symbol/Type.hpp"
 
 namespace yapl {
 
@@ -100,6 +101,8 @@ namespace yapl {
 
             return mangle;
         }
+
+        return "";
     }
 
     std::string Type::MangleArrayType(std::shared_ptr<Type> elementsType, size_t size) {

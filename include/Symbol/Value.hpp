@@ -24,7 +24,7 @@ namespace yapl {
         std::vector<std::shared_ptr<Value>> m_Params;
         std::shared_ptr<SymbolTable> m_Scope = nullptr;
 
-        Value();
+        Value() = default;
         Value(ValueKind, const std::string&, Type);
     public:
         static std::shared_ptr<Value> CreateTypeValue(const std::string&, std::shared_ptr<Type>);

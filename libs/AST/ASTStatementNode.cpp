@@ -47,12 +47,12 @@ namespace yapl {
         :ASTStatementNode(scope)
     {}
 
-    void ASTExportNode::setExportedValue(const std::string &name) {
-        m_ExportedValue = std::move(name);
+    void ASTExportNode::addExportedValue(const std::string &name) {
+        m_ExportedValues.push_back(std::move(name));
     }
 
-    std::string ASTExportNode::getExportedValue() const {
-        return m_ExportedValue;
+    std::vector<std::string> ASTExportNode::getExportedValues() const {
+        return m_ExportedValues;
     }
 
     /* 

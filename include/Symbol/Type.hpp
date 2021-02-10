@@ -23,7 +23,7 @@ namespace yapl {
         friend class SymbolTable;
 
         Type& operator=(const Type&) = delete;
-        Type();
+        Type() = default;
 
         static std::shared_ptr<Type> CreateBaseType(const std::string&);
     public:

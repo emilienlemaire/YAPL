@@ -19,7 +19,6 @@
 #include "YAPL.h"
 #include "Parser/Parser.hpp"
 
-#include "lld/Common/Driver.h"
 
 
 int main(int argc, char *argv[]) {
@@ -34,10 +33,10 @@ int main(int argc, char *argv[]) {
 
     if (argc > 1) {
         std::string filepath = argv[1];
-        Parser parser(filepath, CppLogger::Level::Trace);
+        yapl::Parser parser(filepath, CppLogger::Level::Trace);
         parser.parse();
     } else {
-        Parser parser("", CppLogger::Level::Trace);
+        yapl::Parser parser("", CppLogger::Level::Trace);
         parser.parse();
     }
 

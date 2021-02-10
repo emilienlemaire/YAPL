@@ -20,6 +20,8 @@ namespace yapl {
         CppLogger::CppLogger m_Logger;
         Lexer m_Lexer;
 
+        const std::string m_FilePath;
+
         std::unique_ptr<ASTProgramNode> m_Program;
 
         Token m_CurrentToken;

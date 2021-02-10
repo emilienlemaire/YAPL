@@ -7,7 +7,6 @@
 #include <memory>
 
 #include "AST/ASTNode.hpp"
-#include "AST/ASTExprNode.hpp"
 
 namespace yapl
 {
@@ -35,12 +34,12 @@ namespace yapl
 
     class ASTExportNode : public ASTStatementNode {
     private:
-        std::string m_ExportedValue;
+        std::vector<std::string> m_ExportedValues;
     public:
         ASTExportNode(SharedScope);
-        void setExportedValue(const std::string&);
+        void addExportedValue(const std::string&);
 
-        std::string getExportedValue() const;
+        std::vector<std::string> getExportedValues() const;
     };
 
     class ASTFunctionDefinitionNode : public ASTStatementNode {

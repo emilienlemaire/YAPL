@@ -16,7 +16,7 @@
 
 namespace yapl {
     Parser::Parser(std::string filepath, CppLogger::Level level)
-        : m_Logger(level, "Parser"), m_Lexer(filepath)
+        : m_Logger(level, "Parser"), m_Lexer(filepath), m_FilePath(filepath)
     {
         CppLogger::Format format({
                 CppLogger::FormatAttribute::Name,
@@ -61,12 +61,16 @@ namespace yapl {
 
     void Parser::parse() {
         std::vector<std::unique_ptr<ASTNode>> nodes;
+        m_CurrentToken = m_Lexer.getNextToken();
         while (m_Lexer.peekToken().token != token::EOF_) {
             auto node = parseNext();
+            if (!node) {
+                m_CurrentToken = m_Lexer.getNextToken();
+            }
             nodes.push_back(std::move(node));
         }
 
-        m_Program = std::make_unique<ASTProgramNode>(std::move(nodes));
+        m_Program = std::make_unique<ASTProgramNode>(m_SymbolTable, std::move(nodes));
     }
 
     std::unique_ptr<ASTProgramNode> Parser::getProgram() {
@@ -75,6 +79,10 @@ namespace yapl {
 
     std::unique_ptr<ASTNode> Parser::parseNext() {
         parseInfo("next");
+
+        while (m_CurrentToken == token::SEMI) {
+            m_CurrentToken = m_Lexer.getNextToken();
+        }
 
         if (m_CurrentToken.token == token::IMPORT) {
             return parseImport();
@@ -96,7 +104,166 @@ namespace yapl {
             return parseIdentifier(m_CurrentToken.identifier);
         }
 
-        return parseError<ASTNode>("Unexpected token at top level scope: {}", m_CurrentToken);
+        return parseError<ASTNode>(
+                "File: {}:{}\n\tUnexpected token at top level scope: {}",
+                m_FilePath,
+                m_CurrentToken.pos,
+                m_CurrentToken);
+    }
+
+    /* TODO:
+     *  - Make it possible to import several values from on namespace
+     * */
+    std::unique_ptr<ASTImportNode> Parser::parseImport() {
+        std::string currentIdentifier;
+
+        std::unique_ptr<ASTImportNode> importNode = std::make_unique<ASTImportNode>(m_SymbolTable);
+
+        m_CurrentToken = m_Lexer.getNextToken();
+
+        if (m_CurrentToken != token::IDENT) {
+            return parseError<ASTImportNode>(
+                    "File: {}:{}\n\tExpecting an identifier after 'import' instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        currentIdentifier = m_CurrentToken.identifier;
+
+        m_CurrentToken = m_Lexer.getNextToken();
+
+        while (m_CurrentToken == token::D_COLON) {
+            importNode->addNamespace(currentIdentifier);
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat ::
+
+            if (m_CurrentToken != token::IDENT) {
+                return parseError<ASTImportNode>(
+                        "File: {}:{}\n\tExpecting an identifier after '::' instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            currentIdentifier = m_CurrentToken.identifier;
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
+        }
+
+        importNode->setImportedValue(currentIdentifier);
+
+        if (m_CurrentToken != token::SEMI) {
+            return parseError<ASTImportNode>(
+                    "File: {}:{}\n\tExpecting a ';' after 'import' statement instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
+
+        return std::move(importNode);
+    }
+
+    std::unique_ptr<ASTExportNode> Parser::parseExport() {
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat 'export'
+
+        ASTExportNode exportNode(m_SymbolTable);
+
+        if (m_CurrentToken == token::IDENT) {
+            exportNode.addExportedValue(m_CurrentToken.identifier);
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier;
+
+            if (m_CurrentToken != token::SEMI) {
+                return parseError<ASTExportNode>(
+                        "File: {}:{}\n\tExpecting a ';' after export statement, instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
+
+            return std::make_unique<ASTExportNode>(exportNode);
+        }
+        
+        if (m_CurrentToken == token::BRA_O) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '{'
+
+            if (m_CurrentToken == token::IDENT) {
+                std::string currentIdentifier = m_CurrentToken.identifier;
+
+                m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
+
+                while (m_CurrentToken == token::COMMA) {
+                    exportNode.addExportedValue(currentIdentifier);
+                    
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat ','
+
+                    if (m_CurrentToken != token::IDENT) {
+                        return parseError<ASTExportNode>(
+                                "File: {}:{}\n\tExpecting an identifier after ',' instead of {}",
+                                m_FilePath,
+                                m_CurrentToken.pos,
+                                m_CurrentToken
+                            );
+                    }
+
+                    currentIdentifier = m_CurrentToken.identifier;
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
+                } // While token == COMMA
+
+                exportNode.addExportedValue(currentIdentifier);
+
+                if (m_CurrentToken != token::BRA_C) {
+                    return parseError<ASTExportNode>(
+                            "File: {}:{}\n\tMissing matching '}' instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
+                }
+
+                m_CurrentToken = m_Lexer.getNextToken(); // Eat '}'
+
+                return std::make_unique<ASTExportNode>(exportNode);
+            }
+
+            return parseError<ASTExportNode>(
+                    "File: {}:{}\n\tExpecting an identifier after '{' instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        return parseError<ASTExportNode>(
+                "File: {}:{}\n\tExpecting an identifier or a '{' after 'export' instead of {}",
+                m_FilePath,
+                m_CurrentToken.pos,
+                m_CurrentToken
+            );
+    }
+
+    std::unique_ptr<ASTFunctionDefinitionNode> Parser::parseFunctionDefinition() {
+        return nullptr;
+    }
+
+    std::unique_ptr<ASTStructDefinitionNode> Parser::parseStructDefinition() {
+        return nullptr;
+    }
+
+    std::unique_ptr<ASTNode> Parser::parseIdentifier(const std::string &identifier) {
+        return nullptr;
+    }
+
+    std::unique_ptr<ASTExprNode> Parser::parseExpr() {
+        return nullptr;
     }
 
 }
