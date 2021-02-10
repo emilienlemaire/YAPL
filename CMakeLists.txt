@@ -40,7 +40,7 @@ add_executable(yapl
     main.cpp)
 
 
-target_link_libraries(yapl PUBLIC cpplogger irgenerator)
+target_link_libraries(yapl PUBLIC cpplogger parser)
 
 add_custom_target(run_YAPL ALL DEPENDS yapl)
 

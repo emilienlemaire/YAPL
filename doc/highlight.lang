@@ -4,7 +4,7 @@ Keywords = {
     {
         Id = 1,
         List = {
-            "func", "for", "in", "struct", "if", "else"
+            "func", "for", "in", "struct", "if", "else", "return"
         }
     },
     {
@@ -12,6 +12,24 @@ Keywords = {
         List = {
             "int", "float", "double", "bool", "void"
         }
+    },
+    {
+        Id = 4,
+        List = {
+            "true", "false"
+        }
+    },
+    {
+        Id = 3,
+        Regex=[[(\w+)\s*\(]]
+    },
+    {
+        Id = 2,
+        Regex=[[(\w+(?=\s+\{))]]
+    },
+    {
+        Id = 2,
+        Regex = [[((\w+)(?=\s+\w+\())]],
     }
 }
 
@@ -30,3 +48,5 @@ Comments = {
 IgnoreCase = false
 
 Operators = [[\(|\)|\[|\]|\{|\}|\,|\;|\.|\:|\&|<|>|\!|\=|\/|\*|\%|\+|\-|\~]]
+
+

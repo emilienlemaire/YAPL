@@ -1,10 +1,13 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "Type.hpp"
 
 namespace yapl {
+    class SymbolTable;
+
     enum class ValueKind {
         Constant,
         Variable,
@@ -18,6 +21,9 @@ namespace yapl {
         ValueKind m_Kind;
         std::string m_Name;
         std::shared_ptr<Type> m_Type;
+        std::vector<std::shared_ptr<Value>> m_Params;
+        std::shared_ptr<SymbolTable> m_Scope = nullptr;
+
         Value();
         Value(ValueKind, const std::string&, Type);
     public:

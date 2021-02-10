@@ -17,9 +17,7 @@
 #include <CppLogger2/CppLogger2.h>
 
 #include "YAPL.h"
-#include "Lexer/Lexer.hpp"
-#include "Lexer/TokenUtils.hpp"
-#include "IRGenerator/IRGenerator.hpp"
+#include "Parser/Parser.hpp"
 
 #include "lld/Common/Driver.h"
 
@@ -36,11 +34,11 @@ int main(int argc, char *argv[]) {
 
     if (argc > 1) {
         std::string filepath = argv[1];
-        IRGenerator generator(filepath);
-        generator.generate();
+        Parser parser(filepath, CppLogger::Level::Trace);
+        parser.parse();
     } else {
-       IRGenerator generator("");
-       generator.generate();
+        Parser parser("", CppLogger::Level::Trace);
+        parser.parse();
     }
 
     return 0;

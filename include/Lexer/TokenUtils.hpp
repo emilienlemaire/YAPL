@@ -93,10 +93,8 @@ inline std::string tokToString(token tok) {
             return "RETURN";
         case token::FUNC:
             return "FUNC";
-        case token::INT_LIT:
-            return "INT_LIT";
-        case token::FLOAT_LIT:
-            return "FLOAT_LIT";
+        case token::NUMBER:
+            return "NUMBER";
         case token::PAR_O:
             return "PAR_O";
         case token::PAR_C:
