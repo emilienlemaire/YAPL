@@ -51,11 +51,13 @@ namespace yapl {
         std::unique_ptr<ASTProgramNode> getProgram();
 
     private:
+        std::unique_ptr<ASTNode> parseIdentifier(const std::string&);
+
         std::unique_ptr<ASTImportNode> parseImport();
         std::unique_ptr<ASTExportNode> parseExport();
         std::unique_ptr<ASTFunctionDefinitionNode> parseFunctionDefinition();
         std::unique_ptr<ASTStructDefinitionNode> parseStructDefinition();
-        std::unique_ptr<ASTNode> parseIdentifier(const std::string&);
+        std::unique_ptr<ASTDeclarationNode> parseDeclaration(const std::string&);
 
         std::unique_ptr<ASTExprNode> parseExpr();
     };

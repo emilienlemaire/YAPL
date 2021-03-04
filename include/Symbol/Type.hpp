@@ -22,11 +22,12 @@ namespace yapl {
 
         friend class SymbolTable;
 
-        Type& operator=(const Type&) = delete;
         Type() = default;
 
         static std::shared_ptr<Type> CreateBaseType(const std::string&);
     public:
+        Type& operator=(const Type&) = delete;
+
         static std::shared_ptr<Type> CreateSimpleType(
                     const std::string&
                 );
@@ -54,7 +55,7 @@ namespace yapl {
                     std::vector<std::shared_ptr<Type>>
                 );
 
-        bool hasName() const { return m_HasName; }
-        std::string getIdentifier() const { return m_Identifier; }
+        [[nodiscard]] bool hasName() const { return m_HasName; }
+        [[nodiscard]] std::string getIdentifier() const { return m_Identifier; }
     };
 }

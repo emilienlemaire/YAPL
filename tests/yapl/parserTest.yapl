@@ -1,15 +1,6 @@
-import Test;
+int name;
+bool name1;
+double name2;
+flaot name3;
 
-import Test::Namespace;
-
-//Should be possible soon:
-// import Test::Namespace::{F1, F2};
-
-export Test;
-
-export {
-    Test1,
-    Test2
-}
-
-
+notYetCreated name4;

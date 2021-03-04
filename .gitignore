@@ -4,3 +4,5 @@ tags
 Debug
 .vimspector.json
 .DS_Store
+
+fixes.yml

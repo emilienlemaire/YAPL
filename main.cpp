@@ -13,13 +13,10 @@
  * under the License.
  *******************************************************************************/
 
-#include <iostream>
 #include <CppLogger2/CppLogger2.h>
 
 #include "YAPL.h"
 #include "Parser/Parser.hpp"
-
-
 
 int main(int argc, char *argv[]) {
     CppLogger::CppLogger mainConsole(CppLogger::Level::Trace, "Main");
@@ -32,7 +29,7 @@ int main(int argc, char *argv[]) {
     mainConsole.printTrace("YAPL v.{}", VERSION);
 
     if (argc > 1) {
-        std::string filepath = argv[1];
+        std::string filepath = argv[1]; //NOLINT: We are in the main function so this is ok.
         yapl::Parser parser(filepath, CppLogger::Level::Trace);
         parser.parse();
     } else {
@@ -40,5 +37,5 @@ int main(int argc, char *argv[]) {
         parser.parse();
     }
 
-    return 0;
 }
+

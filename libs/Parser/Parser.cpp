@@ -62,11 +62,14 @@ namespace yapl {
     void Parser::parse() {
         std::vector<std::unique_ptr<ASTNode>> nodes;
         m_CurrentToken = m_Lexer.getNextToken();
+
         while (m_Lexer.peekToken().token != token::EOF_) {
             auto node = parseNext();
+
             if (!node) {
                 m_CurrentToken = m_Lexer.getNextToken();
             }
+
             nodes.push_back(std::move(node));
         }
 
@@ -104,6 +107,10 @@ namespace yapl {
             return parseIdentifier(m_CurrentToken.identifier);
         }
 
+        if (m_CurrentToken == token::EOF_) {
+            return std::make_unique<ASTEOFNode>(m_SymbolTable);
+        }
+
         return parseError<ASTNode>(
                 "File: {}:{}\n\tUnexpected token at top level scope: {}",
                 m_FilePath,
@@ -111,8 +118,15 @@ namespace yapl {
                 m_CurrentToken);
     }
 
+    /**************************************************************
+     *
+     *          Statements
+     *
+     **************************************************************/
+
     /* TODO:
      *  - Make it possible to import several values from on namespace
+     *    i.e.: import namespace1::namespace2::{value1, value2};
      * */
     std::unique_ptr<ASTImportNode> Parser::parseImport() {
         std::string currentIdentifier;
@@ -191,7 +205,7 @@ namespace yapl {
 
             return std::make_unique<ASTExportNode>(exportNode);
         }
-        
+
         if (m_CurrentToken == token::BRA_O) {
             m_CurrentToken = m_Lexer.getNextToken(); // Eat '{'
 
@@ -202,7 +216,7 @@ namespace yapl {
 
                 while (m_CurrentToken == token::COMMA) {
                     exportNode.addExportedValue(currentIdentifier);
-                    
+
                     m_CurrentToken = m_Lexer.getNextToken(); // Eat ','
 
                     if (m_CurrentToken != token::IDENT) {
@@ -259,7 +273,53 @@ namespace yapl {
     }
 
     std::unique_ptr<ASTNode> Parser::parseIdentifier(const std::string &identifier) {
-        return nullptr;
+        std::string firstIdentifier = identifier;
+        m_CurrentToken = m_Lexer.getNextToken();
+
+        if (m_CurrentToken == token::IDENT) {
+            return parseDeclaration(identifier);
+        }
+
+        return parseError<ASTNode>(
+                "File: {}:{}\n\tUnxecpted token after identifier: {}",
+                m_FilePath,
+                m_CurrentToken.pos,
+                m_CurrentToken
+            );
+    }
+
+    std::unique_ptr<ASTDeclarationNode> Parser::parseDeclaration(const std::string &type) {
+        std::unique_ptr<ASTDeclarationNode> declarationNode = std::make_unique<ASTDeclarationNode>(m_SymbolTable);
+
+        declarationNode->setType(type);
+
+        std::string identifier = m_CurrentToken.identifier;
+
+        declarationNode->setIdentifier(identifier);
+
+        // It doesn't matter now if the type value is nullptr, as we will check it
+        // during semantic analysis.
+        auto typeValue = m_SymbolTable->lookup(type);
+
+        auto variable = Value::CreateVariableValue(identifier, typeValue);
+
+        m_SymbolTable->insert(variable);
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
+
+        /* TODO:
+         *  - Initialization
+         *  - Array
+         * */
+
+        if (m_CurrentToken != token::SEMI)
+            return parseError<ASTDeclarationNode>(
+                    "File: {}:{}\n\tMissing a ';' after a variable declaration",
+                    m_FilePath,
+                    m_CurrentToken.pos
+                );
+
+        return std::move(declarationNode);
     }
 
     std::unique_ptr<ASTExprNode> Parser::parseExpr() {

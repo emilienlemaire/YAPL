@@ -24,6 +24,16 @@ func f1(int a) -> int {
     return b + s.addA(a);
 }
 
+func f2(int array[2], int loops) -> void {
+    for (int i in array) {
+        print(i);
+    }
+
+    for (int i in 0 ... loops) {
+        print(i);
+    }
+}
+
 func t(int a) -> test {
     test s1(a, 2);
     return s1;

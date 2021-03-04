@@ -4,16 +4,10 @@ func main() -> int {
         b = b + i;
     }
 
-    for(int i in 0 ..< 4) {
-        b = b + i;
-    }
+    int arr[4] = {1, 2, 3, 4};
 
-    for(int i in 0 ..- 4) {
-        b = b + i;
-    }
-
-    for(int i in 0 <.. 4) {
-        b = b + i;
+    for (int elem in array) {
+        elem = elem + 1;
     }
     return 0;
 }

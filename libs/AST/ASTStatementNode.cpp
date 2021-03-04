@@ -1,3 +1,19 @@
+/**
+ * libs/AST/ASTStatementNode.cpp
+ * Copyright (c) 2021 Emilien Lemaire <emilien.lem@icloud.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #include <algorithm>
 #include <cstddef>
 #include <memory>
@@ -15,7 +31,7 @@ namespace yapl {
         : ASTNode(scope)
     {}
 
-    /* 
+    /*
      * ASTImportNode
      *
      * */
@@ -55,7 +71,7 @@ namespace yapl {
         return m_ExportedValues;
     }
 
-    /* 
+    /*
      * ASTFunctionDefinitionNode
      *
      * */
@@ -87,7 +103,7 @@ namespace yapl {
         return m_ParamNames;
     }
 
-    /* 
+    /*
      * ASTStructDefinitionNode
      *
      * */
@@ -117,5 +133,25 @@ namespace yapl {
 
     std::vector<std::string> ASTStructDefinitionNode::getMethodNames() const {
         return m_MethodNames;
+    }
+
+    ASTDeclarationNode::ASTDeclarationNode(SharedScope scope)
+        : ASTStatementNode(scope)
+    {}
+
+    void ASTDeclarationNode::setType(const std::string &type) {
+        m_Type = std::move(type);
+    }
+
+    void ASTDeclarationNode::setIdentifier(const std::string &identifier) {
+        m_Identifier = std::move(identifier);
+    }
+
+    std::string ASTDeclarationNode::getType() const {
+        return m_Type;
+    }
+
+    std::string ASTDeclarationNode::getIdentifier() const {
+        return m_Identifier;
     }
 }

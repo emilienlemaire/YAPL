@@ -28,7 +28,7 @@ private:
     llvm::LLVMContext m_LLVMContext;
     llvm::IRBuilder<> m_Builder;
     std::unique_ptr<llvm::Module> m_Module;
-    
+
     CppLogger::CppLogger m_Logger;
 
     std::unique_ptr<YAPLContext> m_YAPLContext;
