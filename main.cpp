@@ -21,9 +21,6 @@
 #include "Lexer/TokenUtils.hpp"
 #include "IRGenerator/IRGenerator.hpp"
 
-#include "lld/Common/Driver.h"
-
-
 int main(int argc, char *argv[]) {
     CppLogger::CppLogger mainConsole(CppLogger::Level::Trace, "Main");
 

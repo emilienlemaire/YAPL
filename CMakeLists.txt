@@ -6,10 +6,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CMAKE_LINKER /usr/local/bin/ld.lld)
     set(CMAKE_RANLIB /usr/local/bin/llvm-ranlib)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld -stdlib=libc++ -D_GLIBCXX_USE_CXX11_ABI=0 -fPIC")
+else()
+    set(CMAKE_C_COMPILER clang)
+    set(CMAKE_CXX_COMPILER clang++)
+    set(CMAKE_LINKER ld.lld)
+    set(CMAKE_RANLIB llvm-ranlib)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "")   
+    execute_process(COMMAND xcrun --show-sdk-path OUTPUT_VARIABLE CMAKE_OSX_SYSROOT)
 endif()
 
 
@@ -38,7 +44,6 @@ add_subdirectory(tests)
 
 add_executable(yapl
     main.cpp)
-
 
 target_link_libraries(yapl PUBLIC cpplogger irgenerator)
 
