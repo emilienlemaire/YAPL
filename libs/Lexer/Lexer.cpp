@@ -187,7 +187,44 @@ Token Lexer::getNextToken(){
             getNextChar();
         }
 
-        m_CurrentToken = {token::NUMBER, numVal, m_Pos};
+        if (m_CurrentChar == 'd') {
+            getNextChar();
+            m_CurrentToken = {token::DOUBLE_LIT, numVal, m_Pos};
+            return m_CurrentToken;
+        }
+
+        if (m_CurrentChar == 'f') {
+            getNextChar();
+            m_CurrentToken = {token::FLOAT_LIT, numVal, m_Pos};
+            return m_CurrentToken;
+        }
+
+        if (m_CurrentChar == '.') {
+            getNextChar();
+            numVal += '.';
+
+            while (std::isdigit(m_CurrentChar)) {
+                numVal += m_CurrentChar;
+                getNextChar();
+            }
+
+            if (m_CurrentChar == 'd') {
+                getNextChar();
+                m_CurrentToken = {token::DOUBLE_LIT, numVal, m_Pos};
+                return m_CurrentToken;
+            }
+
+            if (m_CurrentChar == 'f') {
+                getNextChar();
+                m_CurrentToken = {token::FLOAT_LIT, numVal, m_Pos};
+                return m_CurrentToken;
+            }
+
+            m_CurrentToken = {token::DOUBLE_LIT, numVal, m_Pos};
+            return m_CurrentToken;
+        }
+
+        m_CurrentToken = {token::INT_LIT, numVal, m_Pos};
         return m_CurrentToken;
     }
 
@@ -345,6 +382,32 @@ Token Lexer::getNextToken(){
                 identifier += (char)m_CurrentChar;
                 return {token::NONE, identifier, m_Pos};
             }
+
+            if (std::isdigit(m_CurrentChar)) {
+                getNextChar();
+                numVal += '.';
+
+                while (std::isdigit(m_CurrentChar)) {
+                    numVal += m_CurrentChar;
+                    getNextChar();
+                }
+
+                if (m_CurrentChar == 'd') {
+                    getNextChar();
+                    m_CurrentToken = {token::DOUBLE_LIT, numVal, m_Pos};
+                    return m_CurrentToken;
+                }
+
+                if (m_CurrentChar == 'f') {
+                    getNextChar();
+                    m_CurrentToken = {token::FLOAT_LIT, numVal, m_Pos};
+                    return m_CurrentToken;
+                }
+
+                m_CurrentToken = {token::DOUBLE_LIT, numVal, m_Pos};
+                return m_CurrentToken;
+            }
+
             m_CurrentToken = {token::DOT, identifier, m_Pos};
             return m_CurrentToken;
         }

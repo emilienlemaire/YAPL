@@ -21,7 +21,7 @@
 #define STRINGIFY(tok) #tok
 
 enum class token{
-    NONE,
+    NONE = 0,
     IDENT,
 
     FOR,
@@ -37,7 +37,9 @@ enum class token{
     RETURN,
     FUNC,
 
-    NUMBER,
+    INT_LIT,
+    DOUBLE_LIT,
+    FLOAT_LIT,
 
     PAR_O,
     PAR_C,
@@ -55,6 +57,11 @@ enum class token{
     SEMI,
     COMMA,
 
+    FROM_TO,
+
+    EOF_, // avoid conflicts with existing EOF
+    EOL,
+
     ASSIGN,
     PLUS,
     MINUS,
@@ -71,12 +78,7 @@ enum class token{
 
     NOT,
     OR,
-    AND,
-
-    FROM_TO,
-
-    EOF_, // avoid conflicts with existing EOF
-    EOL
+    AND
 };
 
 inline std::string tokToString(token tok) {
@@ -109,8 +111,12 @@ inline std::string tokToString(token tok) {
             return "RETURN";
         case token::FUNC:
             return "FUNC";
-        case token::NUMBER:
-            return "NUMBER";
+        case token::INT_LIT:
+            return "INT_LIT";
+        case token::DOUBLE_LIT:
+            return "DOUBLE_LIT";
+        case token::FLOAT_LIT:
+            return "FLOAT_LIT";
         case token::PAR_O:
             return "PAR_O";
         case token::PAR_C:
