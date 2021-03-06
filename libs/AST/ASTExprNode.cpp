@@ -24,4 +24,44 @@ namespace yapl {
     ASTExprNode::ASTExprNode(SharedScope scope)
         : ASTNode(scope)
     {}
+
+    ASTNumberExpr::ASTNumberExpr(SharedScope scope)
+        : ASTExprNode(scope)
+    {}
+
+    ASTFloatNumberExpr::ASTFloatNumberExpr(SharedScope scope)
+        :ASTNumberExpr(scope)
+    {}
+
+    void ASTFloatNumberExpr::setValue(float value) {
+        m_Value = value;
+    }
+
+    float ASTFloatNumberExpr::getValue() const {
+        return m_Value;
+    }
+
+    ASTDoubleNumberExpr::ASTDoubleNumberExpr(SharedScope scope)
+        :ASTNumberExpr(scope)
+    {}
+
+    void ASTDoubleNumberExpr::setValue(double value) {
+        m_Value = value;
+    }
+
+    double ASTDoubleNumberExpr::getValue() const {
+        return m_Value;
+    }
+
+    ASTIntegerNumberExpr::ASTIntegerNumberExpr(SharedScope scope)
+        : ASTNumberExpr(scope)
+    {}
+
+    void ASTIntegerNumberExpr::setValue(int value) {
+        m_Value = value;
+    }
+
+    int ASTIntegerNumberExpr::getValue() const {
+        return m_Value;
+    }
 }

@@ -30,4 +30,42 @@ namespace yapl {
     public:
         ASTExprNode(SharedScope);
     };
+
+    class ASTNumberExpr : public ASTExprNode {
+    public:
+        ASTNumberExpr(SharedScope);
+    };
+
+    class ASTFloatNumberExpr : public ASTNumberExpr {
+    private:
+        float m_Value;
+    public:
+        ASTFloatNumberExpr(SharedScope);
+
+        void setValue(float);
+
+        [[nodiscard]] float getValue() const;
+    };
+
+    class ASTDoubleNumberExpr : public ASTNumberExpr {
+    private:
+        double m_Value;
+    public:
+        ASTDoubleNumberExpr(SharedScope);
+
+        void setValue(double);
+
+        [[nodiscard]] double getValue() const;
+    };
+
+    class ASTIntegerNumberExpr : public ASTNumberExpr {
+    private:
+        int m_Value;
+    public:
+        ASTIntegerNumberExpr(SharedScope);
+
+        void setValue(int);
+
+        [[nodiscard]] int getValue() const;
+    };
 }

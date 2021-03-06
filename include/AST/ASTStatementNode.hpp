@@ -32,7 +32,7 @@ namespace yapl
     class ASTStatementNode : public ASTNode {
     private:
     public:
-        ASTStatementNode(SharedScope);
+        explicit ASTStatementNode(SharedScope);
         virtual ~ASTStatementNode() override = default;
     };
 
@@ -41,7 +41,7 @@ namespace yapl
         std::vector<std::string> m_Namespaces;
         std::string m_ImportedValue;
     public:
-        ASTImportNode(SharedScope);
+        explicit ASTImportNode(SharedScope);
         void addNamespace(const std::string&);
         void setImportedValue(const std::string&);
 
@@ -53,7 +53,7 @@ namespace yapl
     private:
         std::vector<std::string> m_ExportedValues;
     public:
-        ASTExportNode(SharedScope);
+        explicit ASTExportNode(SharedScope);
         void addExportedValue(const std::string&);
 
         [[nodiscard]] std::vector<std::string> getExportedValues() const;
@@ -65,7 +65,7 @@ namespace yapl
         std::string m_ReturnType;
         std::vector<std::string> m_ParamNames;
     public:
-        ASTFunctionDefinitionNode(SharedScope);
+        explicit ASTFunctionDefinitionNode(SharedScope);
         void setFunctionName(const std::string&);
         void setReturnType(const std::string&);
         void addParam(const std::string &);
@@ -81,7 +81,7 @@ namespace yapl
         std::vector<std::string> m_AttributeNames;
         std::vector<std::string> m_MethodNames;
     public:
-        ASTStructDefinitionNode(SharedScope);
+        explicit ASTStructDefinitionNode(SharedScope);
 
         void setStructName(const std::string&);
         void addAttribute(const std::string&);
@@ -97,7 +97,7 @@ namespace yapl
         std::string m_Type;
         std::string m_Identifier;
     public:
-        ASTDeclarationNode(SharedScope);
+        explicit ASTDeclarationNode(SharedScope);
 
         void setType(const std::string&);
         void setIdentifier(const std::string&);
@@ -110,10 +110,10 @@ namespace yapl
     private:
         std::unique_ptr<ASTExprNode> m_Value;
     public:
-        ASTInitializationNode(SharedScope);
+        explicit ASTInitializationNode(SharedScope);
 
         void setExpression(std::unique_ptr<ASTExprNode>);
 
         [[nodiscard]] ASTExprNode *getExpr() const;
     };
-}
+} // namespace yapl
