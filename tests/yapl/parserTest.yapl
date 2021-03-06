@@ -1,6 +1,6 @@
 int name;
 bool name1;
 double name2;
-flaot name3;
+float name3;
 
 notYetCreated name4;
