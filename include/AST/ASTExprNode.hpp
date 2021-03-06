@@ -25,22 +25,110 @@
 namespace yapl {
     using SharedScope = std::shared_ptr<SymbolTable>;
 
+    // Virtual classes for the AST.
     class ASTExprNode : public ASTNode {
     private:
     public:
-        ASTExprNode(SharedScope);
+        explicit ASTExprNode(SharedScope);
+    };
+
+    class ASTAssignableExpr : public ASTExprNode {
+    public:
+        explicit ASTAssignableExpr(SharedScope);
+    };
+
+    class ASTCallableExpr : public ASTAssignableExpr {
+    public:
+        explicit ASTCallableExpr(SharedScope);
+    };
+
+    class ASTAccessibleExpr : public ASTAssignableExpr {
+        public:
+            explicit ASTAccessibleExpr(SharedScope);
     };
 
     class ASTNumberExpr : public ASTExprNode {
     public:
-        ASTNumberExpr(SharedScope);
+        explicit ASTNumberExpr(SharedScope);
+    };
+
+    // Non virtual classes
+
+    class ASTArgumentList : public ASTExprNode {
+    private:
+        std::vector<std::unique_ptr<ASTExprNode>> m_Arguments;
+
+    public:
+        explicit ASTArgumentList(SharedScope);
+
+        typedef typename std::vector<std::unique_ptr<ASTExprNode>> vectorType;
+        typedef typename vectorType::iterator iterator;
+        typedef typename vectorType::const_iterator const_iterator;
+
+        void setArguments(const vectorType&);
+        void addArgument(std::unique_ptr<ASTExprNode>);
+
+        const vectorType &getArguments() const;
+
+        inline auto begin() noexcept -> decltype(m_Arguments.begin())
+            { return m_Arguments.begin(); }
+        inline auto end() noexcept -> decltype(m_Arguments.end())
+            { return m_Arguments.end(); }
+        inline auto cbegin() noexcept -> decltype(m_Arguments.cbegin())
+            { return m_Arguments.cbegin(); }
+        inline auto cend() noexcept -> decltype(m_Arguments.cend())
+            { return m_Arguments.cend(); }
+    };
+
+    class ASTBoolLiteralExpr : public ASTExprNode {
+    private:
+        bool m_Value;
+    public:
+        ASTBoolLiteralExpr(SharedScope);
+
+        void setValue(bool);
+
+        [[nodiscard]] bool getValue() const;
+    };
+
+    class ASTBinaryExpr : public ASTExprNode {
+    private:
+        std::unique_ptr<ASTExprNode> m_LHS;
+        std::unique_ptr<ASTExprNode> m_RHS;
+
+        char m_Operator;
+    public:
+        explicit ASTBinaryExpr(SharedScope);
+
+        void setLHS(std::unique_ptr<ASTExprNode>);
+        void setRHS(std::unique_ptr<ASTExprNode>);
+        void setOperator(char);
+
+        [[nodiscard]] const ASTExprNode *getLHS() const;
+        [[nodiscard]] const ASTExprNode *getRHS() const;
+        [[nodiscard]] char getOperator() const;
+    };
+
+    class ASTRangeExpr : public ASTExprNode {
+    private:
+        std::unique_ptr<ASTExprNode> m_Start;
+        std::unique_ptr<ASTExprNode> m_End;
+
+    public:
+        explicit ASTRangeExpr(SharedScope);
+
+        void setStart(std::unique_ptr<ASTExprNode>);
+        void setEnd(std::unique_ptr<ASTExprNode>);
+
+        [[nodiscard]] const ASTExprNode *getStart() const;
+        [[nodiscard]] const ASTExprNode *getEnd() const;
     };
 
     class ASTFloatNumberExpr : public ASTNumberExpr {
     private:
         float m_Value;
     public:
-        ASTFloatNumberExpr(SharedScope);
+        explicit ASTFloatNumberExpr(SharedScope);
 
         void setValue(float);
 
@@ -51,7 +139,7 @@ namespace yapl {
     private:
         double m_Value;
     public:
-        ASTDoubleNumberExpr(SharedScope);
+        explicit ASTDoubleNumberExpr(SharedScope);
 
         void setValue(double);
 
@@ -62,10 +150,63 @@ namespace yapl {
     private:
         int m_Value;
     public:
-        ASTIntegerNumberExpr(SharedScope);
+        explicit ASTIntegerNumberExpr(SharedScope);
 
         void setValue(int);
 
         [[nodiscard]] int getValue() const;
+    };
+
+    class ASTIdentifierExpr : public ASTCallableExpr {
+    private:
+        std::string m_Identifier;
+    public:
+        explicit ASTIdentifierExpr(SharedScope);
+
+        void setIdentifier(const std::string &);
+
+        [[nodiscard]] std::string getIdentifier() const;
+    };
+
+    class ASTAttributeAccessExpr : public ASTCallableExpr {
+    private:
+        std::unique_ptr<ASTAccessibleExpr> m_Struct;
+        std::unique_ptr<ASTIdentifierExpr> m_Attribute;
+    public:
+        explicit ASTAttributeAccessExpr(SharedScope);
+
+        void setStruct(std::unique_ptr<ASTAccessibleExpr>);
+        void setAttribute(std::unique_ptr<ASTIdentifierExpr>);
+
+        [[nodiscard]] const ASTAccessibleExpr *getStruct() const;
+        [[nodiscard]] const ASTIdentifierExpr *getAttribute() const;
+    };
+
+    class ASTArrayAccessExpr : public ASTAssignableExpr {
+    private:
+        std::unique_ptr<ASTAccessibleExpr> m_Array;
+        std::unique_ptr<ASTExprNode> m_Index;
+    public:
+        explicit ASTArrayAccessExpr(SharedScope);
+
+        void setArray(std::unique_ptr<ASTAccessibleExpr>);
+        void setIndex(std::unique_ptr<ASTExprNode>);
+
+        [[nodiscard]] const ASTAccessibleExpr* getArray() const;
+        [[nodiscard]] const ASTExprNode* getIndex() const;
+    };
+
+    class ASTFunctionCallExpr : public ASTAccessibleExpr {
+    private:
+        std::unique_ptr<ASTCallableExpr> m_Function;
+        std::unique_ptr<ASTArgumentList> m_Arguments;
+    public:
+        explicit ASTFunctionCallExpr(SharedScope);
+
+        void setFunction(std::unique_ptr<ASTCallableExpr>);
+        void setArguments(std::unique_ptr<ASTArgumentList>);
+
+        [[nodiscard]] const ASTCallableExpr *getFunction() const;
+        [[nodiscard]] const ASTArgumentList *getArguments() const;
     };
 }
