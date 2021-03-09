@@ -16,6 +16,7 @@
  */
 #include <cstddef>
 #include <memory>
+#include <queue>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -72,6 +73,8 @@ namespace yapl {
                 return 14;
             case Operator::OR:
                 return 15;
+            case Operator::NONE:
+                return -1;
         }
     }
 
@@ -177,7 +180,7 @@ namespace yapl {
             m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
         }
 
-        importNode->setImportedValue(currentIdentifier);
+        importNode->addImportedValue(currentIdentifier);
 
         if (m_CurrentToken != token::SEMI) {
             return parseError<ASTImportNode>(
@@ -379,7 +382,12 @@ namespace yapl {
                 );
         }
 
-        return expr;
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat ')'
+
+        auto parExpr = std::make_unique<ASTParExpr>(m_SymbolTable);
+        parExpr -> setExpr(std::move(expr));
+
+        return parExpr;
     }
 
     std::unique_ptr<ASTNumberExpr> Parser::parseNumberExpr() {
@@ -415,4 +423,158 @@ namespace yapl {
 
         return parseError<ASTNumberExpr>("Something went very wrong, this shouldn't happen");
     }
+
+    // We want to parse a lot here: for example aStruct.aStructAttibute.aMethod() should return
+    // a ASTFunctionCallExpr.
+    std::unique_ptr<ASTAssignableExpr> Parser::parseIdentifierExpr() {
+        std::unique_ptr<ASTAssignableExpr> assignableExpr;
+        auto identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
+        identifierExpr->setIdentifier(m_CurrentToken.identifier);
+        assignableExpr = std::move(identifierExpr);
+
+        while (m_CurrentToken == token::PAR_O
+                || m_CurrentToken == token::DOT
+                || m_CurrentToken == token::ACC_O) {
+            switch(m_CurrentToken.token) {
+                case token::PAR_O: {
+                    auto functionCallExpr = std::make_unique<ASTFunctionCallExpr>(m_SymbolTable);
+                    auto argumentList = parseArgumentList(); // Should eat ')'
+                    if (auto callable = dynamic_cast<ASTCallableExpr*>(assignableExpr.release())) {
+                        auto uniqueCallable = std::make_unique<ASTCallableExpr>(m_SymbolTable);
+                        uniqueCallable.reset(callable);
+                        functionCallExpr->setFunction(std::move(uniqueCallable));
+                        functionCallExpr->setArguments(std::move(argumentList));
+
+                        assignableExpr = std::move(functionCallExpr);
+                        break;
+                    }
+                    // TODO: more verbose.
+                    return parseError<ASTAssignableExpr>("Trying to call a non callable expressions");
+                }
+                case token::DOT: {
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat '.'
+                    if (m_CurrentToken == token::IDENT) {
+                        auto attributeAccessExpr = std::make_unique<ASTAttributeAccessExpr>(m_SymbolTable);
+                        identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
+                        identifierExpr->setIdentifier(m_CurrentToken.identifier);
+
+                        m_CurrentToken = m_Lexer.getNextToken(); // Eat IDENT
+                        if (auto accessible = dynamic_cast<ASTAccessibleExpr*>(assignableExpr.release())){
+                            auto uniqueAccessible = std::make_unique<ASTAccessibleExpr>(m_SymbolTable);
+                            uniqueAccessible.reset(accessible);
+                            attributeAccessExpr->setStruct(std::move(uniqueAccessible));
+                            attributeAccessExpr->setAttribute(std::move(identifierExpr));
+
+                            assignableExpr = std::move(attributeAccessExpr);
+                            break;
+                        }
+                        return parseError<ASTAssignableExpr>("Trying to access an attribute from a non "
+                            "accessible expression");
+                    }
+                    // TODO: more verbose
+                    return parseError<ASTAssignableExpr>("Expecting an identifier after '.'");
+                }
+                case token::ACC_O: {
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
+                    auto indexExpr = parseExpr(); // Current char should be ']'
+                    auto arrayAccessExpr = std::make_unique<ASTArrayAccessExpr>(m_SymbolTable);
+                    if (auto accessible = dynamic_cast<ASTAccessibleExpr*>(assignableExpr.release())){
+                        auto uniqueAccessible = std::make_unique<ASTAccessibleExpr>(m_SymbolTable);
+                        uniqueAccessible.reset(accessible);
+                        arrayAccessExpr->setArray(std::move(uniqueAccessible));
+                        arrayAccessExpr->setIndex(std::move(indexExpr));
+
+                        assignableExpr = std::move(arrayAccessExpr);
+                        break;
+                    }
+
+                    return parseError<ASTAssignableExpr>("Trying to access an array index from a non accessible"
+                            "expression");
+                }
+                default:
+                    return parseError<ASTAssignableExpr>("This should never happen at {}: {}",
+                            __FILE__,
+                            __func__);
+            }
+        }
+
+        return assignableExpr;
+    }
+
+    std::unique_ptr<ASTUnaryExpr> Parser::parseUnaryExpr() {
+        token savedToken = m_CurrentToken.token;
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat the unary operator
+
+        auto expr = parseExpr();
+
+        switch (savedToken) {
+            case token::NOT: {
+                auto notExpr = std::make_unique<ASTNotExpr>(m_SymbolTable);
+                notExpr->setValue(std::move(expr));
+                return notExpr;
+            }
+            case token::MINUS:{
+              auto negExpr = std::make_unique<ASTNegExpr>(m_SymbolTable);
+              negExpr->setValue(std::move(expr));
+              return negExpr;
+            }
+            default:
+                return parseError<ASTUnaryExpr>("This should never happen at {}: {}",
+                        __FILE__,
+                        __func__);
+        }
+    }
+
+    std::unique_ptr<ASTBinaryExpr> Parser::parseBinaryExpr(std::unique_ptr<ASTExprNode> lhs) {
+        auto binaryExpr = std::make_unique<ASTBinaryExpr>(m_SymbolTable);
+        auto op = ASTNode::TokenToOperator(m_CurrentToken.token);
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat operator
+        auto rhs = parseExpr();
+
+        binaryExpr->setLHS(std::move(lhs));
+        binaryExpr->setRHS(std::move(rhs));
+        binaryExpr->setOperator(op);
+
+        if (auto binaryRHS = dynamic_cast<ASTBinaryExpr*>(rhs.release())) {
+            if (getOpPrecedence(binaryRHS->getOperator()) > getOpPrecedence(op)) {
+                auto newLHS = std::make_unique<ASTBinaryExpr>(m_SymbolTable);
+                newLHS->setLHS(std::move(binaryExpr->getLHSPtr()));
+                newLHS->setRHS(std::move(binaryRHS->getLHSPtr()));
+                newLHS->setOperator(op);
+
+                binaryExpr->setRHS(std::move(newLHS));
+                binaryExpr->setOperator(binaryRHS->getOperator());
+                binaryExpr->setRHS(std::move(binaryRHS->getRHSPtr()));
+            }
+        }
+
+        return binaryExpr;
+    }
+
+    std::unique_ptr<ASTArgumentList> Parser::parseArgumentList() {
+        auto argumentList = std::make_unique<ASTArgumentList>(m_SymbolTable);
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat ')'
+
+        while (m_CurrentToken != token::PAR_C) {
+            auto arg = parseExpr();
+
+            argumentList->addArgument(std::move(arg));
+
+            if (m_CurrentToken != token::PAR_C &&
+                    m_CurrentToken != token::COMMA)
+                return parseError<ASTArgumentList>("Expecting a ',' or a ')' in an argument list.");
+
+            if (m_CurrentToken == token::COMMA) {
+                m_CurrentToken = m_Lexer.getNextToken();
+            }
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken();
+
+        return argumentList;
+    }
+
 } // namespace yapl

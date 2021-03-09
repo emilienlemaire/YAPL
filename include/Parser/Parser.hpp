@@ -1,12 +1,29 @@
+/**
+ * include/Parser/Parser.hpp
+ * Copyright (c) 2021 Emilien Lemaire <emilien.lem@icloud.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #pragma once
 
 #include <CppLogger2/CppLogger2.h>
 #include <array>
 #include <cstddef>
 #include <memory>
+#include <stack>
 #include <string>
 #include <type_traits>
-#include <unordered_set>
+#include <queue>
 
 #include "AST/ASTExprNode.hpp"
 #include "AST/ASTNode.hpp"
@@ -62,10 +79,12 @@ namespace yapl {
         std::unique_ptr<ASTExprNode> parseExpr();
         std::unique_ptr<ASTExprNode> parseParenExpr();
         std::unique_ptr<ASTNumberExpr> parseNumberExpr();
-        std::unique_ptr<ASTFloatingNumberExpr> parseFloatingNumberExpr(const std::string&);
+        std::unique_ptr<ASTFloatNumberExpr> parseFloatingNumberExpr(const std::string&);
         std::unique_ptr<ASTIntegerNumberExpr> parseIntegerNumberExpr();
-        std::unique_ptr<ASTExprNode> parseIdentifierExpr();
-        std::unique_ptr<ASTExprNode> parseUnaryExpr();
-        std::unique_ptr<ASTExprNode> parseBinaryExpr(std::unique_ptr<ASTExprNode>);
+        std::unique_ptr<ASTAssignableExpr> parseIdentifierExpr();
+        std::unique_ptr<ASTUnaryExpr> parseUnaryExpr();
+        std::unique_ptr<ASTBinaryExpr> parseBinaryExpr(std::unique_ptr<ASTExprNode>);
+
+        std::unique_ptr<ASTArgumentList> parseArgumentList();
     };
 } // namespace yapl
