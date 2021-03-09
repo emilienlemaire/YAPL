@@ -21,11 +21,13 @@
 #include <vector>
 #include <string>
 
+#include "Lexer/TokenUtils.hpp"
 #include "Symbol/SymbolTable.hpp"
 
 namespace yapl {
 
     enum class Operator {
+        NONE = 0,
         TIMES,
         BY,
         MOD,
@@ -49,6 +51,39 @@ namespace yapl {
         virtual ~ASTNode() = default;
 
         [[nodiscard]] std::shared_ptr<SymbolTable> getScope() const;
+
+        inline static Operator TokenToOperator(token tok) {
+            switch(tok) {
+                case token::TIMES:
+                    return Operator::TIMES;
+                case token::BY:
+                    return Operator::BY;
+                case token::MOD:
+                    return Operator::MOD;
+                case token::PLUS:
+                    return Operator::PLUS;
+                case token::MINUS:
+                    return Operator::MINUS;
+                case token::LTH:
+                    return Operator::LTH;
+                case token::MTH:
+                    return Operator::MTH;
+                case token::LEQ:
+                    return Operator::LEQ;
+                case token::MEQ:
+                    return Operator::MEQ;
+                case token::EQ:
+                    return Operator::EQ;
+                case token::NEQ:
+                    return Operator::NEQ;
+                case token::AND:
+                    return Operator::AND;
+                case token::OR:
+                    return Operator::OR;
+                default:
+                    return Operator::NONE;
+            }
+        }
     };
 
     class ASTEOFNode : public ASTNode {

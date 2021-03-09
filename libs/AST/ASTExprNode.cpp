@@ -27,6 +27,10 @@ namespace yapl {
         : ASTNode(scope)
     {}
 
+    ASTUnaryExpr::ASTUnaryExpr(SharedScope scope)
+        : ASTExprNode(scope)
+    {}
+
     ASTAssignableExpr::ASTAssignableExpr(SharedScope scope)
         : ASTExprNode(scope)
     {}
@@ -44,16 +48,48 @@ namespace yapl {
     {}
 
     // Non virtual classes
+    ASTNegExpr::ASTNegExpr(SharedScope scope)
+        : ASTUnaryExpr(scope)
+    {}
+
+    void ASTNegExpr::setValue(std::unique_ptr<ASTExprNode> value) {
+        m_Value = std::move(value);
+    }
+
+    const ASTExprNode *ASTNegExpr::getValue() const {
+        return m_Value.get();
+    }
+
+    ASTNotExpr::ASTNotExpr(SharedScope scope)
+        : ASTUnaryExpr(scope)
+    {}
+
+    void ASTNotExpr::setValue(std::unique_ptr<ASTExprNode> value) {
+        m_Value = std::move(value);
+    }
+
+    const ASTExprNode *ASTNotExpr::getValue() const {
+        return m_Value.get();
+    }
+
+    ASTParExpr::ASTParExpr(SharedScope scope)
+        : ASTExprNode(scope)
+    {}
+
+    void ASTParExpr::setExpr(std::unique_ptr<ASTExprNode> value) {
+        m_Expr = std::move(value);
+    }
+
+    const ASTExprNode *ASTParExpr::getExpr() const {
+        return m_Expr.get();
+    }
+
     ASTArgumentList::ASTArgumentList(SharedScope scope)
         : ASTExprNode(scope)
     {}
 
-    void ASTArgumentList::setArguments(const ASTArgumentList::vectorType &arguments) {
-        m_Arguments = std::move(arguments);
-    }
-
     void ASTArgumentList::addArgument(std::unique_ptr<ASTExprNode> argument) {
-        m_Arguments.emplace_back(std::move(argument));
+        m_Arguments.push_back(std::move(argument));
     }
 
     const ASTArgumentList::vectorType &ASTArgumentList::getArguments() const {
@@ -75,6 +111,36 @@ namespace yapl {
     ASTBinaryExpr::ASTBinaryExpr(SharedScope scope)
         : ASTExprNode(scope)
     {}
+
+    void ASTBinaryExpr::setLHS(std::unique_ptr<ASTExprNode> lhs) {
+        m_LHS = std::move(lhs);
+    }
+
+    void ASTBinaryExpr::setRHS(std::unique_ptr<ASTExprNode> lhs) {
+        m_RHS = std::move(lhs);
+    }
+
+    void ASTBinaryExpr::setOperator(Operator op) {
+        m_Operator = std::move(op);
+    }
+
+    const ASTExprNode* ASTBinaryExpr::getLHS() const {
+        return m_LHS.get();
+    }
+
+
+    const ASTExprNode* ASTBinaryExpr::getRHS() const {
+        return m_RHS.get();
+    }
+
+    Operator ASTBinaryExpr::getOperator() const {
+        return m_Operator;
+    }
+
+    ASTRangeExpr::ASTRangeExpr(SharedScope scope)
+        : ASTExprNode(scope)
+    {}
+
 
     void ASTRangeExpr::setStart(std::unique_ptr<ASTExprNode> start) {
         m_Start = std::move(start);

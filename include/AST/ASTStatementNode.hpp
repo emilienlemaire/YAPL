@@ -44,7 +44,7 @@ namespace yapl
 
         void addStatement(std::unique_ptr<ASTStatementNode>);
 
-        [[nodiscard]] inline auto getStatements() const -> decltype(m_Statements) {
+        [[nodiscard]] inline auto getStatements() const -> const decltype(m_Statements)& {
             return m_Statements;
         }
 
@@ -152,7 +152,7 @@ namespace yapl
 
         [[nodiscard]] std::string getFunctionName() const;
         [[nodiscard]] std::string getReturnType() const;
-        [[nodiscard]] auto getParameters() const -> decltype(m_Parameters);
+        [[nodiscard]] const std::vector<std::unique_ptr<ASTDeclarationNode>> &getParameters() const;
         [[nodiscard]] const ASTBlockNode *getBody() const;
     };
 
@@ -169,8 +169,8 @@ namespace yapl
         void addMethod(std::unique_ptr<ASTFunctionDefinitionNode>);
 
         [[nodiscard]] std::string getStructName() const;
-        [[nodiscard]] auto getAttributes() const -> decltype(m_Attributes);
-        [[nodiscard]] auto getMethods() const -> decltype(m_Methods);
+        [[nodiscard]] auto getAttributes() const -> const decltype(m_Attributes)&;
+        [[nodiscard]] auto getMethods() const -> const decltype(m_Methods)&;
     };
 
     class ASTImportNode : public ASTStatementNode {

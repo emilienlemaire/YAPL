@@ -32,6 +32,12 @@ namespace yapl {
         explicit ASTExprNode(SharedScope);
     };
 
+    class ASTUnaryExpr : public ASTExprNode {
+    private:
+    public:
+        explicit ASTUnaryExpr(SharedScope);
+    };
+
     class ASTAssignableExpr : public ASTExprNode {
     public:
         explicit ASTAssignableExpr(SharedScope);
@@ -54,6 +60,39 @@ namespace yapl {
 
     // Non virtual classes
 
+    class ASTNegExpr : public ASTUnaryExpr {
+    private:
+        std::unique_ptr<ASTExprNode> m_Value;
+    public:
+        explicit ASTNegExpr(SharedScope);
+
+        void setValue(std::unique_ptr<ASTExprNode>);
+
+        [[nodiscard]] const ASTExprNode *getValue() const;
+    };
+
+    class ASTNotExpr : public ASTUnaryExpr {
+    private:
+        std::unique_ptr<ASTExprNode> m_Value;
+    public:
+        explicit ASTNotExpr(SharedScope);
+
+        void setValue(std::unique_ptr<ASTExprNode>);
+
+        [[nodiscard]] const ASTExprNode *getValue() const;
+    };
+
+    class ASTParExpr : public ASTExprNode {
+    private:
+        std::unique_ptr<ASTExprNode> m_Expr;
+    public:
+        explicit ASTParExpr(SharedScope);
+
+        void setExpr(std::unique_ptr<ASTExprNode>);
+
+        [[nodiscard]] const ASTExprNode *getExpr() const;
+    };
+
     class ASTArgumentList : public ASTExprNode {
     private:
         std::vector<std::unique_ptr<ASTExprNode>> m_Arguments;
@@ -65,7 +104,6 @@ namespace yapl {
         typedef typename vectorType::iterator iterator;
         typedef typename vectorType::const_iterator const_iterator;
 
-        void setArguments(const vectorType&);
         void addArgument(std::unique_ptr<ASTExprNode>);
 
         const vectorType &getArguments() const;
@@ -96,17 +134,25 @@ namespace yapl {
         std::unique_ptr<ASTExprNode> m_LHS;
         std::unique_ptr<ASTExprNode> m_RHS;
 
-        char m_Operator;
+        Operator m_Operator;
     public:
         explicit ASTBinaryExpr(SharedScope);
 
         void setLHS(std::unique_ptr<ASTExprNode>);
         void setRHS(std::unique_ptr<ASTExprNode>);
-        void setOperator(char);
+        void setOperator(Operator);
 
         [[nodiscard]] const ASTExprNode *getLHS() const;
         [[nodiscard]] const ASTExprNode *getRHS() const;
-        [[nodiscard]] char getOperator() const;
+        [[nodiscard]] Operator getOperator() const;
+
+        [[nodiscard]] inline auto getLHSPtr() -> decltype(m_LHS) {
+            return std::move(m_LHS);
+        }
+
+        [[nodiscard]] inline auto getRHSPtr() -> decltype(m_RHS) {
+            return std::move(m_RHS);
+        }
     };
 
     class ASTRangeExpr : public ASTExprNode {
@@ -205,6 +251,10 @@ namespace yapl {
 
         void setFunction(std::unique_ptr<ASTCallableExpr>);
         void setArguments(std::unique_ptr<ASTArgumentList>);
+
+        void setFunction(ASTCallableExpr *callable) {
+            m_Function.reset(callable);
+        }
 
         [[nodiscard]] const ASTCallableExpr *getFunction() const;
         [[nodiscard]] const ASTArgumentList *getArguments() const;

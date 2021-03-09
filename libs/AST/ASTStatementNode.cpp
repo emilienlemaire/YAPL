@@ -34,7 +34,7 @@ namespace yapl {
     {}
 
     void ASTBlockNode::addStatement(std::unique_ptr<ASTStatementNode> statement) {
-        m_Statements.push_back(statement);
+        m_Statements.push_back(std::move(statement));
     }
 
     ASTExprStatementNode::ASTExprStatementNode(SharedScope scope)
@@ -145,7 +145,7 @@ namespace yapl {
         return m_ReturnType;
     }
 
-    auto ASTFunctionDefinitionNode::getParameters() const -> decltype(m_Parameters) {
+    const std::vector<std::unique_ptr<ASTDeclarationNode>> &ASTFunctionDefinitionNode::getParameters() const {
         return m_Parameters;
     }
 
@@ -169,11 +169,11 @@ namespace yapl {
         return m_StructName;
     }
 
-    auto ASTStructDefinitionNode::getAttributes() const -> decltype(m_Attributes) {
+    auto ASTStructDefinitionNode::getAttributes() const -> const decltype(m_Attributes)& {
         return m_Attributes;
     }
 
-    auto ASTStructDefinitionNode::getMethods() const -> decltype(m_Methods) {
+    auto ASTStructDefinitionNode::getMethods() const -> const decltype(m_Methods)& {
         return m_Methods;
     }
 
