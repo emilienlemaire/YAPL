@@ -38,19 +38,19 @@ namespace yapl {
         explicit ASTUnaryExpr(SharedScope);
     };
 
-    class ASTAssignableExpr : public ASTExprNode {
-    public:
-        explicit ASTAssignableExpr(SharedScope);
-    };
-
-    class ASTCallableExpr : public ASTAssignableExpr {
+    class ASTCallableExpr : public ASTExprNode {
     public:
         explicit ASTCallableExpr(SharedScope);
     };
 
-    class ASTAccessibleExpr : public ASTAssignableExpr {
+    class ASTAccessibleExpr : public ASTCallableExpr {
+    public:
+        explicit ASTAccessibleExpr(SharedScope);
+    };
+
+    class ASTAssignableExpr : public ASTAccessibleExpr {
         public:
-            explicit ASTAccessibleExpr(SharedScope);
+            explicit ASTAssignableExpr(SharedScope);
     };
 
     class ASTNumberExpr : public ASTExprNode {
@@ -203,7 +203,7 @@ namespace yapl {
         [[nodiscard]] int getValue() const;
     };
 
-    class ASTIdentifierExpr : public ASTCallableExpr {
+    class ASTIdentifierExpr : public ASTAccessibleExpr {
     private:
         std::string m_Identifier;
     public:
@@ -214,7 +214,7 @@ namespace yapl {
         [[nodiscard]] std::string getIdentifier() const;
     };
 
-    class ASTAttributeAccessExpr : public ASTCallableExpr {
+    class ASTAttributeAccessExpr : public ASTAccessibleExpr {
     private:
         std::unique_ptr<ASTAccessibleExpr> m_Struct;
         std::unique_ptr<ASTIdentifierExpr> m_Attribute;

@@ -31,16 +31,16 @@ namespace yapl {
         : ASTExprNode(scope)
     {}
 
-    ASTAssignableExpr::ASTAssignableExpr(SharedScope scope)
+    ASTCallableExpr::ASTCallableExpr(SharedScope scope)
         : ASTExprNode(scope)
     {}
 
-    ASTCallableExpr::ASTCallableExpr(SharedScope scope)
-        : ASTAssignableExpr(scope)
+    ASTAssignableExpr::ASTAssignableExpr(SharedScope scope)
+        : ASTAccessibleExpr(scope)
     {}
 
     ASTAccessibleExpr::ASTAccessibleExpr(SharedScope scope)
-        : ASTAssignableExpr(scope)
+        : ASTCallableExpr(scope)
     {}
 
     ASTNumberExpr::ASTNumberExpr(SharedScope scope)
@@ -195,7 +195,7 @@ namespace yapl {
     }
 
     ASTIdentifierExpr::ASTIdentifierExpr(SharedScope scope)
-        : ASTCallableExpr(scope)
+        : ASTAccessibleExpr(scope)
     {}
 
     void ASTIdentifierExpr::setIdentifier(const std::string &identifier) {
@@ -207,7 +207,7 @@ namespace yapl {
     }
 
     ASTAttributeAccessExpr::ASTAttributeAccessExpr(SharedScope scope)
-        : ASTCallableExpr(scope)
+        : ASTAccessibleExpr(scope)
     {}
 
     void ASTAttributeAccessExpr::setStruct(std::unique_ptr<ASTAccessibleExpr> t_Struct) {
