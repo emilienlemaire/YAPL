@@ -138,10 +138,6 @@ namespace yapl {
                 m_CurrentToken);
     }
 
-    /* TODO:
-     *  - Make it possible to import several values from on namespace
-     *    i.e.: import namespace1::namespace2::{value1, value2};
-     * */
     std::unique_ptr<ASTImportNode> Parser::parseImport() {
         std::string currentIdentifier;
 
@@ -166,21 +162,73 @@ namespace yapl {
             importNode->addNamespace(currentIdentifier);
             m_CurrentToken = m_Lexer.getNextToken(); // Eat ::
 
-            if (m_CurrentToken != token::IDENT) {
+            if (m_CurrentToken != token::IDENT && m_CurrentToken != token::BRA_O) {
                 return parseError<ASTImportNode>(
-                        "File: {}:{}\n\tExpecting an identifier after '::' instead of {}",
+                        "File: {}:{}\n\tExpecting an identifier or '{' after '::' instead of {}",
                         m_FilePath,
                         m_CurrentToken.pos,
                         m_CurrentToken
                     );
             }
 
+            if (m_CurrentToken == token::BRA_O) // Cas namespace::{value, value1};
+                break;
+
             currentIdentifier = m_CurrentToken.identifier;
 
             m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
         }
 
-        importNode->addImportedValue(currentIdentifier);
+        if (m_CurrentToken == token::SEMI) { // Cas import namespace::value;
+            importNode->addImportedValue(currentIdentifier);
+        }
+
+        if (m_CurrentToken == token::BRA_O) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '{'
+
+            if (m_CurrentToken != token::IDENT)
+            {
+                return parseError<ASTImportNode>(
+                        "File {}:{}\n\tExpecting an identifier after '{' in import statement instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            while (m_CurrentToken == token::IDENT) {
+                importNode->addImportedValue(m_CurrentToken.identifier);
+                m_CurrentToken = m_Lexer.getNextToken();
+
+                if (m_CurrentToken != token::COMMA && m_CurrentToken != token::BRA_C) {
+                    return parseError<ASTImportNode>(
+                            "File: {}:{}\n\tExpecting an identifier or '{' after '::' instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
+                }
+
+                if (m_CurrentToken == token::BRA_C) {
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat '}'
+                    break;
+                }
+
+                if (m_CurrentToken == token::COMMA) {
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat ','
+
+                    if (m_CurrentToken != token::IDENT) {
+                        return parseError<ASTImportNode>(
+                                "File: {}:{}\n\tExpecting an identifier after ',' "
+                                "in import statement instead of {}",
+                                m_FilePath,
+                                m_CurrentToken.pos,
+                                m_CurrentToken
+                            );
+                    }
+                }
+            }
+        }
 
         if (m_CurrentToken != token::SEMI) {
             return parseError<ASTImportNode>(
@@ -291,7 +339,7 @@ namespace yapl {
         m_CurrentToken = m_Lexer.getNextToken();
 
         if (m_CurrentToken == token::IDENT) {
-            return parseDeclaration(identifier);
+            return parseDeclaration(firstIdentifier);
         }
 
         return parseError<ASTNode>(
@@ -311,6 +359,14 @@ namespace yapl {
 
         declarationNode->setIdentifier(identifier);
 
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
+
+        if (m_CurrentToken == token::ACC_O) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
+
+            return parseArrayDeclaration(std::move(declarationNode));
+        }
+
         // It doesn't matter now if the type value is nullptr, as we will check it
         // during semantic analysis.
         auto typeValue = m_SymbolTable->lookup(type);
@@ -319,12 +375,11 @@ namespace yapl {
 
         m_SymbolTable->insert(variable);
 
-        m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
+        if (m_CurrentToken == token::ASSIGN) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '='
 
-        /* TODO:
-         *  - Initialization
-         *  - Array
-         * */
+            return parseInitialization(std::move(declarationNode));
+        }
 
         if (m_CurrentToken != token::SEMI){
             return parseError<ASTDeclarationNode>(
@@ -337,8 +392,130 @@ namespace yapl {
         return std::move(declarationNode);
     }
 
+    std::unique_ptr<ASTInitializationNode> Parser::parseInitialization(
+            std::unique_ptr<ASTDeclarationNode> declaration
+        ) {
+        auto type = declaration->getType();
+        auto identifier = declaration->getIdentifier();
+
+        auto initialization = std::make_unique<ASTInitializationNode>(m_SymbolTable);
+
+        if (auto expr = parseExpr()) {
+            initialization->setValue(std::move(expr));
+
+            if (m_CurrentToken != token::SEMI) {
+                return parseError<ASTInitializationNode>(
+                        "File {}:{}\n\tExpecting a ';' after initialization instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            m_CurrentToken = m_Lexer.getNextToken();
+
+            return initialization;
+        }
+
+        return parseError<ASTInitializationNode>(
+                "File {}:{}\n\tExpecting an expression after '=' instead of {}",
+                m_FilePath,
+                m_CurrentToken.pos,
+                m_CurrentToken
+            );
+    }
+
+    std::unique_ptr<ASTArrayDeclarationNode> Parser::parseArrayDeclaration(
+            std::unique_ptr<ASTDeclarationNode> declaration
+            ) {
+        if (m_CurrentToken != token::INT_LIT) {
+            return parseError<ASTArrayDeclarationNode>(
+                    "File {}:{}\n\tExpecting an integer literal afater '[' instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        auto arrayDeclaration = std::make_unique<ASTArrayDeclarationNode>(m_SymbolTable);
+
+        auto typeName = declaration->getType();
+
+        int size = std::stoi(m_CurrentToken.identifier);
+
+        auto typeValue = m_SymbolTable->lookup(typeName);
+
+        if (!typeValue) {
+            return parseError<ASTArrayDeclarationNode>(
+                    "File: {}:{}\n\tTrying to declare an array of unknown type: {}",
+                    m_FilePath,
+                    m_CurrentToken,
+                    typeName
+                    );
+        }
+
+        auto type = typeValue->getType();
+
+        if (auto arrDecl = dynamic_cast<ASTArrayDeclarationNode*>(declaration.get())) {
+            typeName = Type::MangleArrayType(type, arrDecl->getSize());
+            typeValue = m_SymbolTable->lookup(typeName);
+            type = typeValue->getType();
+        }
+
+
+        auto mangledType = Type::MangleArrayType(type, size);
+
+        if (!m_SymbolTable->lookup(mangledType)) {
+            auto newType = Type::CreateArrayType(size, type);
+            auto newTypeValue = Value::CreateTypeValue(mangledType, newType);
+
+            m_SymbolTable->insert(newTypeValue);
+        }
+
+        arrayDeclaration->setType(typeName);
+        arrayDeclaration->setIdentifier(declaration->getIdentifier());
+        arrayDeclaration->setSize(size);
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat int literal
+
+        if (m_CurrentToken != token::ACC_C) {
+            return parseError<ASTArrayDeclarationNode>(
+                    "File: {}:{}\n\tExpecting a ']' after array declaration instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken();
+
+        if (m_CurrentToken != token::SEMI &&
+                m_CurrentToken != token::ACC_O &&
+                m_CurrentToken != token::ASSIGN) {
+            return parseError<ASTArrayDeclarationNode>(
+                    "File: {}:{}\n\tExpecting a ';' after array declaration instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        if (m_CurrentToken == token::ACC_O) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
+
+            return parseArrayDeclaration(std::move(arrayDeclaration));
+        }
+
+        /* TODO:
+         *   - Handle declaration
+         */
+
+        return arrayDeclaration;
+    }
+
     std::unique_ptr<ASTExprNode> Parser::parseExpr() {
-        // Expressions can start with a parenthesis, a dot, a number, an identifier or an unary operator
+        // Expressions can start with a parenthesis, a dot, a number, a bool lit, an identifier or
+        // an unary operator.
         // We first parse an expression and then if the next token is a binary operator we parse it
         // as such.
 
@@ -361,6 +538,17 @@ namespace yapl {
         if (m_CurrentToken == token::NOT ||
                 m_CurrentToken == token::MINUS) {
             exprTmp = parseUnaryExpr();
+        }
+
+        if (m_CurrentToken == token::TRUE ||
+                m_CurrentToken == token::FALSE) {
+            auto boolLit = std::make_unique<ASTBoolLiteralExpr>(m_SymbolTable);
+
+            boolLit->setValue(m_CurrentToken == token::TRUE);
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat bool lit
+
+            return boolLit;
         }
 
         // All tokens higher than assign are binray operators.
@@ -426,12 +614,13 @@ namespace yapl {
 
     // We want to parse a lot here: for example aStruct.aStructAttibute.aMethod() should return
     // a ASTFunctionCallExpr.
-    std::unique_ptr<ASTAssignableExpr> Parser::parseIdentifierExpr() {
-        std::unique_ptr<ASTAssignableExpr> assignableExpr;
+    std::unique_ptr<ASTCallableExpr> Parser::parseIdentifierExpr() {
+        std::unique_ptr<ASTCallableExpr> assignableExpr;
         auto identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
         identifierExpr->setIdentifier(m_CurrentToken.identifier);
         assignableExpr = std::move(identifierExpr);
 
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
         while (m_CurrentToken == token::PAR_O
                 || m_CurrentToken == token::DOT
                 || m_CurrentToken == token::ACC_O) {
@@ -477,6 +666,18 @@ namespace yapl {
                 case token::ACC_O: {
                     m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
                     auto indexExpr = parseExpr(); // Current char should be ']'
+
+                    if (m_CurrentToken != token::ACC_C) {
+                        return parseError<ASTAccessibleExpr>(
+                                "File {}:{}\n\tExpecting a ']' after an array access isntead of {}",
+                                m_FilePath,
+                                m_CurrentToken.pos,
+                                m_CurrentToken
+                            );
+                    }
+
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat ']'
+
                     auto arrayAccessExpr = std::make_unique<ASTArrayAccessExpr>(m_SymbolTable);
                     if (auto accessible = dynamic_cast<ASTAccessibleExpr*>(assignableExpr.release())){
                         auto uniqueAccessible = std::make_unique<ASTAccessibleExpr>(m_SymbolTable);
@@ -488,8 +689,8 @@ namespace yapl {
                         break;
                     }
 
-                    return parseError<ASTAssignableExpr>("Trying to access an array index from a non accessible"
-                            "expression");
+                    return parseError<ASTAssignableExpr>("Trying to access an array index from a"
+                            "non accessible expression: {}", typeid(assignableExpr).name());
                 }
                 default:
                     return parseError<ASTAssignableExpr>("This should never happen at {}: {}",

@@ -20,7 +20,7 @@ namespace yapl {
     private:
         ValueKind m_Kind;
         std::string m_Name;
-        std::shared_ptr<Type> m_Type; // For semantic analyzer
+        std::shared_ptr<Type> m_Type = nullptr; // For semantic analyzer
         std::shared_ptr<Value> m_TypeValue; // For parser
         std::vector<std::shared_ptr<Value>> m_Params;
         std::shared_ptr<SymbolTable> m_Scope = nullptr;
@@ -33,5 +33,6 @@ namespace yapl {
 
         [[nodiscard]] std::string getName() const { return m_Name; }
         [[nodiscard]] ValueKind getKind() const { return m_Kind; }
+        [[nodiscard]] std::shared_ptr<Type> getType() const { return m_Type; }
     };
 }

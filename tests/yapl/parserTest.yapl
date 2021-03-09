@@ -1,8 +1,10 @@
 import hello::this::{this};
 
-int name;
-bool name1;
-double name2;
-float name3;
+int name = 12;
+bool name1 = true;
+double name2 = -1.5;
+float name3 = .5f;
 
-notYetCreated name4;
+int infiniteArray[5][2][1][4][3];
+
+float test = anArray[name].aMethod(12, bla, test.a);
