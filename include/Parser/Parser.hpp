@@ -77,6 +77,7 @@ namespace yapl {
         std::unique_ptr<ASTDeclarationNode> parseDeclaration(const std::string&);
         std::unique_ptr<ASTArrayDeclarationNode> parseArrayDeclaration(std::unique_ptr<ASTDeclarationNode>);
         std::unique_ptr<ASTInitializationNode> parseInitialization(std::unique_ptr<ASTDeclarationNode>);
+        std::unique_ptr<ASTArrayInitializationNode> parseArrayInitialization(std::unique_ptr<ASTArrayDeclarationNode>);
 
         std::unique_ptr<ASTExprNode> parseExpr();
         std::unique_ptr<ASTExprNode> parseParenExpr();

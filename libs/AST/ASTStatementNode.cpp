@@ -97,11 +97,11 @@ namespace yapl {
         :ASTArrayDeclarationNode(scope)
     {}
 
-    void ASTArrayInitializationNode::setValues(std::unique_ptr<ASTArgumentList> values) {
+    void ASTArrayInitializationNode::setValues(std::unique_ptr<ASTExprNode> values) {
         m_Values = std::move(values);
     }
 
-    const ASTArgumentList *ASTArrayInitializationNode::getValues() const {
+    const ASTExprNode *ASTArrayInitializationNode::getValues() const {
         return m_Values.get();
     }
 
@@ -109,11 +109,11 @@ namespace yapl {
         : ASTDeclarationNode(scope)
     {}
 
-    void ASTStructInitializationNode::setAttributeValues(std::unique_ptr<ASTArgumentList> values) {
+    void ASTStructInitializationNode::setAttributeValues(std::unique_ptr<ASTExprNode> values) {
         m_AttributeValues = std::move(values);
     }
 
-    const ASTArgumentList *ASTStructInitializationNode::getAttributeValues() const {
+    const ASTExprNode *ASTStructInitializationNode::getAttributeValues() const {
         return m_AttributeValues.get();
     }
 

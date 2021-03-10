@@ -489,33 +489,66 @@ namespace yapl {
 
         m_CurrentToken = m_Lexer.getNextToken();
 
-        if (m_CurrentToken != token::SEMI &&
-                m_CurrentToken != token::ACC_O &&
-                m_CurrentToken != token::ASSIGN) {
-            return parseError<ASTArrayDeclarationNode>(
-                    "File: {}:{}\n\tExpecting a ';' after array declaration instead of {}",
-                    m_FilePath,
-                    m_CurrentToken.pos,
-                    m_CurrentToken
-                );
-        }
-
         if (m_CurrentToken == token::ACC_O) {
             m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
 
             return parseArrayDeclaration(std::move(arrayDeclaration));
         }
 
-        /* TODO:
-         *   - Handle declaration
-         */
+        if (m_CurrentToken == token::ASSIGN) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '='
+
+            return parseArrayInitialization(std::move(arrayDeclaration));
+        }
+
+        if (m_CurrentToken != token::SEMI) {
+            return parseError<ASTArrayDeclarationNode>(
+                    "File: {}:{}\n\tExpecting a ';', '[' or '=' after array declaration instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
 
         return arrayDeclaration;
     }
 
+    std::unique_ptr<ASTArrayInitializationNode> Parser::parseArrayInitialization(
+            std::unique_ptr<ASTArrayDeclarationNode> declaration
+        ) {
+        // We dont care if types are incompatible we'll check that later
+        auto values = parseExpr();
+        if (!values) {
+            return parseError<ASTArrayInitializationNode>(
+                    "File: {}:{}\n\tExpecting an expression. Got :",
+                    m_FilePath,
+                    m_CurrentToken.pos
+                    );
+        }
+
+        auto arrayInitialization = std::make_unique<ASTArrayInitializationNode>(m_SymbolTable);
+        arrayInitialization->setIdentifier(declaration->getIdentifier());
+        arrayInitialization->setType(declaration->getType());
+        arrayInitialization->setSize(declaration->getSize());
+
+
+        arrayInitialization->setValues(std::move(values));
+
+        if (m_CurrentToken != token::SEMI) {
+            return parseError<ASTArrayInitializationNode>(
+                    "File: {}:{}\n\tExpecting a ';' after an array initialization insted of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        return arrayInitialization;
+    }
+
     std::unique_ptr<ASTExprNode> Parser::parseExpr() {
-        // Expressions can start with a parenthesis, a dot, a number, a bool lit, an identifier or
-        // an unary operator.
+        // Expressions can start with a parenthesis, a dot, a number, a bool lit, an identifier,
+        // a squirly bracket (for arrays and structs) or an unary operator.
         // We first parse an expression and then if the next token is a binary operator we parse it
         // as such.
 
@@ -549,6 +582,10 @@ namespace yapl {
             m_CurrentToken = m_Lexer.getNextToken(); // Eat bool lit
 
             return boolLit;
+        }
+
+        if (m_CurrentToken == token::BRA_O) {
+            exprTmp = parseArgumentList();
         }
 
         // All tokens higher than assign are binray operators.
@@ -757,23 +794,25 @@ namespace yapl {
     std::unique_ptr<ASTArgumentList> Parser::parseArgumentList() {
         auto argumentList = std::make_unique<ASTArgumentList>(m_SymbolTable);
 
-        m_CurrentToken = m_Lexer.getNextToken(); // Eat ')'
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '{' or '('
 
-        while (m_CurrentToken != token::PAR_C) {
+        while (m_CurrentToken != token::PAR_C &&
+                m_CurrentToken != token::BRA_C) {
             auto arg = parseExpr();
 
             argumentList->addArgument(std::move(arg));
 
             if (m_CurrentToken != token::PAR_C &&
+                    m_CurrentToken != token::BRA_C &&
                     m_CurrentToken != token::COMMA)
-                return parseError<ASTArgumentList>("Expecting a ',' or a ')' in an argument list.");
+                return parseError<ASTArgumentList>("Expecting a ',', a ')' or a '}' in an argument list.");
 
             if (m_CurrentToken == token::COMMA) {
-                m_CurrentToken = m_Lexer.getNextToken();
+                m_CurrentToken = m_Lexer.getNextToken(); // Eat ','
             }
         }
 
-        m_CurrentToken = m_Lexer.getNextToken();
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat ')' or '}'
 
         return argumentList;
     }

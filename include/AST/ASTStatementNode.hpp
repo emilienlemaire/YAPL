@@ -115,24 +115,24 @@ namespace yapl
 
     class ASTArrayInitializationNode : public ASTArrayDeclarationNode {
     private:
-        std::unique_ptr<ASTArgumentList> m_Values;
+        std::unique_ptr<ASTExprNode> m_Values;
     public:
         explicit ASTArrayInitializationNode(SharedScope);
 
-        void setValues(std::unique_ptr<ASTArgumentList>);
+        void setValues(std::unique_ptr<ASTExprNode>);
 
-        [[nodiscard]] const ASTArgumentList *getValues() const;
+        [[nodiscard]] const ASTExprNode *getValues() const;
     };
 
     class ASTStructInitializationNode : public ASTDeclarationNode {
     private:
-        std::unique_ptr<ASTArgumentList> m_AttributeValues;
+        std::unique_ptr<ASTExprNode> m_AttributeValues;
     public:
         ASTStructInitializationNode(SharedScope);
 
-        void setAttributeValues(std::unique_ptr<ASTArgumentList>);
+        void setAttributeValues(std::unique_ptr<ASTExprNode>);
 
-        [[nodiscard]] const ASTArgumentList *getAttributeValues() const;
+        [[nodiscard]] const ASTExprNode *getAttributeValues() const;
     };
 
     class ASTFunctionDefinitionNode : public ASTStatementNode {
