@@ -21,4 +21,17 @@ namespace yapl {
         v.m_TypeValue = type;
         return std::make_shared<Value>(v);
     }
+
+    std::shared_ptr<Value> Value::CreateFunctionValue(
+            const std::string &name,
+            std::shared_ptr<Value> type,
+            std::vector<std::shared_ptr<Value>> parametersType
+    ) {
+        Value v;
+        v.m_Kind = ValueKind::Function;
+        v.m_Name = std::move(name);
+        v.m_TypeValue = type;
+        v.m_Params = parametersType;
+        return std::make_shared<Value>(v);
+    }
 }

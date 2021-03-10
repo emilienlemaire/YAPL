@@ -8,3 +8,21 @@ float name3 = .5f;
 int infiniteArray[3][2] = {{ 1, 2}, {3, 4}, {5, 6}};
 
 float test = anArray[name].aMethod(12, bla, test.a);
+
+func f1() -> void {}
+
+func f2(int a) -> void {}
+
+func f3(int a = 12) -> void {}
+
+func f4(int arr[2]) -> void {}
+
+func f5(int arr[2] = {1, 2}) -> void {}
+
+func f6(int a, int b = 2) -> void {}
+
+// Forbidden
+//func f7(int a, int b = 2, int c = 3) -> void {}
+
+// OK
+func f7(int a, int b = 2, int c = 3) -> void {}

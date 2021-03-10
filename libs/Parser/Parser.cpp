@@ -123,8 +123,20 @@ namespace yapl {
         }
 
         if (m_CurrentToken == token::IDENT) {
-            return parseIdentifier(m_CurrentToken.identifier);
+            auto identNode = parseIdentifier(m_CurrentToken.identifier);
+            if (m_CurrentToken != token::SEMI){
+                return parseError<ASTDeclarationNode>(
+                        "File: {}:{}\n\tMissing a ';' after a statement",
+                        m_FilePath,
+                        m_CurrentToken.pos
+                        );
+            }
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
+
+            return identNode;
         }
+
 
         if (m_CurrentToken == token::EOF_) {
             return std::make_unique<ASTEOFNode>(m_SymbolTable);
@@ -327,7 +339,171 @@ namespace yapl {
     }
 
     std::unique_ptr<ASTFunctionDefinitionNode> Parser::parseFunctionDefinition() {
-        return nullptr;
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat 'func'
+
+        if (m_CurrentToken != token::IDENT) {
+            return parseError<ASTFunctionDefinitionNode>(
+                    "File: {}:{}\n\tExpecting an identifier after 'func' instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        auto funcName = m_CurrentToken.identifier;
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
+
+        if (m_CurrentToken != token::PAR_O) {
+            return parseError<ASTFunctionDefinitionNode>(
+                    "File: {}:{}\n\tExpecting a parameter list after a function identifier instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '('
+
+        // This should allow for default parameters, let's try
+        bool hasDefaultParameter = false;
+
+        std::vector<std::unique_ptr<ASTDeclarationNode>> parameters;
+
+        while (m_CurrentToken != token::PAR_C) {
+            if (m_CurrentToken != token::IDENT) {
+                return parseError<ASTFunctionDefinitionNode>(
+                        "File: {}:{}\n\tExpecting a declaration in function parameters list instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            auto typeName = m_CurrentToken.identifier;
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat type identifier
+
+            auto declaration = parseDeclaration(typeName);
+
+            bool isInitialization = false;
+            if (dynamic_cast<ASTInitializationNode*>(declaration.get())) {
+                isInitialization = true;
+            }
+
+            if (dynamic_cast<ASTArrayInitializationNode*>(declaration.get())) {
+                isInitialization = true;
+            }
+
+            hasDefaultParameter = hasDefaultParameter || isInitialization;
+
+            if (hasDefaultParameter && !isInitialization) {
+                return parseError<ASTFunctionDefinitionNode>(
+                        "File: {}:{}\n\tIn {} declaration, all subsequent parameters to a default "
+                        "parameter must be defaulted too.",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        funcName
+                    );
+            }
+
+            parameters.push_back(std::move(declaration));
+
+            if (m_CurrentToken == token::COMMA) {
+                m_CurrentToken = m_Lexer.getNextToken();
+
+                if (m_CurrentToken != token::IDENT) {
+                    return parseError<ASTFunctionDefinitionNode>(
+                            "File: {}:{}\n\tExpecting a type identifier after a ',' in parameters list "
+                            "instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
+                }
+            } else if (m_CurrentToken != token::PAR_C) {
+                return parseError<ASTFunctionDefinitionNode>(
+                        "File; {}:{}\n\tExpecting a ')' at the end of parameters list instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat ')'
+
+        if (m_CurrentToken != token::ARROW) {
+            return parseError<ASTFunctionDefinitionNode>(
+                    "File: {}:{}\n\tExpecting an '->' after function parameters list isntead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '->'
+
+        if (m_CurrentToken != token::IDENT) {
+            return parseError<ASTFunctionDefinitionNode>(
+                    "File: {}:{}\n\tExpecting a type identifier after '->' instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        auto typeName = m_CurrentToken.identifier;
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat type identifier
+
+        if (m_CurrentToken != token::BRA_O) {
+            return parseError<ASTFunctionDefinitionNode>(
+                    "File: {}:{}\n\tExpecting a '{' at start of function body instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the body scope
+
+        std::vector<std::shared_ptr<Value>> parametersValue;
+
+        for (const auto &param : parameters) {
+            auto paramType = m_SymbolTable->lookup(param->getType());
+            auto paramValue = Value::CreateVariableValue(param->getIdentifier(), paramType);
+            parametersValue.push_back(paramValue);
+            m_SymbolTable->insert(paramValue);
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken();
+
+        auto body = parseBlock(); // Eats '}'
+
+
+        auto functionDefinition = std::make_unique<ASTFunctionDefinitionNode>(m_SymbolTable);
+        functionDefinition->setFunctionName(funcName);
+        functionDefinition->setReturnType(typeName);
+        functionDefinition->setBody(std::move(body));
+
+        m_SymbolTable = m_SymbolTable->popScope(); // Exit the body scope
+
+        auto typeValue = m_SymbolTable->lookup(typeName);
+        auto functionValue = Value::CreateFunctionValue(funcName, typeValue, parametersValue);
+
+        // TODO: Allow function overload
+        if (!m_SymbolTable->insert(functionValue)) {
+            return parseError<ASTFunctionDefinitionNode>(
+                    "File: {}:{}\n\tRedfinition of function {}.",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    funcName
+                );
+        }
+
+        return functionDefinition;
     }
 
     std::unique_ptr<ASTStructDefinitionNode> Parser::parseStructDefinition() {
@@ -381,14 +557,6 @@ namespace yapl {
             return parseInitialization(std::move(declarationNode));
         }
 
-        if (m_CurrentToken != token::SEMI){
-            return parseError<ASTDeclarationNode>(
-                    "File: {}:{}\n\tMissing a ';' after a variable declaration",
-                    m_FilePath,
-                    m_CurrentToken.pos
-                    );
-        }
-
         return std::move(declarationNode);
     }
 
@@ -402,17 +570,6 @@ namespace yapl {
 
         if (auto expr = parseExpr()) {
             initialization->setValue(std::move(expr));
-
-            if (m_CurrentToken != token::SEMI) {
-                return parseError<ASTInitializationNode>(
-                        "File {}:{}\n\tExpecting a ';' after initialization instead of {}",
-                        m_FilePath,
-                        m_CurrentToken.pos,
-                        m_CurrentToken
-                    );
-            }
-
-            m_CurrentToken = m_Lexer.getNextToken();
 
             return initialization;
         }
@@ -487,7 +644,7 @@ namespace yapl {
                 );
         }
 
-        m_CurrentToken = m_Lexer.getNextToken();
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat ']'
 
         if (m_CurrentToken == token::ACC_O) {
             m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
@@ -501,15 +658,6 @@ namespace yapl {
             return parseArrayInitialization(std::move(arrayDeclaration));
         }
 
-        if (m_CurrentToken != token::SEMI) {
-            return parseError<ASTArrayDeclarationNode>(
-                    "File: {}:{}\n\tExpecting a ';', '[' or '=' after array declaration instead of {}",
-                    m_FilePath,
-                    m_CurrentToken.pos,
-                    m_CurrentToken
-                );
-        }
-
         return arrayDeclaration;
     }
 
@@ -520,10 +668,10 @@ namespace yapl {
         auto values = parseExpr();
         if (!values) {
             return parseError<ASTArrayInitializationNode>(
-                    "File: {}:{}\n\tExpecting an expression. Got :",
+                    "File: {}:{}\n\tExpecting an expression",
                     m_FilePath,
                     m_CurrentToken.pos
-                    );
+                );
         }
 
         auto arrayInitialization = std::make_unique<ASTArrayInitializationNode>(m_SymbolTable);
@@ -534,16 +682,12 @@ namespace yapl {
 
         arrayInitialization->setValues(std::move(values));
 
-        if (m_CurrentToken != token::SEMI) {
-            return parseError<ASTArrayInitializationNode>(
-                    "File: {}:{}\n\tExpecting a ';' after an array initialization insted of {}",
-                    m_FilePath,
-                    m_CurrentToken.pos,
-                    m_CurrentToken
-                );
-        }
-
         return arrayInitialization;
+    }
+
+    std::unique_ptr<ASTBlockNode> Parser::parseBlock() {
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '}'
+        return nullptr;
     }
 
     std::unique_ptr<ASTExprNode> Parser::parseExpr() {

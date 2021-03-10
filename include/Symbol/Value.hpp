@@ -30,6 +30,11 @@ namespace yapl {
     public:
         static std::shared_ptr<Value> CreateTypeValue(const std::string&, std::shared_ptr<Type>);
         static std::shared_ptr<Value> CreateVariableValue(const std::string&, std::shared_ptr<Value>);
+        static std::shared_ptr<Value> CreateFunctionValue(
+                const std::string&,
+                std::shared_ptr<Value>,
+                std::vector<std::shared_ptr<Value>>
+            );
 
         [[nodiscard]] std::string getName() const { return m_Name; }
         [[nodiscard]] ValueKind getKind() const { return m_Kind; }

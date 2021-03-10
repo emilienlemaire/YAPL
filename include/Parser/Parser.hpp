@@ -63,8 +63,10 @@ namespace yapl {
         static int getOpPrecedence(Operator t_Operator);
     public:
         explicit Parser(const std::string &file="", CppLogger::Level level=CppLogger::Level::Warn);
-        std::unique_ptr<ASTNode> parseNext();
+
         void parse();
+
+        std::unique_ptr<ASTNode> parseNext();
         std::unique_ptr<ASTProgramNode> getProgram();
 
     private:
@@ -78,6 +80,7 @@ namespace yapl {
         std::unique_ptr<ASTArrayDeclarationNode> parseArrayDeclaration(std::unique_ptr<ASTDeclarationNode>);
         std::unique_ptr<ASTInitializationNode> parseInitialization(std::unique_ptr<ASTDeclarationNode>);
         std::unique_ptr<ASTArrayInitializationNode> parseArrayInitialization(std::unique_ptr<ASTArrayDeclarationNode>);
+        std::unique_ptr<ASTBlockNode> parseBlock();
 
         std::unique_ptr<ASTExprNode> parseExpr();
         std::unique_ptr<ASTExprNode> parseParenExpr();
