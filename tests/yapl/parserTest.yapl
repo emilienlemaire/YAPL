@@ -32,6 +32,6 @@ struct str {
     int b = 2;
 
     func addToA(int v) -> int {
-        // return a + v;
+        return a + v;
     }
 }

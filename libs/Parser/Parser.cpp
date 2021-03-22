@@ -521,6 +521,8 @@ namespace yapl {
 
         auto structDef = std::make_unique<ASTStructDefinitionNode>(m_SymbolTable);
 
+        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the body scope
+
         structDef->setStructName(m_CurrentToken.identifier);
 
         m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
@@ -537,8 +539,6 @@ namespace yapl {
         }
 
         m_CurrentToken = m_Lexer.getNextToken(); // Eat '{'
-
-        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the body scope
 
         while (m_CurrentToken == token::IDENT || m_CurrentToken == token::FUNC) {
             if (m_CurrentToken == token::IDENT) {
@@ -587,7 +587,9 @@ namespace yapl {
                 );
         }
 
-        // TODO: Add the constructor
+        // TODO: Add the constructor, (maybe in semantic analysis)
+
+        m_SymbolTable = m_SymbolTable->popScope();
 
         m_CurrentToken = m_Lexer.getNextToken(); // Eat '}'
 
@@ -777,10 +779,305 @@ namespace yapl {
     }
 
     std::unique_ptr<ASTBlockNode> Parser::parseBlock() {
+        auto block = std::make_unique<ASTBlockNode>(m_SymbolTable);
+
+        while (m_CurrentToken != token::BRA_C) {
+            if (m_CurrentToken == token::IF) {
+                auto ifNode = parseIf();
+
+                if(!ifNode) {
+                    return parseError<ASTBlockNode>("If wrong!!!");
+                }
+
+                block->addStatement(std::move(ifNode));
+                continue;
+            }
+
+            if (m_CurrentToken == token::FOR) {
+                auto forNode = parseFor();
+
+                if(!forNode) {
+                    return parseError<ASTBlockNode>("For wrong!!!");
+                }
+
+                block->addStatement(std::move(forNode));
+                continue;
+            }
+
+            if (m_CurrentToken == token::RETURN) {
+                auto returnNode = parseReturn();
+
+                if(!returnNode) {
+                    return parseError<ASTBlockNode>("Return wrong!!!");
+                }
+
+                if (m_CurrentToken != token::SEMI) {
+                    return parseError<ASTBlockNode>(
+                            "File: {}:{}\n\tExpecting a ';' after a return statement instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
+                }
+
+                m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
+
+                block->addStatement(std::move(returnNode));
+                continue;
+            }
+
+            if (m_CurrentToken == token::IDENT) {
+                auto oldToken = m_CurrentToken;
+                auto firstIdentifier = m_CurrentToken.identifier;
+
+                m_CurrentToken = m_Lexer.getNextToken();
+
+                if (m_CurrentToken == token::IDENT) {
+                    auto declStmt = parseDeclaration(firstIdentifier);
+
+                    if (m_CurrentToken != token::SEMI) {
+                        return parseError<ASTBlockNode>(
+                                "File: {}:{}\n\tExpecting a ';' after a declaration statemennt instead of {}",
+                                m_FilePath,
+                                m_CurrentToken.pos,
+                                m_CurrentToken
+                            );
+                    }
+
+                    m_CurrentToken = m_Lexer.getNextToken();
+
+                    block->addStatement(std::move(declStmt));
+                    continue;
+                }
+
+                auto identExpr = parseIdentifierExpr(oldToken);
+
+                auto exprStmt = std::make_unique<ASTExprStatementNode>(m_SymbolTable);
+
+                exprStmt->setExpr(std::move(identExpr));
+
+                if (m_CurrentToken != token::SEMI) {
+                    return parseError<ASTBlockNode>(
+                            "File: {}:{}\n\tExpecting a ';' instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
+                }
+
+                block->addStatement(std::move(exprStmt));
+                continue;
+            }
+
+            if (auto expr = parseExpr()) {
+                auto exprStmt = std::make_unique<ASTExprStatementNode>(m_SymbolTable);
+
+                exprStmt->setExpr(std::move(expr));
+
+                if (m_CurrentToken != token::SEMI) {
+                    return parseError<ASTBlockNode>(
+                            "File: {}:{}\n\tExpecting a ';' instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
+                }
+
+                block->addStatement(std::move(exprStmt));
+                continue;
+            }
+
+            return parseError<ASTBlockNode>(
+                    "File: {}:{}\n\tUnexpected token inside a block: {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
         m_CurrentToken = m_Lexer.getNextToken(); // Eat '}'
-        return nullptr;
+        return block;
     }
 
+    std::unique_ptr<ASTReturnNode> Parser::parseReturn() {
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat 'return'
+
+        auto returnNode = std::make_unique<ASTReturnNode>(m_SymbolTable);
+
+        if (auto expr = parseExpr()) {
+            returnNode->setExpr(std::move(expr));
+
+            return returnNode;
+        }
+
+        return parseError<ASTReturnNode>(
+                "File: {}:{}\n\tFailed to parse the expression after 'return'",
+                m_FilePath,
+                m_CurrentToken.pos
+            );
+    }
+
+    std::unique_ptr<ASTIfNode> Parser::parseIf() {
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat 'if'
+
+        if (m_CurrentToken != token::PAR_O) {
+            return parseError<ASTIfNode>(
+                    "File: {}:{}\n\tExpecting a '(' after 'if' instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+
+        auto ifStmt = std::make_unique<ASTIfNode>(m_SymbolTable);
+
+        auto conditionExpr = parseExpr();
+
+        if (!conditionExpr) {
+            return parseError<ASTIfNode>(
+                    "File: {}:{}\n\tExpecting an expression inside the 'if' condition",
+                    m_FilePath,
+                    m_CurrentToken.pos
+                );
+        }
+
+        ifStmt->setCondition(std::move(conditionExpr));
+
+        if (m_CurrentToken != token::PAR_C) {
+            return parseError<ASTIfNode>(
+                    "File: {}:{}\n\tExpecting a matching ')' after the if condition instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat ')'
+
+        if (m_CurrentToken != token::BRA_O) {
+            return parseError<ASTIfNode>(
+                    "File: {}:{}\n\tExpecting a '{' after the if condition instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '{'
+
+        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // Enter the then block scope
+
+        auto thenBlock = parseBlock(); // Eats '}' of then block
+
+        ifStmt->setThenBlock(std::move(thenBlock));
+
+        m_SymbolTable = m_SymbolTable->popScope(); // Exit then block scope
+
+        if (m_CurrentToken == token::ELSE) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat 'else'
+
+            if (m_CurrentToken != token::BRA_O) {
+                return parseError<ASTIfNode>(
+                        "File: {}:{}\n\tExpecting a '{' after 'else' instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // Enter the else block scope
+
+            auto elseBlock = parseBlock(); // Eats '}' of the else block
+
+            m_SymbolTable = m_SymbolTable->popScope(); // Exit else block scope
+
+            ifStmt->setElseBlock(std::move(elseBlock));
+        }
+
+        return ifStmt;
+    }
+
+    std::unique_ptr<ASTForNode> Parser::parseFor() {
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat 'for'
+
+        if (m_CurrentToken != token::PAR_O) {
+            return parseError<ASTForNode>(
+                    "File: {}:{}\n\tExpecting a '(' after a 'for' instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // Enter the for scope
+
+        auto forStmt = std::make_unique<ASTForNode>(m_SymbolTable);
+
+        m_CurrentToken = m_Lexer.getNextToken();
+
+        if (m_CurrentToken != token::IDENT) {
+            return parseError<ASTForNode>(
+                    "File: {}:{}\n\tExpecting a type identifier in the for declaration instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        auto declStmt = parseDeclaration(m_CurrentToken.identifier);
+
+        forStmt->setIteratorVariable(declStmt->getIdentifier());
+
+        if (m_CurrentToken != token::IN) {
+            return parseError<ASTForNode>(
+                    "File: {}:{}\n\tExpecting in after the for iterator variable declaration instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat 'in'
+
+        auto rangeExpr = parseRangeExpr();
+
+        forStmt->setRangeExpr(std::move(rangeExpr));
+
+        if (m_CurrentToken != token::PAR_C) {
+            return parseError<ASTForNode>(
+                    "File: {}:{}\n\tExpecting a matching ')' instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat ')'
+
+        if (m_CurrentToken != token::PAR_O) {
+            return parseError<ASTForNode>(
+                    "File: {}:{}\n\tExpecting a '{' after for condition instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        auto forBlock = parseBlock(); // Eats the '}' at the end of the for block
+
+        forStmt->setBlock(std::move(forBlock));
+
+        m_SymbolTable = m_SymbolTable->popScope(); // Exit the for scope
+
+        return forStmt;
+    }
+
+    /***************
+     *             *
+     * Expressions *
+     *             *
+     ***************/
     std::unique_ptr<ASTExprNode> Parser::parseExpr() {
         // Expressions can start with a parenthesis, a dot, a number, a bool lit, an identifier,
         // a squirly bracket (for arrays and structs) or an unary operator.
@@ -909,8 +1206,12 @@ namespace yapl {
                         assignableExpr = std::move(functionCallExpr);
                         break;
                     }
-                    // TODO: more verbose.
-                    return parseError<ASTAssignableExpr>("Trying to call a non callable expressions");
+                    return parseError<ASTAssignableExpr>(
+                            "File: {}:{}\n\tNear '{}'. Trying to call an expression which is not a callable",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            identifierExpr->getIdentifier()
+                        );
                 }
                 case token::DOT: {
                     m_CurrentToken = m_Lexer.getNextToken(); // Eat '.'
@@ -929,11 +1230,20 @@ namespace yapl {
                             assignableExpr = std::move(attributeAccessExpr);
                             break;
                         }
-                        return parseError<ASTAssignableExpr>("Trying to access an attribute from a non "
-                            "accessible expression");
+                        return parseError<ASTAssignableExpr>(
+                                "File: {}:{}\n\tNear {}. Trying to access an attribute from a non"
+                                "accessible expression",
+                                m_FilePath,
+                                m_CurrentToken.pos,
+                                identifierExpr->getIdentifier()
+                            );
                     }
-                    // TODO: more verbose
-                    return parseError<ASTAssignableExpr>("Expecting an identifier after '.'");
+                    return parseError<ASTAssignableExpr>(
+                            "File: {}:{}\n\tExpecting an identifier after '.' instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
                 }
                 case token::ACC_O: {
                     m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
@@ -974,6 +1284,105 @@ namespace yapl {
         return assignableExpr;
     }
 
+    std::unique_ptr<ASTCallableExpr> Parser::parseIdentifierExpr(Token startToken) {
+        std::unique_ptr<ASTCallableExpr> assignableExpr;
+        auto identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
+        identifierExpr->setIdentifier(startToken.identifier);
+        assignableExpr = std::move(identifierExpr);
+
+        while (m_CurrentToken == token::PAR_O
+                || m_CurrentToken == token::DOT
+                || m_CurrentToken == token::ACC_O) {
+            switch(m_CurrentToken.token) {
+                case token::PAR_O: {
+                    auto functionCallExpr = std::make_unique<ASTFunctionCallExpr>(m_SymbolTable);
+                    auto argumentList = parseArgumentList(); // Should eat ')'
+                    if (auto callable = dynamic_cast<ASTCallableExpr*>(assignableExpr.release())) {
+                        auto uniqueCallable = std::make_unique<ASTCallableExpr>(m_SymbolTable);
+                        uniqueCallable.reset(callable);
+                        functionCallExpr->setFunction(std::move(uniqueCallable));
+                        functionCallExpr->setArguments(std::move(argumentList));
+
+                        assignableExpr = std::move(functionCallExpr);
+                        break;
+                    }
+                    return parseError<ASTAssignableExpr>(
+                            "File: {}:{}\n\tNear '{}'. Trying to call an expression which is not a callable",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            identifierExpr->getIdentifier()
+                        );
+                }
+                case token::DOT: {
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat '.'
+                    if (m_CurrentToken == token::IDENT) {
+                        auto attributeAccessExpr = std::make_unique<ASTAttributeAccessExpr>(m_SymbolTable);
+                        identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
+                        identifierExpr->setIdentifier(m_CurrentToken.identifier);
+
+                        m_CurrentToken = m_Lexer.getNextToken(); // Eat IDENT
+                        if (auto accessible = dynamic_cast<ASTAccessibleExpr*>(assignableExpr.release())){
+                            auto uniqueAccessible = std::make_unique<ASTAccessibleExpr>(m_SymbolTable);
+                            uniqueAccessible.reset(accessible);
+                            attributeAccessExpr->setStruct(std::move(uniqueAccessible));
+                            attributeAccessExpr->setAttribute(std::move(identifierExpr));
+
+                            assignableExpr = std::move(attributeAccessExpr);
+                            break;
+                        }
+                        return parseError<ASTAssignableExpr>(
+                                "File: {}:{}\n\tNear {}. Trying to access an attribute from a non"
+                                "accessible expression",
+                                m_FilePath,
+                                m_CurrentToken.pos,
+                                identifierExpr->getIdentifier()
+                            );
+                    }
+                    return parseError<ASTAssignableExpr>(
+                            "File: {}:{}\n\tExpecting an identifier after '.' instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
+                }
+                case token::ACC_O: {
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
+                    auto indexExpr = parseExpr(); // Current char should be ']'
+
+                    if (m_CurrentToken != token::ACC_C) {
+                        return parseError<ASTAccessibleExpr>(
+                                "File {}:{}\n\tExpecting a ']' after an array access isntead of {}",
+                                m_FilePath,
+                                m_CurrentToken.pos,
+                                m_CurrentToken
+                            );
+                    }
+
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat ']'
+
+                    auto arrayAccessExpr = std::make_unique<ASTArrayAccessExpr>(m_SymbolTable);
+                    if (auto accessible = dynamic_cast<ASTAccessibleExpr*>(assignableExpr.release())){
+                        auto uniqueAccessible = std::make_unique<ASTAccessibleExpr>(m_SymbolTable);
+                        uniqueAccessible.reset(accessible);
+                        arrayAccessExpr->setArray(std::move(uniqueAccessible));
+                        arrayAccessExpr->setIndex(std::move(indexExpr));
+
+                        assignableExpr = std::move(arrayAccessExpr);
+                        break;
+                    }
+
+                    return parseError<ASTAssignableExpr>("Trying to access an array index from a"
+                            "non accessible expression: {}", typeid(assignableExpr).name());
+                }
+                default:
+                    return parseError<ASTAssignableExpr>("This should never happen at {}: {}",
+                            __FILE__,
+                            __func__);
+            }
+        }
+
+        return assignableExpr;
+    }
     std::unique_ptr<ASTUnaryExpr> Parser::parseUnaryExpr() {
         token savedToken = m_CurrentToken.token;
 
@@ -1050,6 +1459,27 @@ namespace yapl {
         m_CurrentToken = m_Lexer.getNextToken(); // Eat ')' or '}'
 
         return argumentList;
+    }
+
+    std::unique_ptr<ASTRangeExpr> Parser::parseRangeExpr() {
+        auto rangeExpr = std::make_unique<ASTRangeExpr>(m_SymbolTable);
+
+        auto startExpr = parseExpr();
+
+        rangeExpr->setStart(std::move(startExpr));
+
+        // If there is no '...' it means the first expression should be iterable (to check in SemA)
+        // so we don't need to parse the end expression, nullptr is acceptable here.
+
+        if (m_CurrentToken == token::FROM_TO) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '...'
+
+            auto endExpr = parseExpr();
+
+            rangeExpr->setEnd(std::move(endExpr));
+        }
+
+        return rangeExpr;
     }
 
 } // namespace yapl

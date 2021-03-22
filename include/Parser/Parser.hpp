@@ -72,6 +72,7 @@ namespace yapl {
     private:
         std::unique_ptr<ASTNode> parseIdentifier(const std::string&);
 
+        // Available at top level
         std::unique_ptr<ASTImportNode> parseImport();
         std::unique_ptr<ASTExportNode> parseExport();
         std::unique_ptr<ASTFunctionDefinitionNode> parseFunctionDefinition();
@@ -82,14 +83,21 @@ namespace yapl {
         std::unique_ptr<ASTArrayInitializationNode> parseArrayInitialization(std::unique_ptr<ASTArrayDeclarationNode>);
         std::unique_ptr<ASTBlockNode> parseBlock();
 
+        // Available inside a function block
+        std::unique_ptr<ASTReturnNode> parseReturn();
+        std::unique_ptr<ASTForNode> parseFor();
+        std::unique_ptr<ASTIfNode> parseIf();
+
+        // Expressions
         std::unique_ptr<ASTExprNode> parseExpr();
         std::unique_ptr<ASTExprNode> parseParenExpr();
         std::unique_ptr<ASTNumberExpr> parseNumberExpr();
-        std::unique_ptr<ASTFloatNumberExpr> parseFloatingNumberExpr(const std::string&);
-        std::unique_ptr<ASTIntegerNumberExpr> parseIntegerNumberExpr();
+        std::unique_ptr<ASTFloatNumberExpr> parseFloatingNumberExpr(const std::string&); std::unique_ptr<ASTIntegerNumberExpr> parseIntegerNumberExpr();
         std::unique_ptr<ASTCallableExpr> parseIdentifierExpr();
+        std::unique_ptr<ASTCallableExpr> parseIdentifierExpr(Token);
         std::unique_ptr<ASTUnaryExpr> parseUnaryExpr();
         std::unique_ptr<ASTBinaryExpr> parseBinaryExpr(std::unique_ptr<ASTExprNode>);
+        std::unique_ptr<ASTRangeExpr> parseRangeExpr();
 
         std::unique_ptr<ASTArgumentList> parseArgumentList();
     };
