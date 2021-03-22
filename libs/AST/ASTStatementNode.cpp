@@ -165,6 +165,10 @@ namespace yapl {
         m_Attributes.push_back(std::move(attribute));
     }
 
+    void ASTStructDefinitionNode::addMethod(std::unique_ptr<ASTFunctionDefinitionNode> method) {
+        m_Methods.push_back(std::move(method));
+    }
+
     std::string ASTStructDefinitionNode::getStructName() const {
         return m_StructName;
     }

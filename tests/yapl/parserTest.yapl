@@ -22,7 +22,16 @@ func f5(int arr[2] = {1, 2}) -> void {}
 func f6(int a, int b = 2) -> void {}
 
 // Forbidden
-//func f7(int a, int b = 2, int c = 3) -> void {}
+//func f7(int a, int b = 2, int c) -> void {}
 
 // OK
 func f7(int a, int b = 2, int c = 3) -> void {}
+
+struct str {
+    int a;
+    int b = 2;
+
+    func addToA(int v) -> int {
+        // return a + v;
+    }
+}

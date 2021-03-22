@@ -469,8 +469,9 @@ namespace yapl {
 
         m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the body scope
 
-        std::vector<std::shared_ptr<Value>> parametersValue;
+        std::vector<std::shared_ptr<Value>> parametersValue = {};
 
+        // TODO: Create overload for each default parameters
         for (const auto &param : parameters) {
             auto paramType = m_SymbolTable->lookup(param->getType());
             auto paramValue = Value::CreateVariableValue(param->getIdentifier(), paramType);
@@ -507,7 +508,90 @@ namespace yapl {
     }
 
     std::unique_ptr<ASTStructDefinitionNode> Parser::parseStructDefinition() {
-        return nullptr;
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat 'struct'
+
+        if (m_CurrentToken != token::IDENT) {
+            return parseError<ASTStructDefinitionNode>(
+                    "File: {}:{}\n\tExpecting an identifier after 'struct' instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        auto structDef = std::make_unique<ASTStructDefinitionNode>(m_SymbolTable);
+
+        structDef->setStructName(m_CurrentToken.identifier);
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
+
+        // TODO: Enable inheritance
+
+        if (m_CurrentToken != token::BRA_O) {
+            return parseError<ASTStructDefinitionNode>(
+                    "File: {}:{}\n\tExpecting a '{' after struct name instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '{'
+
+        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the body scope
+
+        while (m_CurrentToken == token::IDENT || m_CurrentToken == token::FUNC) {
+            if (m_CurrentToken == token::IDENT) {
+                auto type = m_CurrentToken.identifier;
+
+                m_CurrentToken = m_Lexer.getNextToken(); // Eat type
+
+                if (m_CurrentToken != token::IDENT) {
+                    return parseError<ASTStructDefinitionNode>(
+                            "File: {}:{}\n\tExpecting an identifier after the type in struct definition"
+                            " instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
+                }
+
+                auto declStmt = parseDeclaration(type);
+
+                structDef->addAttribute(std::move(declStmt));
+
+                if (m_CurrentToken != token::SEMI) {
+                    return parseError<ASTStructDefinitionNode>(
+                            "File: {}:{}\n\tExpecting a ';' after attribute declaration instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
+                }
+
+                m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
+            }
+
+            if (m_CurrentToken == token::FUNC) {
+                auto funcDef = parseFunctionDefinition();
+                structDef->addMethod(std::move(funcDef));
+            }
+        }
+
+        if (m_CurrentToken != token::BRA_C) {
+            return parseError<ASTStructDefinitionNode>(
+                    "File: {}:{}\n\tExpecting a '}' after a struct defintion instead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        // TODO: Add the constructor
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '}'
+
+        return structDef;
     }
 
     std::unique_ptr<ASTNode> Parser::parseIdentifier(const std::string &identifier) {
@@ -569,7 +653,14 @@ namespace yapl {
         auto initialization = std::make_unique<ASTInitializationNode>(m_SymbolTable);
 
         if (auto expr = parseExpr()) {
+            initialization->setIdentifier(identifier);
+            initialization->setType(type);
             initialization->setValue(std::move(expr));
+
+            auto typeValue = m_SymbolTable->lookup(type);
+            auto initValue = Value::CreateVariableValue(identifier, typeValue);
+
+            m_SymbolTable->insert(initValue);
 
             return initialization;
         }
