@@ -87,6 +87,7 @@ namespace yapl {
         std::unique_ptr<ASTReturnNode> parseReturn();
         std::unique_ptr<ASTForNode> parseFor();
         std::unique_ptr<ASTIfNode> parseIf();
+        std::unique_ptr<ASTAssignmentNode> parseAssignment(std::unique_ptr<ASTAssignableExpr>);
 
         // Expressions
         std::unique_ptr<ASTExprNode> parseExpr();

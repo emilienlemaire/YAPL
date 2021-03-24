@@ -195,7 +195,7 @@ namespace yapl {
     }
 
     ASTIdentifierExpr::ASTIdentifierExpr(SharedScope scope)
-        : ASTAccessibleExpr(scope)
+        : ASTAssignableExpr(scope)
     {}
 
     void ASTIdentifierExpr::setIdentifier(const std::string &identifier) {

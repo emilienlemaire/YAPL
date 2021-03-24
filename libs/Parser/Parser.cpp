@@ -830,7 +830,7 @@ namespace yapl {
                 auto oldToken = m_CurrentToken;
                 auto firstIdentifier = m_CurrentToken.identifier;
 
-                m_CurrentToken = m_Lexer.getNextToken();
+                m_CurrentToken = m_Lexer.getNextToken(); // Eat first identifier
 
                 if (m_CurrentToken == token::IDENT) {
                     auto declStmt = parseDeclaration(firstIdentifier);
@@ -844,7 +844,7 @@ namespace yapl {
                             );
                     }
 
-                    m_CurrentToken = m_Lexer.getNextToken();
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
 
                     block->addStatement(std::move(declStmt));
                     continue;
@@ -852,18 +852,44 @@ namespace yapl {
 
                 auto identExpr = parseIdentifierExpr(oldToken);
 
+
+                if (auto assignExpr = dynamic_cast<ASTAssignableExpr*>(identExpr.get())) {
+                    if (m_CurrentToken == token::ASSIGN) {
+                        auto assignAST = std::make_unique<ASTAssignableExpr>(m_SymbolTable);
+                        *assignAST = *assignExpr;
+
+                        auto assignNode = parseAssignment(std::move(assignAST));
+
+                        if (m_CurrentToken != token::SEMI) {
+                            return parseError<ASTBlockNode>(
+                                    "File: {}:{}\n\tExpecting a ';' after an assignement instead of {}",
+                                    m_FilePath,
+                                    m_CurrentToken.pos,
+                                    m_CurrentToken
+                                );
+                        }
+
+                        m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
+
+                        block->addStatement(std::move(assignNode));
+                        continue;
+                    }
+                }
+
                 auto exprStmt = std::make_unique<ASTExprStatementNode>(m_SymbolTable);
 
                 exprStmt->setExpr(std::move(identExpr));
 
                 if (m_CurrentToken != token::SEMI) {
                     return parseError<ASTBlockNode>(
-                            "File: {}:{}\n\tExpecting a ';' instead of {}",
+                            "File: {}:{}\n\tExpecting a ';' after an identifier expression statement istead of {}",
                             m_FilePath,
                             m_CurrentToken.pos,
                             m_CurrentToken
                         );
                 }
+
+                m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
 
                 block->addStatement(std::move(exprStmt));
                 continue;
@@ -876,7 +902,7 @@ namespace yapl {
 
                 if (m_CurrentToken != token::SEMI) {
                     return parseError<ASTBlockNode>(
-                            "File: {}:{}\n\tExpecting a ';' instead of {}",
+                            "File: {}:{}\n\tExpecting a ';' after an expression statement instead of {}",
                             m_FilePath,
                             m_CurrentToken.pos,
                             m_CurrentToken
@@ -931,6 +957,8 @@ namespace yapl {
 
 
         auto ifStmt = std::make_unique<ASTIfNode>(m_SymbolTable);
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '('
 
         auto conditionExpr = parseExpr();
 
@@ -1014,7 +1042,7 @@ namespace yapl {
 
         auto forStmt = std::make_unique<ASTForNode>(m_SymbolTable);
 
-        m_CurrentToken = m_Lexer.getNextToken();
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '('
 
         if (m_CurrentToken != token::IDENT) {
             return parseError<ASTForNode>(
@@ -1025,13 +1053,26 @@ namespace yapl {
                 );
         }
 
-        auto declStmt = parseDeclaration(m_CurrentToken.identifier);
+        auto type = m_CurrentToken.identifier;
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat type
+
+        if (m_CurrentToken != token::IDENT) {
+            return parseError<ASTForNode>(
+                    "File: {}:{}\n\tExpecting a variable identifier after for declaration type isntead of {}",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    m_CurrentToken
+                );
+        }
+
+        auto declStmt = parseDeclaration(type);
 
         forStmt->setIteratorVariable(declStmt->getIdentifier());
 
         if (m_CurrentToken != token::IN) {
             return parseError<ASTForNode>(
-                    "File: {}:{}\n\tExpecting in after the for iterator variable declaration instead of {}",
+                    "File: {}:{}\n\tExpecting 'in' after the for iterator variable declaration instead of {}",
                     m_FilePath,
                     m_CurrentToken.pos,
                     m_CurrentToken
@@ -1055,7 +1096,7 @@ namespace yapl {
 
         m_CurrentToken = m_Lexer.getNextToken(); // Eat ')'
 
-        if (m_CurrentToken != token::PAR_O) {
+        if (m_CurrentToken != token::BRA_O) {
             return parseError<ASTForNode>(
                     "File: {}:{}\n\tExpecting a '{' after for condition instead of {}",
                     m_FilePath,
@@ -1064,6 +1105,8 @@ namespace yapl {
                 );
         }
 
+        m_CurrentToken = m_Lexer.getNextToken(); //Eat '{'
+
         auto forBlock = parseBlock(); // Eats the '}' at the end of the for block
 
         forStmt->setBlock(std::move(forBlock));
@@ -1071,6 +1114,25 @@ namespace yapl {
         m_SymbolTable = m_SymbolTable->popScope(); // Exit the for scope
 
         return forStmt;
+    }
+
+    std::unique_ptr<ASTAssignmentNode> Parser::parseAssignment(std::unique_ptr<ASTAssignableExpr> var) {
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat '='
+
+        if (auto expr = parseExpr()) {
+            auto assignment = std::make_unique<ASTAssignmentNode>(m_SymbolTable);
+
+            assignment->setVariable(std::move(var));
+            assignment->setValue(std::move(expr));
+
+            return assignment;
+        }
+
+        return parseError<ASTAssignmentNode>(
+                "File: {}:{}\n\tInvalid expression after assignment.",
+                m_FilePath,
+                m_CurrentToken.pos
+            );
     }
 
     /***************
@@ -1449,7 +1511,12 @@ namespace yapl {
             if (m_CurrentToken != token::PAR_C &&
                     m_CurrentToken != token::BRA_C &&
                     m_CurrentToken != token::COMMA)
-                return parseError<ASTArgumentList>("Expecting a ',', a ')' or a '}' in an argument list.");
+                return parseError<ASTArgumentList>(
+                            "File: {}:{}\n\tExpecting a ',', a ')' or a '}' in an argument list instead of {}",
+                            m_FilePath,
+                            m_CurrentToken.pos,
+                            m_CurrentToken
+                        );
 
             if (m_CurrentToken == token::COMMA) {
                 m_CurrentToken = m_Lexer.getNextToken(); // Eat ','

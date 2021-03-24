@@ -1,4 +1,4 @@
-import hello::this::{this};
+import hello::that::{that};
 
 int name = 12;
 bool name1 = true;
@@ -32,6 +32,13 @@ struct str {
     int b = 2;
 
     func addToA(int v) -> int {
+        if (v < 0) {
+            v = -v;
+        }
+
+        for (int i in 0 ... 12) {
+            v = v + i;
+        }
         return a + v;
     }
 }

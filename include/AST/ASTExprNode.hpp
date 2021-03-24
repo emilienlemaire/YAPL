@@ -30,32 +30,38 @@ namespace yapl {
     private:
     public:
         explicit ASTExprNode(SharedScope);
+        virtual ~ASTExprNode() override = default;
     };
 
     class ASTUnaryExpr : public ASTExprNode {
     private:
     public:
         explicit ASTUnaryExpr(SharedScope);
+        virtual ~ASTUnaryExpr() override = default;
     };
 
     class ASTCallableExpr : public ASTExprNode {
     public:
         explicit ASTCallableExpr(SharedScope);
+        virtual ~ASTCallableExpr() override = default;
     };
 
     class ASTAccessibleExpr : public ASTCallableExpr {
     public:
         explicit ASTAccessibleExpr(SharedScope);
+        virtual ~ASTAccessibleExpr() override = default;
     };
 
     class ASTAssignableExpr : public ASTAccessibleExpr {
-        public:
-            explicit ASTAssignableExpr(SharedScope);
+    public:
+        explicit ASTAssignableExpr(SharedScope);
+        virtual ~ASTAssignableExpr() override = default;
     };
 
     class ASTNumberExpr : public ASTExprNode {
     public:
         explicit ASTNumberExpr(SharedScope);
+        virtual ~ASTNumberExpr() override = default;
     };
 
     // Non virtual classes
@@ -203,7 +209,7 @@ namespace yapl {
         [[nodiscard]] int getValue() const;
     };
 
-    class ASTIdentifierExpr : public ASTAccessibleExpr {
+    class ASTIdentifierExpr : public ASTAssignableExpr {
     private:
         std::string m_Identifier;
     public:
