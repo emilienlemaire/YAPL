@@ -21,8 +21,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "")
 endif()
 
-include(CTest)
-
 include_directories(include vendor)
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     include_directories(/usr/local/opt/llvm/include)
@@ -38,7 +36,6 @@ add_subdirectory(tests)
 
 add_executable(yapl
     main.cpp)
-
 
 target_link_libraries(yapl PUBLIC cpplogger parser)
 

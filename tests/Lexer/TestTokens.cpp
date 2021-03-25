@@ -17,7 +17,7 @@
 #include <fstream>
 #include <stdio.h>
 
-#include "catch2.hpp"
+#include "catch2/catch_all.hpp"
 #include "Lexer/Lexer.hpp"
 
 void generateFile(std::string name, std::string content) {
