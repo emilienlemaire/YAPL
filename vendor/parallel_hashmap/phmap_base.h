@@ -2831,7 +2831,7 @@ template <typename Policy, typename PolicyTraits, typename Alloc,
           typename = void>
 class node_handle : public node_handle_base<PolicyTraits, Alloc> 
 {
-    using Base = typename node_handle::node_handle_base;
+    using Base = node_handle_base<PolicyTraits, Alloc>;
 
 public:
     using value_type = typename PolicyTraits::value_type;
@@ -2855,7 +2855,7 @@ class node_handle<Policy, PolicyTraits, Alloc,
                   phmap::void_t<typename Policy::mapped_type>>
     : public node_handle_base<PolicyTraits, Alloc> 
 {
-    using Base = typename node_handle::node_handle_base;
+    using Base = node_handle_base<PolicyTraits, Alloc>;
 
 public:
     using key_type = typename Policy::key_type;
@@ -3142,8 +3142,8 @@ public:
     static const size_type npos = ~(size_type(0));
 
     constexpr Span() noexcept : Span(nullptr, 0) {}
-    constexpr Span(pointer array, size_type length) noexcept
-        : ptr_(array), len_(length) {}
+    constexpr Span(pointer array, size_type lgth) noexcept
+        : ptr_(array), len_(lgth) {}
 
     // Implicit conversion constructors
     template <size_t N>
@@ -5156,9 +5156,9 @@ public:
         using UniqueLocks     = typename Base::WriteLocks;
         using UpgradeToUnique = typename Base::DoNothing;  // we already have unique ownership
     };
-#endif
+#endif // PHMAP_HAVE_SHARED_MUTEX
 
-#endif // PHMAP_HAS_BOOST_THREAD_MUTEXES
+#endif // BOOST_THREAD_SHARED_MUTEX_HPP
 
 
 }  // phmap

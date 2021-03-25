@@ -40,6 +40,7 @@ enum class token{
     INT_LIT,
     DOUBLE_LIT,
     FLOAT_LIT,
+    STRING_LIT,
 
     PAR_O,
     PAR_C,
@@ -117,6 +118,8 @@ inline std::string tokToString(token tok) {
             return "DOUBLE_LIT";
         case token::FLOAT_LIT:
             return "FLOAT_LIT";
+        case token::STRING_LIT:
+            return "STRING_LIT";
         case token::PAR_O:
             return "PAR_O";
         case token::PAR_C:

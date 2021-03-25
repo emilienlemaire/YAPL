@@ -60,6 +60,7 @@ private:
     Position m_Pos;
 
     FILE* pFile;
+    std::string lexString();
 
 public:
     Lexer(const std::string& filepath="");

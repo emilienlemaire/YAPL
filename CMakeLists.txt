@@ -42,16 +42,5 @@ add_executable(yapl
 
 target_link_libraries(yapl PUBLIC cpplogger parser)
 
-#add_custom_target(run_YAPL ALL DEPENDS yapl)
-
-#foreach(test_file IN LISTS test_files)
-    #message(STATUS "Adding command for ${test_file}")
-    #add_custom_command(
-        #TARGET run_YAPL
-        #POST_BUILD
-        #COMMAND ${CMAKE_CURRENT_BINARY_DIR}/yapl ${test_file}
-        #COMMENT "Running test on ${test_file}"
-        #VERBATIM)
-#endforeach()
 
 

@@ -106,7 +106,6 @@ TEST_CASE("Can lex punctuation", "[lexer][punctuation]") {
     // point
     // colon
     // squote
-    // dquote
     // access_sym
 }
 
@@ -115,7 +114,26 @@ TEST_CASE("Can lex operators", "[lexer][operators]") {
 }
 
 TEST_CASE("Can lex literals", "[lexer][literals]") {
+    SECTION("empty string literal") {
+        generateFile("empty_string_lit.yapl", "\"\"");
+        auto lexer = Lexer("empty_string_lit.yapl");
+        REQUIRE(lexer.getNextToken() == (Token{token::STRING_LIT, ""}));
+        remove("empty_string_lit.yapl");
+    }
 
+    SECTION("string literal") {
+        generateFile("string_lit.yapl", "\"test\"");
+        auto lexer = Lexer("string_lit.yapl");
+        REQUIRE(lexer.getNextToken() == (Token{token::STRING_LIT, "test"}));
+        remove("string_lit.yapl");
+    }
+
+    SECTION("escaped string literals") {
+        generateFile("escaped_string_lit.yapl", "\"this is an \\\"escaped\\\" string lit\"");
+        auto lexer = Lexer("escaped_string_lit.yapl");
+        REQUIRE(lexer.getNextToken() == (Token{token::STRING_LIT, "this is an \"escaped\" string lit"}));
+        remove("escaped_string_lit.yapl");
+    }
 }
 
 TEST_CASE("Can lex keywords", "[lexer][keywords]") {

@@ -353,8 +353,6 @@ Token Lexer::getNextToken(){
                 m_CurrentToken = {token::NEQ, identifier, m_Pos};
                 return m_CurrentToken;
             }
-            m_Logger.printWarn("Unary operation not yet supported please avoid using them."
-                    "At position: {}:{}", m_Pos.line, m_Pos.column);
             m_CurrentToken = {token::NOT, identifier, m_Pos};
             return m_CurrentToken;
         }
@@ -433,7 +431,16 @@ Token Lexer::getNextToken(){
         }
 
         if (identifier == "\"") {
-            m_CurrentToken = {token::D_QUOTE, identifier, m_Pos};
+            auto stringLit = std::string();
+            while (m_CurrentChar != '"') {
+                if (m_CurrentChar == '\\') {
+                    getNextChar();
+                }
+                stringLit += m_CurrentChar;
+                getNextChar();
+            }
+            getNextChar();
+            m_CurrentToken = {token::STRING_LIT, stringLit, m_Pos};
             return m_CurrentToken;
         }
 

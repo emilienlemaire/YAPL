@@ -126,10 +126,11 @@ namespace yapl {
             auto identNode = parseIdentifier(m_CurrentToken.identifier);
             if (m_CurrentToken != token::SEMI){
                 return parseError<ASTDeclarationNode>(
-                        "File: {}:{}\n\tMissing a ';' after a statement",
+                        "File: {}:{}\n\tMissing a ';' after a statement instead of {}",
                         m_FilePath,
-                        m_CurrentToken.pos
-                        );
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
             }
 
             m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
