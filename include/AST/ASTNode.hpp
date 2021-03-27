@@ -23,6 +23,7 @@
 
 #include "Lexer/TokenUtils.hpp"
 #include "Symbol/SymbolTable.hpp"
+#include "AST/ASTVisitor.hpp"
 
 namespace yapl {
 
@@ -52,7 +53,9 @@ namespace yapl {
 
         [[nodiscard]] std::shared_ptr<SymbolTable> getScope() const;
 
-        inline static Operator TokenToOperator(token tok) {
+        virtual void accept(ASTVisitor&) = 0;
+
+        static Operator TokenToOperator(token tok) {
             switch(tok) {
                 case token::TIMES:
                     return Operator::TIMES;
@@ -91,6 +94,10 @@ namespace yapl {
         explicit ASTEOFNode(std::shared_ptr<SymbolTable> st)
             : ASTNode(std::move(st))
         {}
+
+        virtual void accept(ASTVisitor &/*unused*/) {
+            return;
+        }
     };
 
     class ASTProgramNode : public ASTNode {
@@ -110,5 +117,9 @@ namespace yapl {
         [[nodiscard]] inline const_iterator cbegin() const noexcept { return m_Nodes.cbegin(); }
         [[nodiscard]] inline iterator end() noexcept { return m_Nodes.end(); }
         [[nodiscard]] inline const_iterator cend() const noexcept { return m_Nodes.cend(); }
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchProgram(this);
+        }
     };
 } // namespace yapl

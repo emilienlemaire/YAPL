@@ -44,18 +44,30 @@ namespace yapl {
     public:
         explicit ASTCallableExpr(SharedScope);
         virtual ~ASTCallableExpr() override = default;
+
+        virtual void accept(ASTVisitor &/*unused*/) override {
+            return;
+        }
     };
 
     class ASTAccessibleExpr : public ASTCallableExpr {
     public:
         explicit ASTAccessibleExpr(SharedScope);
         virtual ~ASTAccessibleExpr() override = default;
+
+         virtual void accept(ASTVisitor &/*unused*/) override {
+            return;
+        }
     };
 
     class ASTAssignableExpr : public ASTAccessibleExpr {
     public:
         explicit ASTAssignableExpr(SharedScope);
         virtual ~ASTAssignableExpr() override = default;
+
+         virtual void accept(ASTVisitor &/*unused*/) override {
+            return;
+        }
     };
 
     class ASTNumberExpr : public ASTExprNode {
@@ -75,6 +87,10 @@ namespace yapl {
         void setValue(std::unique_ptr<ASTExprNode>);
 
         [[nodiscard]] const ASTExprNode *getValue() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchNegExpr(this);
+        }
     };
 
     class ASTNotExpr : public ASTUnaryExpr {
@@ -86,6 +102,10 @@ namespace yapl {
         void setValue(std::unique_ptr<ASTExprNode>);
 
         [[nodiscard]] const ASTExprNode *getValue() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchNotExpr(this);
+        }
     };
 
     class ASTParExpr : public ASTExprNode {
@@ -97,6 +117,10 @@ namespace yapl {
         void setExpr(std::unique_ptr<ASTExprNode>);
 
         [[nodiscard]] const ASTExprNode *getExpr() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchParExpr(this);
+        }
     };
 
     class ASTArgumentList : public ASTExprNode {
@@ -122,6 +146,10 @@ namespace yapl {
             { return m_Arguments.cbegin(); }
         inline auto cend() noexcept -> decltype(m_Arguments.cend())
             { return m_Arguments.cend(); }
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchArgumentList(this);
+        }
     };
 
     class ASTBoolLiteralExpr : public ASTExprNode {
@@ -133,6 +161,10 @@ namespace yapl {
         void setValue(bool);
 
         [[nodiscard]] bool getValue() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchBoolLiteralExpr(this);
+        }
     };
 
     class ASTBinaryExpr : public ASTExprNode {
@@ -159,6 +191,10 @@ namespace yapl {
         [[nodiscard]] inline auto getRHSPtr() -> decltype(m_RHS) {
             return std::move(m_RHS);
         }
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchBinaryExpr(this);
+        }
     };
 
     class ASTRangeExpr : public ASTExprNode {
@@ -174,6 +210,10 @@ namespace yapl {
 
         [[nodiscard]] const ASTExprNode *getStart() const;
         [[nodiscard]] const ASTExprNode *getEnd() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchRangeExpr(this);
+        }
     };
 
     class ASTFloatNumberExpr : public ASTNumberExpr {
@@ -185,6 +225,10 @@ namespace yapl {
         void setValue(float);
 
         [[nodiscard]] float getValue() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchFloatNumberExpr(this);
+        }
     };
 
     class ASTDoubleNumberExpr : public ASTNumberExpr {
@@ -196,6 +240,10 @@ namespace yapl {
         void setValue(double);
 
         [[nodiscard]] double getValue() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchDoubleNumberExpr(this);
+        }
     };
 
     class ASTIntegerNumberExpr : public ASTNumberExpr {
@@ -207,6 +255,10 @@ namespace yapl {
         void setValue(int);
 
         [[nodiscard]] int getValue() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchIntegerNumberExpr(this);
+        }
     };
 
     class ASTIdentifierExpr : public ASTAssignableExpr {
@@ -218,6 +270,10 @@ namespace yapl {
         void setIdentifier(const std::string &);
 
         [[nodiscard]] std::string getIdentifier() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchIdentifierExpr(this);
+        }
     };
 
     class ASTAttributeAccessExpr : public ASTAssignableExpr {
@@ -232,6 +288,10 @@ namespace yapl {
 
         [[nodiscard]] const ASTAccessibleExpr *getStruct() const;
         [[nodiscard]] const ASTIdentifierExpr *getAttribute() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchAttributeAccessExpr(this);
+        }
     };
 
     class ASTArrayAccessExpr : public ASTAssignableExpr {
@@ -246,6 +306,10 @@ namespace yapl {
 
         [[nodiscard]] const ASTAccessibleExpr* getArray() const;
         [[nodiscard]] const ASTExprNode* getIndex() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchArrayAccessExpr(this);
+        }
     };
 
     class ASTFunctionCallExpr : public ASTAccessibleExpr {
@@ -264,5 +328,9 @@ namespace yapl {
 
         [[nodiscard]] const ASTCallableExpr *getFunction() const;
         [[nodiscard]] const ASTArgumentList *getArguments() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchFunctionCallExpr(this);
+        }
     };
 } // namespace yapl

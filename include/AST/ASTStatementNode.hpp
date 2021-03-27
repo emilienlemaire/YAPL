@@ -66,6 +66,9 @@ namespace yapl
             return m_Statements.cend();
         }
 
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchBlock(this);
+        }
     };
 
     class ASTExprStatementNode : public ASTStatementNode {
@@ -77,6 +80,10 @@ namespace yapl
         void setExpr(std::unique_ptr<ASTExprNode>);
 
         [[nodiscard]] const ASTExprNode *getExpr() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchExprStatement(this);
+        }
     };
 
     class ASTDeclarationNode : public ASTStatementNode {
@@ -91,6 +98,10 @@ namespace yapl
 
         [[nodiscard]] std::string getType() const;
         [[nodiscard]] std::string getIdentifier() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchDeclaration(this);
+        }
     };
 
     class ASTArrayDeclarationNode : public ASTDeclarationNode {
@@ -102,6 +113,10 @@ namespace yapl
         void setSize(int);
 
         [[nodiscard]] int getSize() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchArrayDeclaration(this);
+        }
     };
 
     class ASTInitializationNode : public ASTDeclarationNode {
@@ -113,6 +128,10 @@ namespace yapl
         void setValue(std::unique_ptr<ASTExprNode>);
 
         [[nodiscard]] const ASTExprNode *getValue() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchInitialization(this);
+        }
     };
 
     class ASTArrayInitializationNode : public ASTArrayDeclarationNode {
@@ -124,6 +143,10 @@ namespace yapl
         void setValues(std::unique_ptr<ASTExprNode>);
 
         [[nodiscard]] const ASTExprNode *getValues() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchArrayInitialization(this);
+        }
     };
 
     class ASTStructInitializationNode : public ASTDeclarationNode {
@@ -135,6 +158,10 @@ namespace yapl
         void setAttributeValues(std::unique_ptr<ASTExprNode>);
 
         [[nodiscard]] const ASTExprNode *getAttributeValues() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchStructInitialization(this);
+        }
     };
 
     class ASTFunctionDefinitionNode : public ASTStatementNode {
@@ -156,6 +183,10 @@ namespace yapl
         [[nodiscard]] std::string getReturnType() const;
         [[nodiscard]] const std::vector<std::unique_ptr<ASTDeclarationNode>> &getParameters() const;
         [[nodiscard]] const ASTBlockNode *getBody() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchFunctionDefinition(this);
+        }
     };
 
     class ASTStructDefinitionNode : public ASTStatementNode {
@@ -173,6 +204,10 @@ namespace yapl
         [[nodiscard]] std::string getStructName() const;
         [[nodiscard]] auto getAttributes() const -> const decltype(m_Attributes)&;
         [[nodiscard]] auto getMethods() const -> const decltype(m_Methods)&;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchStructDefinition(this);
+        }
     };
 
     class ASTImportNode : public ASTStatementNode {
@@ -186,6 +221,10 @@ namespace yapl
 
         [[nodiscard]] const std::vector<std::string> &getNamespaces() const;
         [[nodiscard]] const std::vector<std::string> &getImportedValues() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchImport(this);
+        }
     };
 
     class ASTExportNode : public ASTStatementNode {
@@ -197,6 +236,10 @@ namespace yapl
         void addExportedValue(const std::string&);
 
         [[nodiscard]] const std::vector<std::string> &getExportedValues() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchExport(this);
+        }
     };
 
     class ASTReturnNode : public ASTStatementNode {
@@ -208,6 +251,10 @@ namespace yapl
         void setExpr(std::unique_ptr<ASTExprNode>);
 
         [[nodiscard]] const ASTExprNode *getExpr() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchReturn(this);
+        }
     };
 
     class ASTIfNode : public ASTStatementNode {
@@ -225,6 +272,10 @@ namespace yapl
         [[nodiscard]] const ASTExprNode *getCondition() const;
         [[nodiscard]] const ASTBlockNode *getThenBlock() const;
         [[nodiscard]] const ASTBlockNode *getElseBlock() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchIf(this);
+        }
     };
 
     class ASTForNode : public ASTStatementNode {
@@ -242,6 +293,10 @@ namespace yapl
         [[nodiscard]] std::string getIteratorVariable() const;
         [[nodiscard]] const ASTRangeExpr *getRangeExpr() const;
         [[nodiscard]] const ASTBlockNode *getBlock() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchFor(this);
+        }
     };
 
     class ASTAssignmentNode : public ASTStatementNode {
@@ -256,5 +311,9 @@ namespace yapl
 
         [[nodiscard]] const ASTAssignableExpr *getVariable() const;
         [[nodiscard]] const ASTExprNode *getValue() const;
+
+        virtual void accept(ASTVisitor &visitor) override {
+            visitor.dispatchAssignment(this);
+        }
     };
 } // namespace yapl
