@@ -43,19 +43,19 @@ namespace yapl {
                     std::shared_ptr<Type>,
                     const std::vector<std::shared_ptr<Type>>&
                 );
-        static std::string MangleTypeName(std::shared_ptr<Type>);
+        static std::string MangleTypeName(const std::shared_ptr<Type>&);
         static std::string MangleTypeName(Type&);
 
         static std::string MangleArrayType(
-                std::shared_ptr<Type>,
+                const std::shared_ptr<Type>&,
                 size_t
                 );
         static std::string MangleFunctionType(
-                    std::shared_ptr<Type>,
-                    std::vector<std::shared_ptr<Type>>
+                    const std::shared_ptr<Type>&,
+                    const std::vector<std::shared_ptr<Type>>&
                 );
 
         [[nodiscard]] bool hasName() const { return m_HasName; }
         [[nodiscard]] std::string getIdentifier() const { return m_Identifier; }
     };
-}
+} // namespace yapl

@@ -24,32 +24,32 @@ namespace yapl {
 
     // Virtual classes
     ASTExprNode::ASTExprNode(SharedScope scope)
-        : ASTNode(scope)
+        : ASTNode(std::move(scope))
     {}
 
     ASTUnaryExpr::ASTUnaryExpr(SharedScope scope)
-        : ASTExprNode(scope)
+        : ASTExprNode(std::move(scope))
     {}
 
     ASTCallableExpr::ASTCallableExpr(SharedScope scope)
-        : ASTExprNode(scope)
+        : ASTExprNode(std::move(scope))
     {}
 
     ASTAssignableExpr::ASTAssignableExpr(SharedScope scope)
-        : ASTAccessibleExpr(scope)
+        : ASTAccessibleExpr(std::move(scope))
     {}
 
     ASTAccessibleExpr::ASTAccessibleExpr(SharedScope scope)
-        : ASTCallableExpr(scope)
+        : ASTCallableExpr(std::move(scope))
     {}
 
     ASTNumberExpr::ASTNumberExpr(SharedScope scope)
-        : ASTExprNode(scope)
+        : ASTExprNode(std::move(scope))
     {}
 
     // Non virtual classes
     ASTNegExpr::ASTNegExpr(SharedScope scope)
-        : ASTUnaryExpr(scope)
+        : ASTUnaryExpr(std::move(scope))
     {}
 
     void ASTNegExpr::setValue(std::unique_ptr<ASTExprNode> value) {
@@ -61,7 +61,7 @@ namespace yapl {
     }
 
     ASTNotExpr::ASTNotExpr(SharedScope scope)
-        : ASTUnaryExpr(scope)
+        : ASTUnaryExpr(std::move(scope))
     {}
 
     void ASTNotExpr::setValue(std::unique_ptr<ASTExprNode> value) {
@@ -73,7 +73,7 @@ namespace yapl {
     }
 
     ASTParExpr::ASTParExpr(SharedScope scope)
-        : ASTExprNode(scope)
+        : ASTExprNode(std::move(scope))
     {}
 
     void ASTParExpr::setExpr(std::unique_ptr<ASTExprNode> value) {
@@ -85,7 +85,7 @@ namespace yapl {
     }
 
     ASTArgumentList::ASTArgumentList(SharedScope scope)
-        : ASTExprNode(scope)
+        : ASTExprNode(std::move(scope))
     {}
 
     void ASTArgumentList::addArgument(std::unique_ptr<ASTExprNode> argument) {
@@ -97,7 +97,7 @@ namespace yapl {
     }
 
     ASTBoolLiteralExpr::ASTBoolLiteralExpr(SharedScope scope)
-        : ASTExprNode(scope)
+        : ASTExprNode(std::move(scope))
     {}
 
     void ASTBoolLiteralExpr::setValue(bool value) {
@@ -109,7 +109,7 @@ namespace yapl {
     }
 
     ASTBinaryExpr::ASTBinaryExpr(SharedScope scope)
-        : ASTExprNode(scope)
+        : ASTExprNode(std::move(scope))
     {}
 
     void ASTBinaryExpr::setLHS(std::unique_ptr<ASTExprNode> lhs) {
@@ -121,7 +121,7 @@ namespace yapl {
     }
 
     void ASTBinaryExpr::setOperator(Operator op) {
-        m_Operator = std::move(op);
+        m_Operator = op;
     }
 
     const ASTExprNode* ASTBinaryExpr::getLHS() const {
@@ -138,7 +138,7 @@ namespace yapl {
     }
 
     ASTRangeExpr::ASTRangeExpr(SharedScope scope)
-        : ASTExprNode(scope)
+        : ASTExprNode(std::move(scope))
     {}
 
 
@@ -159,7 +159,7 @@ namespace yapl {
     }
 
     ASTFloatNumberExpr::ASTFloatNumberExpr(SharedScope scope)
-        :ASTNumberExpr(scope)
+        :ASTNumberExpr(std::move(scope))
     {}
 
     void ASTFloatNumberExpr::setValue(float value) {
@@ -171,7 +171,7 @@ namespace yapl {
     }
 
     ASTDoubleNumberExpr::ASTDoubleNumberExpr(SharedScope scope)
-        :ASTNumberExpr(scope)
+        :ASTNumberExpr(std::move(scope))
     {}
 
     void ASTDoubleNumberExpr::setValue(double value) {
@@ -183,7 +183,7 @@ namespace yapl {
     }
 
     ASTIntegerNumberExpr::ASTIntegerNumberExpr(SharedScope scope)
-        : ASTNumberExpr(scope)
+        : ASTNumberExpr(std::move(scope))
     {}
 
     void ASTIntegerNumberExpr::setValue(int value) {
@@ -195,11 +195,11 @@ namespace yapl {
     }
 
     ASTIdentifierExpr::ASTIdentifierExpr(SharedScope scope)
-        : ASTAssignableExpr(scope)
+        : ASTAssignableExpr(std::move(scope))
     {}
 
     void ASTIdentifierExpr::setIdentifier(const std::string &identifier) {
-        m_Identifier = std::move(identifier);
+        m_Identifier = identifier;
     }
 
     std::string ASTIdentifierExpr::getIdentifier() const {
@@ -207,7 +207,7 @@ namespace yapl {
     }
 
     ASTAttributeAccessExpr::ASTAttributeAccessExpr(SharedScope scope)
-        : ASTAccessibleExpr(scope)
+        : ASTAssignableExpr(std::move(scope))
     {}
 
     void ASTAttributeAccessExpr::setStruct(std::unique_ptr<ASTAccessibleExpr> t_Struct) {
@@ -227,7 +227,7 @@ namespace yapl {
     }
 
     ASTArrayAccessExpr::ASTArrayAccessExpr(SharedScope scope)
-        :ASTAssignableExpr(scope)
+        :ASTAssignableExpr(std::move(scope))
     {}
 
     void ASTArrayAccessExpr::setArray(std::unique_ptr<ASTAccessibleExpr> array) {
@@ -247,7 +247,7 @@ namespace yapl {
     }
 
     ASTFunctionCallExpr::ASTFunctionCallExpr(SharedScope scope)
-        :ASTAccessibleExpr(scope)
+        :ASTAccessibleExpr(std::move(scope))
     {}
 
     void ASTFunctionCallExpr::setFunction(std::unique_ptr<ASTCallableExpr> function) {
@@ -265,4 +265,4 @@ namespace yapl {
     const ASTArgumentList *ASTFunctionCallExpr::getArguments() const {
         return m_Arguments.get();
     }
-}
+} // namespace yapl

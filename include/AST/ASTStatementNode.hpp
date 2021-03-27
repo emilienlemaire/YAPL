@@ -33,7 +33,9 @@ namespace yapl
     private:
     public:
         explicit ASTStatementNode(SharedScope);
+        // NOLINTNEXTLINE(modernize-use-override, cppcoreguidelines-explicit-virtual-functions,hicpp-use-override)
         virtual ~ASTStatementNode() override = default;
+
     };
 
     class ASTBlockNode : public ASTNode {
@@ -48,19 +50,19 @@ namespace yapl
             return m_Statements;
         }
 
-        inline auto begin() const -> decltype(m_Statements.begin()) {
+        [[nodiscard]] inline auto begin() const -> decltype(m_Statements.begin()) {
             return m_Statements.begin();
         }
 
-        inline auto end() const -> decltype(m_Statements.end()) {
+        [[nodiscard]] inline auto end() const -> decltype(m_Statements.end()) {
             return m_Statements.end();
         }
 
-        inline auto cbegin() const -> decltype(m_Statements.cbegin()) {
+        [[nodiscard]] inline auto cbegin() const -> decltype(m_Statements.cbegin()) {
             return m_Statements.cbegin();
         }
 
-        inline auto cend() const -> decltype(m_Statements.cend()) {
+        [[nodiscard]] inline auto cend() const -> decltype(m_Statements.cend()) {
             return m_Statements.cend();
         }
 
@@ -93,7 +95,7 @@ namespace yapl
 
     class ASTArrayDeclarationNode : public ASTDeclarationNode {
     private:
-        int m_Size;
+        int m_Size = 0;
     public:
         explicit ASTArrayDeclarationNode(SharedScope);
 
@@ -128,7 +130,7 @@ namespace yapl
     private:
         std::unique_ptr<ASTExprNode> m_AttributeValues;
     public:
-        ASTStructInitializationNode(SharedScope);
+        explicit ASTStructInitializationNode(SharedScope);
 
         void setAttributeValues(std::unique_ptr<ASTExprNode>);
 

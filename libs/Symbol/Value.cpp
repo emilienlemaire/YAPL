@@ -1,5 +1,6 @@
 #include "Symbol/Value.hpp"
 #include <memory>
+#include <utility>
 
 namespace yapl {
     std::shared_ptr<Value> Value::CreateTypeValue(
@@ -8,8 +9,8 @@ namespace yapl {
         ) {
         Value v;
         v.m_Kind = ValueKind::Type;
-        v.m_Name = std::move(name);
-        v.m_Type = type;
+        v.m_Name = name;
+        v.m_Type = std::move(type);
 
         return std::make_shared<Value>(v);
     }
@@ -17,11 +18,11 @@ namespace yapl {
     std::shared_ptr<Value>  Value::CreateVariableValue(const std::string &name, std::shared_ptr<Value> type) {
         Value v;
         v.m_Kind = ValueKind::Variable;
-        v.m_Name = std::move(name);
-        v.m_TypeValue = type;
+        v.m_Name = name;
         if (type) {
             v.m_Type = type->getType();
         }
+        v.m_TypeValue = std::move(type);
         return std::make_shared<Value>(v);
     }
 
@@ -32,16 +33,16 @@ namespace yapl {
     ) {
         Value v;
         v.m_Kind = ValueKind::Function;
-        v.m_Name = std::move(name);
-        v.m_TypeValue = type;
-        v.m_Params = parametersType;
+        v.m_Name = name;
+        v.m_TypeValue = std::move(type);
+        v.m_Params = std::move(parametersType);
 
         v.m_Name = MangleFunctionName(v);
 
         return std::make_shared<Value>(v);
     }
 
-    std::string Value::MangleFunctionName(std::shared_ptr<Value> function) {
+    std::string Value::MangleFunctionName(const std::shared_ptr<Value> &function) {
         auto baseName = function->getName();
 
         if (function->getKind() != ValueKind::Function) {
@@ -58,7 +59,7 @@ namespace yapl {
         return baseName;
     }
 
-    std::string Value::MangleFunctionName(Value function) {
+    std::string Value::MangleFunctionName(const Value &function) {
         auto baseName = function.getName();
 
         if (function.getKind() != ValueKind::Function) {
@@ -74,4 +75,4 @@ namespace yapl {
 
         return baseName;
     }
-}
+} // namesapce yapl

@@ -52,27 +52,27 @@ namespace yapl {
 #endif
     }
 
-    int Parser::getOpPrecedence(Operator t_Operator){
+    int Parser::getOpPrecedence(Operator t_Operator) {
         switch (t_Operator) {
             case Operator::TIMES:
             case Operator::BY:
             case Operator::MOD:
-                return 5;
+                return (int)OperatorPrec::MULT;
             case Operator::PLUS:
             case Operator::MINUS:
-                return 6;
+                return (int)OperatorPrec::ADD;
             case Operator::LTH:
             case Operator::MTH:
             case Operator::LEQ:
             case Operator::MEQ:
-                return 9;
+                return (int)OperatorPrec::COMP;
             case Operator::EQ:
             case Operator::NEQ:
-                return 10;
+                return (int)OperatorPrec::EQ;
             case Operator::AND:
-                return 14;
+                return (int)OperatorPrec::AND;
             case Operator::OR:
-                return 15;
+                return (int)OperatorPrec::OR;
             case Operator::NONE:
                 return -1;
         }
@@ -184,8 +184,9 @@ namespace yapl {
                     );
             }
 
-            if (m_CurrentToken == token::BRA_O) // Cas namespace::{value, value1};
+            if (m_CurrentToken == token::BRA_O) { // Cas namespace::{value, value1};
                 break;
+            }
 
             currentIdentifier = m_CurrentToken.identifier;
 
@@ -592,13 +593,28 @@ namespace yapl {
 
         m_SymbolTable = m_SymbolTable->popScope();
 
+        std::vector<std::shared_ptr<Type>> attrType;
+
+        for (const auto &attr : structDef->getAttributes()) {
+            auto typeName = attr->getType();
+            auto typeValue = m_SymbolTable->lookup(typeName);
+
+            attrType.push_back(typeValue->getType());
+        }
+
+        auto structType = Type::CreateStructType(structDef->getStructName(), attrType);
+
+        auto structTypeValue = Value::CreateTypeValue(structDef->getStructName(), structType);
+
+        m_SymbolTable->insert(std::move(structTypeValue));
+
         m_CurrentToken = m_Lexer.getNextToken(); // Eat '}'
 
         return structDef;
     }
 
     std::unique_ptr<ASTNode> Parser::parseIdentifier(const std::string &identifier) {
-        std::string firstIdentifier = identifier;
+        const std::string& firstIdentifier = std::string(identifier);
         m_CurrentToken = m_Lexer.getNextToken();
 
         if (m_CurrentToken == token::IDENT) {
@@ -644,7 +660,11 @@ namespace yapl {
             return parseInitialization(std::move(declarationNode));
         }
 
-        return std::move(declarationNode);
+        if (m_CurrentToken == token::PAR_O) {
+            return parseStructConstructorInitialization(std::move(declarationNode));
+        }
+
+        return declarationNode;
     }
 
     std::unique_ptr<ASTInitializationNode> Parser::parseInitialization(
@@ -779,6 +799,20 @@ namespace yapl {
         return arrayInitialization;
     }
 
+    std::unique_ptr<ASTStructInitializationNode> Parser::parseStructConstructorInitialization(
+            std::unique_ptr<ASTDeclarationNode> declaration
+        ) {
+        auto structInit = std::make_unique<ASTStructInitializationNode>(m_SymbolTable);
+        structInit->setType(declaration->getType());
+        structInit->setIdentifier(declaration->getIdentifier());
+
+        auto arguments = parseArgumentList();
+
+        structInit->setAttributeValues(std::move(arguments));
+
+        return structInit;
+    }
+
     std::unique_ptr<ASTBlockNode> Parser::parseBlock() {
         auto block = std::make_unique<ASTBlockNode>(m_SymbolTable);
 
@@ -850,7 +884,6 @@ namespace yapl {
                     block->addStatement(std::move(declStmt));
                     continue;
                 }
-
                 auto identExpr = parseIdentifierExpr(oldToken);
 
 
@@ -1014,6 +1047,8 @@ namespace yapl {
                         m_CurrentToken
                     );
             }
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '{'
 
             m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // Enter the else block scope
 
@@ -1239,7 +1274,7 @@ namespace yapl {
             return expr;
         }
 
-        assert(false && "Something went very wrong, this shouldn't happen");
+        assert(false && "Something went very wrong, this shouldn't happen"); // NOLINT
 
         return parseError<ASTNumberExpr>("Something went very wrong, this shouldn't happen");
     }
@@ -1273,7 +1308,7 @@ namespace yapl {
                             "File: {}:{}\n\tNear '{}'. Trying to call an expression which is not a callable",
                             m_FilePath,
                             m_CurrentToken.pos,
-                            identifierExpr->getIdentifier()
+                            m_CurrentToken
                         );
                 }
                 case token::DOT: {
@@ -1347,7 +1382,7 @@ namespace yapl {
         return assignableExpr;
     }
 
-    std::unique_ptr<ASTCallableExpr> Parser::parseIdentifierExpr(Token startToken) {
+    std::unique_ptr<ASTCallableExpr> Parser::parseIdentifierExpr(const Token &startToken) {
         std::unique_ptr<ASTCallableExpr> assignableExpr;
         auto identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
         identifierExpr->setIdentifier(startToken.identifier);
@@ -1373,7 +1408,7 @@ namespace yapl {
                             "File: {}:{}\n\tNear '{}'. Trying to call an expression which is not a callable",
                             m_FilePath,
                             m_CurrentToken.pos,
-                            identifierExpr->getIdentifier()
+                            m_CurrentToken
                         );
                 }
                 case token::DOT: {
@@ -1511,13 +1546,14 @@ namespace yapl {
 
             if (m_CurrentToken != token::PAR_C &&
                     m_CurrentToken != token::BRA_C &&
-                    m_CurrentToken != token::COMMA)
+                    m_CurrentToken != token::COMMA) {
                 return parseError<ASTArgumentList>(
                             "File: {}:{}\n\tExpecting a ',', a ')' or a '}' in an argument list instead of {}",
                             m_FilePath,
                             m_CurrentToken.pos,
                             m_CurrentToken
                         );
+            }
 
             if (m_CurrentToken == token::COMMA) {
                 m_CurrentToken = m_Lexer.getNextToken(); // Eat ','

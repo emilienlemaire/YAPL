@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream& os, const Token& token){
 }
 
 Lexer::Lexer(const std::string& filepath)
-    :m_Logger(CppLogger::Level::Trace, "Lexer")
+    :m_Logger(CppLogger::Level::Trace, "Lexer"), m_Pos({1,0,0})
 {
 
     CppLogger::Format format({
@@ -47,7 +47,7 @@ Lexer::Lexer(const std::string& filepath)
     m_Logger.setFormat(format);
 
     if (!filepath.empty()) {
-        pFile = fopen(filepath.c_str(), "r");
+        pFile = fopen(filepath.c_str(), "r"); // NOLINT: We don't use gsl
         if (pFile == nullptr) {
             m_Logger.printError("Cannot open file: {}\n", filepath);
             exit(EXIT_FAILURE);
@@ -58,7 +58,7 @@ Lexer::Lexer(const std::string& filepath)
 }
 
 Lexer::Lexer(FILE* file)
-    :m_Logger(CppLogger::Level::Trace, "Lexer")
+    :m_Logger(CppLogger::Level::Trace, "Lexer"), m_Pos({1,0,0})
 {
 
     CppLogger::Format format({
@@ -71,7 +71,7 @@ Lexer::Lexer(FILE* file)
     pFile = file;
 }
 Lexer::~Lexer(){
-    fclose(pFile);
+    fclose(pFile); // NOLINT: We don't use gsl
 }
 
 Token Lexer::peekToken() {
@@ -204,7 +204,7 @@ Token Lexer::getNextToken(){
             numVal += '.';
 
             while (std::isdigit(m_CurrentChar)) {
-                numVal += m_CurrentChar;
+                numVal += (char)m_CurrentChar;
                 getNextChar();
             }
 
@@ -385,7 +385,7 @@ Token Lexer::getNextToken(){
                 numVal += '.';
 
                 while (std::isdigit(m_CurrentChar)) {
-                    numVal += m_CurrentChar;
+                    numVal += (char)m_CurrentChar;
                     getNextChar();
                 }
 
@@ -436,7 +436,7 @@ Token Lexer::getNextToken(){
                 if (m_CurrentChar == '\\') {
                     getNextChar();
                 }
-                stringLit += m_CurrentChar;
+                stringLit += (char)m_CurrentChar;
                 getNextChar();
             }
             getNextChar();

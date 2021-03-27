@@ -15,10 +15,10 @@ namespace yapl {
 
     public:
         bool insert(std::shared_ptr<Value> val);
-        std::shared_ptr<Value> lookup(std::string);
+        std::shared_ptr<Value> lookup(const std::string&);
         std::shared_ptr<SymbolTable> pushScope(std::shared_ptr<SymbolTable>);
         std::shared_ptr<SymbolTable> popScope();
 
         static std::shared_ptr<SymbolTable> InitTopSymTab();
     };
-}
+} // namespace yapl

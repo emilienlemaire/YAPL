@@ -32,9 +32,9 @@ struct Position {
 };
 
 struct Token{
-    token token;
-    std::string identifier;
-    Position pos;
+    token token; // NOLINT
+    std::string identifier; // NOLINT
+    Position pos; // NOLINT
 
     friend std::ostream& operator<<(std::ostream& os, const Token& token);
     bool operator!=(enum token tok){
@@ -45,13 +45,12 @@ struct Token{
         return token == tok;
     }
 
-    const bool operator==(const Token other) const {
+    const bool operator==(const Token &other) const {
         return (this->token == other.token) && (this->identifier == other.identifier);
     }
 };
 
-class Lexer
-{
+class Lexer {
 private:
     Token m_CurrentToken = {token::NONE, ""};
     int m_CurrentChar = '\0';
@@ -63,8 +62,14 @@ private:
     std::string lexString();
 
 public:
-    Lexer(const std::string& filepath="");
-    Lexer(FILE* file);
+    explicit Lexer(const std::string& filepath="");
+    explicit Lexer(FILE* file);
+
+    Lexer(const Lexer&) = default;
+    Lexer(Lexer&&) = default;
+
+    Lexer &operator=(const Lexer&) = delete;
+    Lexer &operator=(Lexer&&) = delete;
     ~Lexer();
 
     Token peekToken();

@@ -26,11 +26,11 @@
 
 namespace yapl {
     ASTStatementNode::ASTStatementNode(SharedScope scope)
-        : ASTNode(scope)
+        : ASTNode(std::move(scope))
     {}
 
     ASTBlockNode::ASTBlockNode(SharedScope scope)
-        : ASTNode(scope)
+        : ASTNode(std::move(scope))
     {}
 
     void ASTBlockNode::addStatement(std::unique_ptr<ASTStatementNode> statement) {
@@ -38,7 +38,7 @@ namespace yapl {
     }
 
     ASTExprStatementNode::ASTExprStatementNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTExprStatementNode::setExpr(std::unique_ptr<ASTExprNode> expr) {
@@ -50,11 +50,11 @@ namespace yapl {
     }
 
     ASTDeclarationNode::ASTDeclarationNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTDeclarationNode::setType(const std::string &type) {
-        m_Type = std::move(type);
+        m_Type = type;
     }
 
     void ASTDeclarationNode::setIdentifier(const std::string &identifier) {
@@ -70,7 +70,7 @@ namespace yapl {
     }
 
     ASTArrayDeclarationNode::ASTArrayDeclarationNode(SharedScope scope)
-        :ASTDeclarationNode(scope)
+        :ASTDeclarationNode(std::move(scope))
     {}
 
     void ASTArrayDeclarationNode::setSize(int size) {
@@ -82,7 +82,7 @@ namespace yapl {
     }
 
     ASTInitializationNode::ASTInitializationNode(SharedScope scope)
-        : ASTDeclarationNode(scope)
+        : ASTDeclarationNode(std::move(scope))
     {}
 
     void ASTInitializationNode::setValue(std::unique_ptr<ASTExprNode> value) {
@@ -94,7 +94,7 @@ namespace yapl {
     }
 
     ASTArrayInitializationNode::ASTArrayInitializationNode(SharedScope scope)
-        :ASTArrayDeclarationNode(scope)
+        :ASTArrayDeclarationNode(std::move(scope))
     {}
 
     void ASTArrayInitializationNode::setValues(std::unique_ptr<ASTExprNode> values) {
@@ -106,7 +106,7 @@ namespace yapl {
     }
 
     ASTStructInitializationNode::ASTStructInitializationNode(SharedScope scope)
-        : ASTDeclarationNode(scope)
+        : ASTDeclarationNode(std::move(scope))
     {}
 
     void ASTStructInitializationNode::setAttributeValues(std::unique_ptr<ASTExprNode> values) {
@@ -118,15 +118,15 @@ namespace yapl {
     }
 
     ASTFunctionDefinitionNode::ASTFunctionDefinitionNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTFunctionDefinitionNode::setFunctionName(const std::string &functionName) {
-        m_FunctionName = std::move(functionName);
+        m_FunctionName = functionName;
     }
 
     void ASTFunctionDefinitionNode::setReturnType(const std::string &returnType) {
-        m_ReturnType = std::move(m_ReturnType);
+        m_ReturnType = returnType;
     }
 
     void ASTFunctionDefinitionNode::addParameter(std::unique_ptr<ASTDeclarationNode> parameter) {
@@ -154,11 +154,11 @@ namespace yapl {
     }
 
     ASTStructDefinitionNode::ASTStructDefinitionNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTStructDefinitionNode::setStructName(const std::string &structName) {
-        m_StructName = std::move(structName);
+        m_StructName = structName;
     }
 
     void ASTStructDefinitionNode::addAttribute(std::unique_ptr<ASTDeclarationNode> attribute) {
@@ -182,15 +182,15 @@ namespace yapl {
     }
 
     ASTImportNode::ASTImportNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTImportNode::addNamespace(const std::string &t_Namespace) {
-        m_Namespaces.push_back(std::move(t_Namespace));
+        m_Namespaces.push_back(t_Namespace);
     }
 
     void ASTImportNode::addImportedValue(const std::string &value) {
-        m_ImportedValues.push_back(std::move(value));
+        m_ImportedValues.push_back(value);
     }
 
     const std::vector<std::string> &ASTImportNode::getNamespaces() const {
@@ -202,11 +202,11 @@ namespace yapl {
     }
 
     ASTExportNode::ASTExportNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTExportNode::addExportedValue(const std::string &value) {
-        m_ExportedValues.push_back(std::move(value));
+        m_ExportedValues.push_back(value);
     }
 
     const std::vector<std::string> &ASTExportNode::getExportedValues() const {
@@ -214,7 +214,7 @@ namespace yapl {
     }
 
     ASTReturnNode::ASTReturnNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTReturnNode::setExpr(std::unique_ptr<ASTExprNode> expr) {
@@ -226,7 +226,7 @@ namespace yapl {
     }
 
     ASTIfNode::ASTIfNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTIfNode::setCondition(std::unique_ptr<ASTExprNode> condition) {
@@ -254,11 +254,11 @@ namespace yapl {
     }
 
     ASTForNode::ASTForNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTForNode::setIteratorVariable(const std::string &iteratorVariable) {
-        m_IteratorVariable = std::move(iteratorVariable);
+        m_IteratorVariable = iteratorVariable;
     }
 
     void ASTForNode::setRangeExpr(std::unique_ptr<ASTRangeExpr> range) {
@@ -282,7 +282,7 @@ namespace yapl {
     }
 
     ASTAssignmentNode::ASTAssignmentNode(SharedScope scope)
-        : ASTStatementNode(scope)
+        : ASTStatementNode(std::move(scope))
     {}
 
     void ASTAssignmentNode::setVariable(std::unique_ptr<ASTAssignableExpr> variable) {

@@ -35,6 +35,8 @@ struct str {
         if (v < 0) {
             v = -v;
             f2(v);
+        } else {
+            f3(v);
         }
 
         for (int i in 0 ... 12) {

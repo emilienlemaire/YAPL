@@ -26,9 +26,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     include_directories(/usr/local/opt/llvm/include)
 endif()
 
-file(GLOB test_files "tests/yapl/*.yapl")
-
-message(STATUS "Found tests files ${test_files}")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(libs)
 add_subdirectory(vendor)
@@ -38,6 +38,4 @@ add_executable(yapl
     main.cpp)
 
 target_link_libraries(yapl PUBLIC cpplogger parser)
-
-
 

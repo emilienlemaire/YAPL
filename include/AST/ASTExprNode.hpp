@@ -106,13 +106,13 @@ namespace yapl {
     public:
         explicit ASTArgumentList(SharedScope);
 
-        typedef typename std::vector<std::unique_ptr<ASTExprNode>> vectorType;
-        typedef typename vectorType::iterator iterator;
-        typedef typename vectorType::const_iterator const_iterator;
+        using vectorType = typename std::vector<std::unique_ptr<ASTExprNode>>;
+        using iterator = typename vectorType::iterator;
+        using const_iterator = typename vectorType::const_iterator;
 
         void addArgument(std::unique_ptr<ASTExprNode>);
 
-        const vectorType &getArguments() const;
+        [[nodiscard]] const vectorType &getArguments() const;
 
         inline auto begin() noexcept -> decltype(m_Arguments.begin())
             { return m_Arguments.begin(); }
@@ -126,9 +126,9 @@ namespace yapl {
 
     class ASTBoolLiteralExpr : public ASTExprNode {
     private:
-        bool m_Value;
+        bool m_Value = false;
     public:
-        ASTBoolLiteralExpr(SharedScope);
+        explicit ASTBoolLiteralExpr(SharedScope);
 
         void setValue(bool);
 
@@ -140,7 +140,7 @@ namespace yapl {
         std::unique_ptr<ASTExprNode> m_LHS;
         std::unique_ptr<ASTExprNode> m_RHS;
 
-        Operator m_Operator;
+        Operator m_Operator = Operator::NONE;
     public:
         explicit ASTBinaryExpr(SharedScope);
 
@@ -178,7 +178,7 @@ namespace yapl {
 
     class ASTFloatNumberExpr : public ASTNumberExpr {
     private:
-        float m_Value;
+        float m_Value = 0;
     public:
         explicit ASTFloatNumberExpr(SharedScope);
 
@@ -189,7 +189,7 @@ namespace yapl {
 
     class ASTDoubleNumberExpr : public ASTNumberExpr {
     private:
-        double m_Value;
+        double m_Value = 0;
     public:
         explicit ASTDoubleNumberExpr(SharedScope);
 
@@ -200,7 +200,7 @@ namespace yapl {
 
     class ASTIntegerNumberExpr : public ASTNumberExpr {
     private:
-        int m_Value;
+        int m_Value = 0;
     public:
         explicit ASTIntegerNumberExpr(SharedScope);
 
@@ -220,7 +220,7 @@ namespace yapl {
         [[nodiscard]] std::string getIdentifier() const;
     };
 
-    class ASTAttributeAccessExpr : public ASTAccessibleExpr {
+    class ASTAttributeAccessExpr : public ASTAssignableExpr {
     private:
         std::unique_ptr<ASTAccessibleExpr> m_Struct;
         std::unique_ptr<ASTIdentifierExpr> m_Attribute;
@@ -265,4 +265,4 @@ namespace yapl {
         [[nodiscard]] const ASTCallableExpr *getFunction() const;
         [[nodiscard]] const ASTArgumentList *getArguments() const;
     };
-}
+} // namespace yapl

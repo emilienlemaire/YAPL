@@ -47,7 +47,7 @@ namespace yapl {
     private:
         std::shared_ptr<SymbolTable> m_Scope;
     public:
-        ASTNode(std::shared_ptr<SymbolTable>);
+        explicit ASTNode(std::shared_ptr<SymbolTable>);
         virtual ~ASTNode() = default;
 
         [[nodiscard]] std::shared_ptr<SymbolTable> getScope() const;
@@ -88,8 +88,8 @@ namespace yapl {
 
     class ASTEOFNode : public ASTNode {
     public:
-        ASTEOFNode(std::shared_ptr<SymbolTable> st)
-            : ASTNode(st)
+        explicit ASTEOFNode(std::shared_ptr<SymbolTable> st)
+            : ASTNode(std::move(st))
         {}
     };
 
@@ -98,8 +98,8 @@ namespace yapl {
         std::vector<std::unique_ptr<ASTNode>> m_Nodes;
     public:
         ASTProgramNode(std::shared_ptr<SymbolTable> scope, std::vector<std::unique_ptr<ASTNode>> nodes)
-            :ASTNode(scope), m_Nodes(std::move(nodes))
-        {};
+            :ASTNode(std::move(scope)), m_Nodes(std::move(nodes))
+        {}
         void addNode(std::unique_ptr<ASTNode> node);
 
         using vec_type = std::vector<std::unique_ptr<ASTNode>>;
@@ -111,4 +111,4 @@ namespace yapl {
         [[nodiscard]] inline iterator end() noexcept { return m_Nodes.end(); }
         [[nodiscard]] inline const_iterator cend() const noexcept { return m_Nodes.cend(); }
     };
-}
+} // namespace yapl

@@ -1,6 +1,7 @@
 #include <exception>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "Symbol/Type.hpp"
 
@@ -11,15 +12,15 @@ namespace yapl {
 
         t.m_HasName = true;
         t.m_IsBaseType = true;
-        t.m_Identifier = std::move(name);
+        t.m_Identifier = name;
 
         return std::make_shared<Type>(t);
     }
 
     std::shared_ptr<Type> Type::CreateSimpleType(const std::string &name) {
         Type t;
-        t.m_Identifier = std::move(name);
-        
+        t.m_Identifier = name;
+
         return std::make_shared<Type>(t);
     }
 
@@ -29,8 +30,8 @@ namespace yapl {
     ) {
         Type t;
 
-        t.m_Identifier = std::move(name);
-        t.m_FieldsTypes = std::move(fields);
+        t.m_Identifier = name;
+        t.m_FieldsTypes = fields;
         t.m_IsStruct = true;
         t.m_HasName = true;
 
@@ -41,7 +42,7 @@ namespace yapl {
         Type t;
 
         t.m_IsArray = true;
-        t.m_ElementsType = elementsType;
+        t.m_ElementsType = std::move(elementsType);
         t.m_Size = size;
 
         return std::make_shared<Type>(t);
@@ -53,13 +54,13 @@ namespace yapl {
         Type t;
 
         t.m_IsFunctionType = true;
-        t.m_ReturnType = retType;
+        t.m_ReturnType = std::move(retType);
         t.m_ParamsTypes = paramsType;
 
         return std::make_shared<Type>(t);
     }
 
-    std::string Type::MangleTypeName(std::shared_ptr<Type> type) {
+    std::string Type::MangleTypeName(const std::shared_ptr<Type>& type) {
         return MangleTypeName(*type);
     }
 
@@ -89,7 +90,7 @@ namespace yapl {
             }
             mangle += type.m_ReturnType->getIdentifier();
 
-            for(auto paramType : type.m_ParamsTypes) {
+            for(const auto& paramType : type.m_ParamsTypes) {
                 if (!paramType->hasName()) {
                     MangleTypeName(paramType);
                 }
@@ -105,7 +106,7 @@ namespace yapl {
         return "";
     }
 
-    std::string Type::MangleArrayType(std::shared_ptr<Type> elementsType, size_t size) {
+    std::string Type::MangleArrayType(const std::shared_ptr<Type> &elementsType, size_t size) {
             std::string mangle = "Arr";
             if (!elementsType->hasName()) {
                 MangleTypeName(elementsType);
@@ -117,8 +118,8 @@ namespace yapl {
     }
 
     std::string Type::MangleFunctionType(
-        std::shared_ptr<Type> retType,
-        std::vector<std::shared_ptr<Type>> paramsTypes
+        const std::shared_ptr<Type> &retType,
+        const std::vector<std::shared_ptr<Type>> &paramsTypes
     ) {
             std::string mangle = "Func";
             if (!retType->hasName()) {
@@ -126,7 +127,7 @@ namespace yapl {
             }
             mangle += retType->getIdentifier();
 
-            for(auto paramType : paramsTypes) {
+            for(const auto& paramType : paramsTypes) {
                 if (!paramType->hasName()) {
                     MangleTypeName(paramType);
                 }
@@ -135,4 +136,4 @@ namespace yapl {
 
             return mangle;
     }
-}
+} // namespace yapl

@@ -1,3 +1,23 @@
+file(GLOB test_files "yapl/*.yapl")
+
+message(STATUS "Found tests files ${test_files}")
+
+foreach(yaplFile IN LISTS test_files)
+    message(STATUS "Creating test target for ${yaplFile}")
+    get_filename_component(fileName "${yaplFile}" NAME)
+    string(REPLACE ".yapl" "" file "${fileName}")
+    set(testTarget "testYaplFile${file}")
+    list(APPEND testTargets "${testTarget}")
+    add_custom_target(${testTarget}
+        COMMAND yapl "${yaplFile}"
+        COMMENT "Running yapl on ${fileName}"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/tests/yapl"
+        VERBATIM
+        )
+endforeach()
+
+add_custom_target(runTestFiles ALL DEPENDS "${testTargets}")
+
 find_package(Catch2 REQUIRED)
 
 add_executable(tests

@@ -41,7 +41,7 @@ namespace yapl {
         std::vector<std::shared_ptr<Value>> m_Params;
         std::shared_ptr<SymbolTable> m_Scope = nullptr;
 
-        static std::string MangleFunctionName(Value);
+        static std::string MangleFunctionName(const Value&);
 
         Value() = default;
         Value(ValueKind, const std::string&, Type);
@@ -54,11 +54,11 @@ namespace yapl {
                 std::vector<std::shared_ptr<Value>>
             );
 
-        static std::string MangleFunctionName(std::shared_ptr<Value>);
+        static std::string MangleFunctionName(const std::shared_ptr<Value>&);
 
         [[nodiscard]] std::string getName() const { return m_Name; }
         [[nodiscard]] ValueKind getKind() const { return m_Kind; }
         [[nodiscard]] std::shared_ptr<Type> getType() const { return m_Type; }
         [[nodiscard]] std::shared_ptr<Value> getTypeValue() const {return m_TypeValue; }
     };
-}
+} // namespace yapl

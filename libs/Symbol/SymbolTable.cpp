@@ -1,5 +1,6 @@
 #include "Symbol/SymbolTable.hpp"
 #include <memory>
+#include <utility>
 
 namespace yapl {
     std::shared_ptr<SymbolTable> SymbolTable::InitTopSymTab() {
@@ -39,12 +40,12 @@ namespace yapl {
             return false;
         }
 
-        m_Symbols[name] = val;
+        m_Symbols[name] = std::move(val);
 
         return true;
     }
 
-    std::shared_ptr<Value> SymbolTable::lookup(std::string name) {
+    std::shared_ptr<Value> SymbolTable::lookup(const std::string &name) {
         auto it = m_Symbols.find(name);
 
         if (it == m_Symbols.end()) {
@@ -62,7 +63,7 @@ namespace yapl {
             std::shared_ptr<SymbolTable> parent
     ) {
         SymbolTable s;
-        s.m_ParentScope = parent;
+        s.m_ParentScope = std::move(parent);
 
         auto s_ptr = std::make_shared<SymbolTable>(s);
 
@@ -74,4 +75,4 @@ namespace yapl {
     std::shared_ptr<SymbolTable> SymbolTable::popScope() {
         return m_ParentScope;
     }
-}
+} // namespace yapl

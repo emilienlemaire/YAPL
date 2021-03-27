@@ -32,6 +32,15 @@
 #include "Symbol/SymbolTable.hpp"
 
 namespace yapl {
+    enum class OperatorPrec {
+        MULT = 5,
+        ADD = 6,
+        COMP = 9,
+        EQ = 10,
+        AND = 14,
+        OR = 15
+    };
+
     class Parser {
     private:
         CppLogger::CppLogger m_Logger;
@@ -81,6 +90,7 @@ namespace yapl {
         std::unique_ptr<ASTArrayDeclarationNode> parseArrayDeclaration(std::unique_ptr<ASTDeclarationNode>);
         std::unique_ptr<ASTInitializationNode> parseInitialization(std::unique_ptr<ASTDeclarationNode>);
         std::unique_ptr<ASTArrayInitializationNode> parseArrayInitialization(std::unique_ptr<ASTArrayDeclarationNode>);
+        std::unique_ptr<ASTStructInitializationNode> parseStructConstructorInitialization(std::unique_ptr<ASTDeclarationNode>);
         std::unique_ptr<ASTBlockNode> parseBlock();
 
         // Available inside a function block
@@ -95,7 +105,7 @@ namespace yapl {
         std::unique_ptr<ASTNumberExpr> parseNumberExpr();
         std::unique_ptr<ASTFloatNumberExpr> parseFloatingNumberExpr(const std::string&); std::unique_ptr<ASTIntegerNumberExpr> parseIntegerNumberExpr();
         std::unique_ptr<ASTCallableExpr> parseIdentifierExpr();
-        std::unique_ptr<ASTCallableExpr> parseIdentifierExpr(Token);
+        std::unique_ptr<ASTCallableExpr> parseIdentifierExpr(const Token&);
         std::unique_ptr<ASTUnaryExpr> parseUnaryExpr();
         std::unique_ptr<ASTBinaryExpr> parseBinaryExpr(std::unique_ptr<ASTExprNode>);
         std::unique_ptr<ASTRangeExpr> parseRangeExpr();
