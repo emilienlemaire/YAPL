@@ -37,5 +37,5 @@ add_subdirectory(tests)
 add_executable(yapl
     main.cpp)
 
-target_link_libraries(yapl PUBLIC cpplogger parser)
+target_link_libraries(yapl PUBLIC cpplogger parser printer)
 

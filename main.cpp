@@ -18,6 +18,7 @@
 
 #include "YAPL.h"
 #include "Parser/Parser.hpp"
+#include "Printer/ASTPrinter.hpp"
 
 int main(int argc, char *argv[]) {
     CppLogger::CppLogger mainConsole(CppLogger::Level::Trace, "Main");
@@ -33,6 +34,8 @@ int main(int argc, char *argv[]) {
         std::string filepath = argv[1]; //NOLINT: We are in the main function so this is ok.
         yapl::Parser parser(filepath, CppLogger::Level::Trace);
         parser.parse();
+        yapl::ASTPrinter printer(std::move(parser.getProgram()));
+        printer.dump();
     } else {
         yapl::Parser parser("", CppLogger::Level::Trace);
         parser.parse();

@@ -1,38 +1,10 @@
 #pragma once
 
+#include "ASTNode.hpp"
+#include "ASTExprNode.hpp"
+#include "ASTStatementNode.hpp"
+
 namespace yapl {
-    class ASTProgramNode;
-
-    class ASTNegExpr;
-    class ASTNotExpr;
-    class ASTParExpr;
-    class ASTArgumentList;
-    class ASTBoolLiteralExpr;
-    class ASTBinaryExpr;
-    class ASTRangeExpr;
-    class ASTFloatNumberExpr;
-    class ASTDoubleNumberExpr;
-    class ASTIntegerNumberExpr;
-    class ASTIdentifierExpr;
-    class ASTAttributeAccessExpr;
-    class ASTArrayAccessExpr;
-    class ASTFunctionCallExpr;
-
-    class ASTBlockNode;
-    class ASTExprStatementNode;
-    class ASTDeclarationNode;
-    class ASTArrayDeclarationNode;
-    class ASTInitializationNode;
-    class ASTArrayInitializationNode;
-    class ASTStructInitializationNode;
-    class ASTFunctionDefinitionNode;
-    class ASTStructDefinitionNode;
-    class ASTImportNode;
-    class ASTExportNode;
-    class ASTReturnNode;
-    class ASTIfNode;
-    class ASTForNode;
-    class ASTAssignmentNode;
 
     class ASTVisitor {
     public:

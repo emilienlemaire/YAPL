@@ -17,12 +17,14 @@
 #include <algorithm>
 #include <cstddef>
 #include <deque>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "AST/ASTNode.hpp"
 #include "AST/ASTStatementNode.hpp"
+#include "AST/ASTVisitor.hpp"
 
 namespace yapl {
     ASTStatementNode::ASTStatementNode(SharedScope scope)
@@ -37,6 +39,10 @@ namespace yapl {
         m_Statements.push_back(std::move(statement));
     }
 
+    void ASTBlockNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchBlock(this);
+    }
+
     ASTExprStatementNode::ASTExprStatementNode(SharedScope scope)
         : ASTStatementNode(std::move(scope))
     {}
@@ -45,8 +51,12 @@ namespace yapl {
         m_Expr = std::move(expr);
     }
 
-    const ASTExprNode *ASTExprStatementNode::getExpr() const {
+    ASTExprNode *ASTExprStatementNode::getExpr() const {
         return m_Expr.get();
+    }
+
+    void ASTExprStatementNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchExprStatement(this);
     }
 
     ASTDeclarationNode::ASTDeclarationNode(SharedScope scope)
@@ -69,6 +79,10 @@ namespace yapl {
         return m_Identifier;
     }
 
+    void ASTDeclarationNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchDeclaration(this);
+    }
+
     ASTArrayDeclarationNode::ASTArrayDeclarationNode(SharedScope scope)
         :ASTDeclarationNode(std::move(scope))
     {}
@@ -81,6 +95,10 @@ namespace yapl {
         return m_Size;
     }
 
+    void ASTArrayDeclarationNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchArrayDeclaration(this);
+    }
+
     ASTInitializationNode::ASTInitializationNode(SharedScope scope)
         : ASTDeclarationNode(std::move(scope))
     {}
@@ -89,8 +107,12 @@ namespace yapl {
         m_Value = std::move(value);
     }
 
-    const ASTExprNode *ASTInitializationNode::getValue() const {
+    ASTExprNode *ASTInitializationNode::getValue() const {
         return m_Value.get();
+    }
+
+    void ASTInitializationNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchInitialization(this);
     }
 
     ASTArrayInitializationNode::ASTArrayInitializationNode(SharedScope scope)
@@ -101,8 +123,12 @@ namespace yapl {
         m_Values = std::move(values);
     }
 
-    const ASTExprNode *ASTArrayInitializationNode::getValues() const {
+    ASTExprNode *ASTArrayInitializationNode::getValues() const {
         return m_Values.get();
+    }
+
+    void ASTArrayInitializationNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchArrayInitialization(this);
     }
 
     ASTStructInitializationNode::ASTStructInitializationNode(SharedScope scope)
@@ -113,8 +139,12 @@ namespace yapl {
         m_AttributeValues = std::move(values);
     }
 
-    const ASTExprNode *ASTStructInitializationNode::getAttributeValues() const {
+    ASTExprNode *ASTStructInitializationNode::getAttributeValues() const {
         return m_AttributeValues.get();
+    }
+
+    void ASTStructInitializationNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchStructInitialization(this);
     }
 
     ASTFunctionDefinitionNode::ASTFunctionDefinitionNode(SharedScope scope)
@@ -145,12 +175,16 @@ namespace yapl {
         return m_ReturnType;
     }
 
-    const std::vector<std::unique_ptr<ASTDeclarationNode>> &ASTFunctionDefinitionNode::getParameters() const {
+    std::vector<std::unique_ptr<ASTDeclarationNode>> const &ASTFunctionDefinitionNode::getParameters() const {
         return m_Parameters;
     }
 
-    const ASTBlockNode *ASTFunctionDefinitionNode::getBody() const {
+    ASTBlockNode *ASTFunctionDefinitionNode::getBody() const {
         return m_Body.get();
+    }
+
+    void ASTFunctionDefinitionNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchFunctionDefinition(this);
     }
 
     ASTStructDefinitionNode::ASTStructDefinitionNode(SharedScope scope)
@@ -181,6 +215,10 @@ namespace yapl {
         return m_Methods;
     }
 
+    void ASTStructDefinitionNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchStructDefinition(this);
+    }
+
     ASTImportNode::ASTImportNode(SharedScope scope)
         : ASTStatementNode(std::move(scope))
     {}
@@ -201,6 +239,10 @@ namespace yapl {
         return m_ImportedValues;
     }
 
+    void ASTImportNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchImport(this);
+    }
+
     ASTExportNode::ASTExportNode(SharedScope scope)
         : ASTStatementNode(std::move(scope))
     {}
@@ -213,6 +255,10 @@ namespace yapl {
         return m_ExportedValues;
     }
 
+    void ASTExportNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchExport(this);
+    }
+
     ASTReturnNode::ASTReturnNode(SharedScope scope)
         : ASTStatementNode(std::move(scope))
     {}
@@ -221,8 +267,12 @@ namespace yapl {
         m_Expr = std::move(expr);
     }
 
-    const ASTExprNode *ASTReturnNode::getExpr() const {
+    ASTExprNode *ASTReturnNode::getExpr() const {
         return m_Expr.get();
+    }
+
+    void ASTReturnNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchReturn(this);
     }
 
     ASTIfNode::ASTIfNode(SharedScope scope)
@@ -241,16 +291,20 @@ namespace yapl {
         m_ElseBlock = std::move(elseBlock);
     }
 
-    const ASTExprNode *ASTIfNode::getCondition() const {
+    ASTExprNode *ASTIfNode::getCondition() const {
         return m_Condition.get();
     }
 
-    const ASTBlockNode *ASTIfNode::getThenBlock() const {
+    ASTBlockNode *ASTIfNode::getThenBlock() const {
         return m_ThenBlock.get();
     }
 
-    const ASTBlockNode *ASTIfNode::getElseBlock() const {
+    ASTBlockNode *ASTIfNode::getElseBlock() const {
         return m_ElseBlock.get();
+    }
+
+    void ASTIfNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchIf(this);
     }
 
     ASTForNode::ASTForNode(SharedScope scope)
@@ -273,12 +327,16 @@ namespace yapl {
         return m_IteratorVariable;
     }
 
-    const ASTRangeExpr *ASTForNode::getRangeExpr() const {
+    ASTRangeExpr *ASTForNode::getRangeExpr() const {
         return m_RangeExpr.get();
     }
 
-    const ASTBlockNode *ASTForNode::getBlock() const {
+    ASTBlockNode *ASTForNode::getBlock() const {
         return m_Block.get();
+    }
+
+    void ASTForNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchFor(this);
     }
 
     ASTAssignmentNode::ASTAssignmentNode(SharedScope scope)
@@ -293,11 +351,15 @@ namespace yapl {
         m_Value = std::move(value);
     }
 
-    const ASTAssignableExpr *ASTAssignmentNode::getVariable() const {
+    ASTAssignableExpr *ASTAssignmentNode::getVariable() const {
         return m_Variable.get();
     }
 
-    const ASTExprNode *ASTAssignmentNode::getValue() const {
+    ASTExprNode *ASTAssignmentNode::getValue() const {
         return m_Value.get();
+    }
+
+    void ASTAssignmentNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchAssignment(this);
     }
 } // namespace yapl

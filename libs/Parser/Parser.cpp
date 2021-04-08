@@ -343,6 +343,8 @@ namespace yapl {
     std::unique_ptr<ASTFunctionDefinitionNode> Parser::parseFunctionDefinition() {
         m_CurrentToken = m_Lexer.getNextToken(); // Eat 'func'
 
+        auto functionDefinition = std::make_unique<ASTFunctionDefinitionNode>(m_SymbolTable);
+
         if (m_CurrentToken != token::IDENT) {
             return parseError<ASTFunctionDefinitionNode>(
                     "File: {}:{}\n\tExpecting an identifier after 'func' instead of {}",
@@ -369,8 +371,6 @@ namespace yapl {
 
         // This should allow for default parameters, let's try
         bool hasDefaultParameter = false;
-
-        std::vector<std::unique_ptr<ASTDeclarationNode>> parameters;
 
         while (m_CurrentToken != token::PAR_C) {
             if (m_CurrentToken != token::IDENT) {
@@ -409,7 +409,7 @@ namespace yapl {
                     );
             }
 
-            parameters.push_back(std::move(declaration));
+            functionDefinition->addParameter(std::move(declaration));
 
             if (m_CurrentToken == token::COMMA) {
                 m_CurrentToken = m_Lexer.getNextToken();
@@ -474,7 +474,7 @@ namespace yapl {
         std::vector<std::shared_ptr<Value>> parametersValue = {};
 
         // TODO: Create overload for each default parameters
-        for (const auto &param : parameters) {
+        for (const auto &param : functionDefinition->getParameters()) {
             auto paramType = m_SymbolTable->lookup(param->getType());
             auto paramValue = Value::CreateVariableValue(param->getIdentifier(), paramType);
             parametersValue.push_back(paramValue);
@@ -485,8 +485,6 @@ namespace yapl {
 
         auto body = parseBlock(); // Eats '}'
 
-
-        auto functionDefinition = std::make_unique<ASTFunctionDefinitionNode>(m_SymbolTable);
         functionDefinition->setFunctionName(funcName);
         functionDefinition->setReturnType(typeName);
         functionDefinition->setBody(std::move(body));
@@ -806,7 +804,7 @@ namespace yapl {
         structInit->setType(declaration->getType());
         structInit->setIdentifier(declaration->getIdentifier());
 
-        auto arguments = parseArgumentList();
+        auto arguments = parseArgumentList(); // Eats ')'
 
         structInit->setAttributeValues(std::move(arguments));
 
@@ -884,39 +882,34 @@ namespace yapl {
                     block->addStatement(std::move(declStmt));
                     continue;
                 }
-                auto identExpr = parseIdentifierExpr(oldToken);
 
+                auto exprTmp = parseExpr(oldToken);
 
-                if (auto assignExpr = dynamic_cast<ASTAssignableExpr*>(identExpr.get())) {
-                    if (m_CurrentToken == token::ASSIGN) {
-                        auto assignAST = std::make_unique<ASTAssignableExpr>(m_SymbolTable);
-                        *assignAST = *assignExpr;
+                if (m_CurrentToken == token::ASSIGN) {
+                    auto assignNode = parseAssignment(std::move(exprTmp));
 
-                        auto assignNode = parseAssignment(std::move(assignAST));
-
-                        if (m_CurrentToken != token::SEMI) {
-                            return parseError<ASTBlockNode>(
-                                    "File: {}:{}\n\tExpecting a ';' after an assignement instead of {}",
-                                    m_FilePath,
-                                    m_CurrentToken.pos,
-                                    m_CurrentToken
+                    if (m_CurrentToken != token::SEMI) {
+                        return parseError<ASTBlockNode>(
+                                "File: {}:{}\n\tExpecting a ';' after an assignement instead of {}",
+                                m_FilePath,
+                                m_CurrentToken.pos,
+                                m_CurrentToken
                                 );
-                        }
-
-                        m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
-
-                        block->addStatement(std::move(assignNode));
-                        continue;
                     }
+
+                    m_CurrentToken = m_Lexer.getNextToken(); // Eat ';'
+
+                    block->addStatement(std::move(assignNode));
+                    continue;
                 }
 
                 auto exprStmt = std::make_unique<ASTExprStatementNode>(m_SymbolTable);
 
-                exprStmt->setExpr(std::move(identExpr));
+                exprStmt->setExpr(std::move(exprTmp));
 
                 if (m_CurrentToken != token::SEMI) {
                     return parseError<ASTBlockNode>(
-                            "File: {}:{}\n\tExpecting a ';' after an identifier expression statement istead of {}",
+                            "File: {}:{}\n\tExpecting a ';' after an identifier expression statement instead of {}",
                             m_FilePath,
                             m_CurrentToken.pos,
                             m_CurrentToken
@@ -1152,23 +1145,31 @@ namespace yapl {
         return forStmt;
     }
 
-    std::unique_ptr<ASTAssignmentNode> Parser::parseAssignment(std::unique_ptr<ASTAssignableExpr> var) {
-        m_CurrentToken = m_Lexer.getNextToken(); // Eat '='
+    std::unique_ptr<ASTAssignmentNode> Parser::parseAssignment(std::unique_ptr<ASTExprNode> var) {
+        if (auto assignable = static_unique_pointer_cast<ASTAssignableExpr>(std::move(var))) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '='
 
-        if (auto expr = parseExpr()) {
-            auto assignment = std::make_unique<ASTAssignmentNode>(m_SymbolTable);
+            if (auto expr = parseExpr()) {
+                auto assignment = std::make_unique<ASTAssignmentNode>(m_SymbolTable);
 
-            assignment->setVariable(std::move(var));
-            assignment->setValue(std::move(expr));
+                assignment->setVariable(std::move(assignable));
+                assignment->setValue(std::move(expr));
 
-            return assignment;
+                return assignment;
+            }
+
+            return parseError<ASTAssignmentNode>(
+                    "File: {}:{}\n\tInvalid expression after assignment.",
+                    m_FilePath,
+                    m_CurrentToken.pos
+                );
         }
 
         return parseError<ASTAssignmentNode>(
-                "File: {}:{}\n\tInvalid expression after assignment.",
+                "File: {}:{}\n\tNear {}: Trying to assign a value to a non-assignable expression.",
                 m_FilePath,
-                m_CurrentToken.pos
-            );
+                m_CurrentToken.pos,
+                m_CurrentToken);
     }
 
     /***************
@@ -1196,6 +1197,25 @@ namespace yapl {
 
         if (m_CurrentToken == token::IDENT) {
             exprTmp = parseIdentifierExpr();
+
+            while(m_CurrentToken == token::DOT ||
+                    m_CurrentToken == token::PAR_O ||
+                    m_CurrentToken == token::ACC_O) {
+                switch (m_CurrentToken.token) {
+                    case token::DOT:
+                        exprTmp = parseAttributeAccess(std::move(exprTmp));
+                        break;
+                    case token::PAR_O:
+                        exprTmp = parseFunctionCall(std::move(exprTmp));
+                        break;
+                    case token::ACC_O:
+                        exprTmp = parseArrayAccess(std::move(exprTmp));
+                        break;
+                    default:
+                        assert(false && "Something went very wrong");
+                        break;
+                }
+            }
         }
 
         if (m_CurrentToken == token::NOT ||
@@ -1226,6 +1246,39 @@ namespace yapl {
         return exprTmp;
     }
 
+    std::unique_ptr<ASTExprNode> Parser::parseExpr(Token oldToken) {
+        // Expressions can start with a parenthesis, a dot, a number, a bool lit, an identifier,
+        // a squirly bracket (for arrays and structs) or an unary operator.
+        // We first parse an expression and then if the next token is a binary operator we parse it
+        // as such.
+
+        std::unique_ptr<ASTExprNode> exprTmp;
+
+        if (oldToken == token::IDENT) {
+            exprTmp = parseIdentifierExpr(oldToken.identifier);
+
+            while(m_CurrentToken == token::DOT ||
+                    m_CurrentToken == token::PAR_O ||
+                    m_CurrentToken == token::ACC_O) {
+                switch (m_CurrentToken.token) {
+                    case token::DOT:
+                        exprTmp = parseAttributeAccess(std::move(exprTmp));
+                        break;
+                    case token::PAR_O:
+                        exprTmp = parseFunctionCall(std::move(exprTmp));
+                        break;
+                    case token::ACC_O:
+                        exprTmp = parseArrayAccess(std::move(exprTmp));
+                        break;
+                    default:
+                        assert(false && "Something went very wrong");
+                        break;
+                }
+            }
+        }
+
+        return exprTmp;
+    }
     std::unique_ptr<ASTExprNode> Parser::parseParenExpr() {
         std::unique_ptr<ASTExprNode> expr = parseExpr();
 
@@ -1279,208 +1332,124 @@ namespace yapl {
         return parseError<ASTNumberExpr>("Something went very wrong, this shouldn't happen");
     }
 
-    // We want to parse a lot here: for example aStruct.aStructAttibute.aMethod() should return
-    // a ASTFunctionCallExpr.
     std::unique_ptr<ASTCallableExpr> Parser::parseIdentifierExpr() {
-        std::unique_ptr<ASTCallableExpr> assignableExpr;
         auto identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
         identifierExpr->setIdentifier(m_CurrentToken.identifier);
-        assignableExpr = std::move(identifierExpr);
 
         m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
-        while (m_CurrentToken == token::PAR_O
-                || m_CurrentToken == token::DOT
-                || m_CurrentToken == token::ACC_O) {
-            switch(m_CurrentToken.token) {
-                case token::PAR_O: {
-                    auto functionCallExpr = std::make_unique<ASTFunctionCallExpr>(m_SymbolTable);
-                    auto argumentList = parseArgumentList(); // Should eat ')'
-                    if (auto callable = dynamic_cast<ASTCallableExpr*>(assignableExpr.release())) {
-                        auto uniqueCallable = std::make_unique<ASTCallableExpr>(m_SymbolTable);
-                        uniqueCallable.reset(callable);
-                        functionCallExpr->setFunction(std::move(uniqueCallable));
-                        functionCallExpr->setArguments(std::move(argumentList));
-
-                        assignableExpr = std::move(functionCallExpr);
-                        break;
-                    }
-                    return parseError<ASTAssignableExpr>(
-                            "File: {}:{}\n\tNear '{}'. Trying to call an expression which is not a callable",
-                            m_FilePath,
-                            m_CurrentToken.pos,
-                            m_CurrentToken
-                        );
-                }
-                case token::DOT: {
-                    m_CurrentToken = m_Lexer.getNextToken(); // Eat '.'
-                    if (m_CurrentToken == token::IDENT) {
-                        auto attributeAccessExpr = std::make_unique<ASTAttributeAccessExpr>(m_SymbolTable);
-                        identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
-                        identifierExpr->setIdentifier(m_CurrentToken.identifier);
-
-                        m_CurrentToken = m_Lexer.getNextToken(); // Eat IDENT
-                        if (auto accessible = dynamic_cast<ASTAccessibleExpr*>(assignableExpr.release())){
-                            auto uniqueAccessible = std::make_unique<ASTAccessibleExpr>(m_SymbolTable);
-                            uniqueAccessible.reset(accessible);
-                            attributeAccessExpr->setStruct(std::move(uniqueAccessible));
-                            attributeAccessExpr->setAttribute(std::move(identifierExpr));
-
-                            assignableExpr = std::move(attributeAccessExpr);
-                            break;
-                        }
-                        return parseError<ASTAssignableExpr>(
-                                "File: {}:{}\n\tNear {}. Trying to access an attribute from a non"
-                                "accessible expression",
-                                m_FilePath,
-                                m_CurrentToken.pos,
-                                identifierExpr->getIdentifier()
-                            );
-                    }
-                    return parseError<ASTAssignableExpr>(
-                            "File: {}:{}\n\tExpecting an identifier after '.' instead of {}",
-                            m_FilePath,
-                            m_CurrentToken.pos,
-                            m_CurrentToken
-                        );
-                }
-                case token::ACC_O: {
-                    m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
-                    auto indexExpr = parseExpr(); // Current char should be ']'
-
-                    if (m_CurrentToken != token::ACC_C) {
-                        return parseError<ASTAccessibleExpr>(
-                                "File {}:{}\n\tExpecting a ']' after an array access isntead of {}",
-                                m_FilePath,
-                                m_CurrentToken.pos,
-                                m_CurrentToken
-                            );
-                    }
-
-                    m_CurrentToken = m_Lexer.getNextToken(); // Eat ']'
-
-                    auto arrayAccessExpr = std::make_unique<ASTArrayAccessExpr>(m_SymbolTable);
-                    if (auto accessible = dynamic_cast<ASTAccessibleExpr*>(assignableExpr.release())){
-                        auto uniqueAccessible = std::make_unique<ASTAccessibleExpr>(m_SymbolTable);
-                        uniqueAccessible.reset(accessible);
-                        arrayAccessExpr->setArray(std::move(uniqueAccessible));
-                        arrayAccessExpr->setIndex(std::move(indexExpr));
-
-                        assignableExpr = std::move(arrayAccessExpr);
-                        break;
-                    }
-
-                    return parseError<ASTAssignableExpr>("Trying to access an array index from a"
-                            "non accessible expression: {}", typeid(assignableExpr).name());
-                }
-                default:
-                    return parseError<ASTAssignableExpr>("This should never happen at {}: {}",
-                            __FILE__,
-                            __func__);
-            }
-        }
-
-        return assignableExpr;
+        return identifierExpr;
     }
 
-    std::unique_ptr<ASTCallableExpr> Parser::parseIdentifierExpr(const Token &startToken) {
-        std::unique_ptr<ASTCallableExpr> assignableExpr;
+    std::unique_ptr<ASTCallableExpr> Parser::parseIdentifierExpr(std::string identifier) {
         auto identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
-        identifierExpr->setIdentifier(startToken.identifier);
-        assignableExpr = std::move(identifierExpr);
+        identifierExpr->setIdentifier(identifier);
 
-        while (m_CurrentToken == token::PAR_O
-                || m_CurrentToken == token::DOT
-                || m_CurrentToken == token::ACC_O) {
-            switch(m_CurrentToken.token) {
-                case token::PAR_O: {
-                    auto functionCallExpr = std::make_unique<ASTFunctionCallExpr>(m_SymbolTable);
-                    auto argumentList = parseArgumentList(); // Should eat ')'
-                    if (auto callable = dynamic_cast<ASTCallableExpr*>(assignableExpr.release())) {
-                        auto uniqueCallable = std::make_unique<ASTCallableExpr>(m_SymbolTable);
-                        uniqueCallable.reset(callable);
-                        functionCallExpr->setFunction(std::move(uniqueCallable));
-                        functionCallExpr->setArguments(std::move(argumentList));
+        return identifierExpr;
+    }
 
-                        assignableExpr = std::move(functionCallExpr);
-                        break;
-                    }
-                    return parseError<ASTAssignableExpr>(
-                            "File: {}:{}\n\tNear '{}'. Trying to call an expression which is not a callable",
-                            m_FilePath,
-                            m_CurrentToken.pos,
-                            m_CurrentToken
-                        );
-                }
-                case token::DOT: {
-                    m_CurrentToken = m_Lexer.getNextToken(); // Eat '.'
-                    if (m_CurrentToken == token::IDENT) {
-                        auto attributeAccessExpr = std::make_unique<ASTAttributeAccessExpr>(m_SymbolTable);
-                        identifierExpr = std::make_unique<ASTIdentifierExpr>(m_SymbolTable);
-                        identifierExpr->setIdentifier(m_CurrentToken.identifier);
+    std::unique_ptr<ASTAttributeAccessExpr> Parser::parseAttributeAccess(std::unique_ptr<ASTExprNode> expr) {
+        if (auto accessible = static_unique_pointer_cast<ASTAccessibleExpr>(std::move(expr))) {
+            auto attributeAccess = std::make_unique<ASTAttributeAccessExpr>(m_SymbolTable);
 
-                        m_CurrentToken = m_Lexer.getNextToken(); // Eat IDENT
-                        if (auto accessible = dynamic_cast<ASTAccessibleExpr*>(assignableExpr.release())){
-                            auto uniqueAccessible = std::make_unique<ASTAccessibleExpr>(m_SymbolTable);
-                            uniqueAccessible.reset(accessible);
-                            attributeAccessExpr->setStruct(std::move(uniqueAccessible));
-                            attributeAccessExpr->setAttribute(std::move(identifierExpr));
+            attributeAccess->setStruct(std::move(accessible));
 
-                            assignableExpr = std::move(attributeAccessExpr);
-                            break;
-                        }
-                        return parseError<ASTAssignableExpr>(
-                                "File: {}:{}\n\tNear {}. Trying to access an attribute from a non"
-                                "accessible expression",
-                                m_FilePath,
-                                m_CurrentToken.pos,
-                                identifierExpr->getIdentifier()
-                            );
-                    }
-                    return parseError<ASTAssignableExpr>(
-                            "File: {}:{}\n\tExpecting an identifier after '.' instead of {}",
-                            m_FilePath,
-                            m_CurrentToken.pos,
-                            m_CurrentToken
-                        );
-                }
-                case token::ACC_O: {
-                    m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
-                    auto indexExpr = parseExpr(); // Current char should be ']'
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '.'
 
-                    if (m_CurrentToken != token::ACC_C) {
-                        return parseError<ASTAccessibleExpr>(
-                                "File {}:{}\n\tExpecting a ']' after an array access isntead of {}",
-                                m_FilePath,
-                                m_CurrentToken.pos,
-                                m_CurrentToken
-                            );
-                    }
-
-                    m_CurrentToken = m_Lexer.getNextToken(); // Eat ']'
-
-                    auto arrayAccessExpr = std::make_unique<ASTArrayAccessExpr>(m_SymbolTable);
-                    if (auto accessible = dynamic_cast<ASTAccessibleExpr*>(assignableExpr.release())){
-                        auto uniqueAccessible = std::make_unique<ASTAccessibleExpr>(m_SymbolTable);
-                        uniqueAccessible.reset(accessible);
-                        arrayAccessExpr->setArray(std::move(uniqueAccessible));
-                        arrayAccessExpr->setIndex(std::move(indexExpr));
-
-                        assignableExpr = std::move(arrayAccessExpr);
-                        break;
-                    }
-
-                    return parseError<ASTAssignableExpr>("Trying to access an array index from a"
-                            "non accessible expression: {}", typeid(assignableExpr).name());
-                }
-                default:
-                    return parseError<ASTAssignableExpr>("This should never happen at {}: {}",
-                            __FILE__,
-                            __func__);
+            if (m_CurrentToken != token::IDENT) {
+                return parseError<ASTAttributeAccessExpr>(
+                        "File: {}:{}\n\tExpecting an identifier after '.' instead of {}.",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
             }
+
+            auto attribute = parseIdentifierExpr(); // Eats last identifier
+
+            attributeAccess->setAttribute(static_unique_pointer_cast<ASTIdentifierExpr>(std::move(attribute)));
+
+            return attributeAccess;
         }
 
-        return assignableExpr;
+        return parseError<ASTAttributeAccessExpr>(
+                "File {}:{}\n\tNear: {}, trying to access a non-accessible expression.",
+                m_FilePath,
+                m_CurrentToken.pos,
+                m_CurrentToken
+            );
     }
+
+    std::unique_ptr<ASTArrayAccessExpr> Parser::parseArrayAccess(std::unique_ptr<ASTExprNode> expr) {
+        if (auto accessible = static_unique_pointer_cast<ASTAccessibleExpr>(std::move(expr))) {
+            auto arrayAccess = std::make_unique<ASTArrayAccessExpr>(m_SymbolTable);
+
+            arrayAccess->setArray(std::move(accessible));
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
+
+            auto index = parseExpr();
+
+            if(!index) {
+                return parseError<ASTArrayAccessExpr>(
+                        "File: {}:{}\n\tNot viable expression for array index.",
+                        m_FilePath,
+                        m_CurrentToken.pos
+                    );
+            }
+
+            arrayAccess->setIndex(std::move(index));
+
+            if (m_CurrentToken != token::ACC_C) {
+                return parseError<ASTArrayAccessExpr>(
+                        "File: {}:{}\n\tExpecting a ']' after array access instead of {}.",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat ']'
+
+            return arrayAccess;
+        }
+
+        return parseError<ASTArrayAccessExpr>(
+                "File {}:{}\n\tNear: {}, trying to access a non-accessible expression.",
+                m_FilePath,
+                m_CurrentToken.pos,
+                m_CurrentToken
+            );
+    }
+
+    std::unique_ptr<ASTFunctionCallExpr> Parser::parseFunctionCall(std::unique_ptr<ASTExprNode> expr) {
+        if (auto callable = static_unique_pointer_cast<ASTCallableExpr>(std::move(expr))) {
+            auto callExpr = std::make_unique<ASTFunctionCallExpr>(m_SymbolTable);
+
+            callExpr->setFunction(std::move(callable));
+
+            auto arguments = parseArgumentList(); // Eats ')'
+
+            if(!arguments) {
+                return parseError<ASTFunctionCallExpr>(
+                        "File: {}:{}\n\tNot viable argument list.",
+                        m_FilePath,
+                        m_CurrentToken.pos
+                    );
+            }
+
+            callExpr->setArguments(std::move(arguments));
+
+            return callExpr;
+        }
+
+        return parseError<ASTFunctionCallExpr>(
+                "File {}:{}\n\tNear: {}, trying to access a non-accessible expression.",
+                m_FilePath,
+                m_CurrentToken.pos,
+                m_CurrentToken
+            );
+    }
+
     std::unique_ptr<ASTUnaryExpr> Parser::parseUnaryExpr() {
         token savedToken = m_CurrentToken.token;
 

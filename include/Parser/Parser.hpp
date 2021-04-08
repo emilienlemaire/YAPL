@@ -31,6 +31,12 @@
 #include "Lexer/Lexer.hpp"
 #include "Symbol/SymbolTable.hpp"
 
+template<typename TO, typename FROM>
+std::unique_ptr<TO> static_unique_pointer_cast (std::unique_ptr<FROM>&& old){
+    return std::unique_ptr<TO>{static_cast<TO*>(old.release())};
+    //conversion: unique_ptr<FROM>->FROM*->TO*->unique_ptr<TO>
+}
+
 namespace yapl {
     enum class OperatorPrec {
         MULT = 5,
@@ -97,15 +103,19 @@ namespace yapl {
         std::unique_ptr<ASTReturnNode> parseReturn();
         std::unique_ptr<ASTForNode> parseFor();
         std::unique_ptr<ASTIfNode> parseIf();
-        std::unique_ptr<ASTAssignmentNode> parseAssignment(std::unique_ptr<ASTAssignableExpr>);
+        std::unique_ptr<ASTAssignmentNode> parseAssignment(std::unique_ptr<ASTExprNode>);
 
         // Expressions
         std::unique_ptr<ASTExprNode> parseExpr();
+        std::unique_ptr<ASTExprNode> parseExpr(Token);
         std::unique_ptr<ASTExprNode> parseParenExpr();
         std::unique_ptr<ASTNumberExpr> parseNumberExpr();
         std::unique_ptr<ASTFloatNumberExpr> parseFloatingNumberExpr(const std::string&); std::unique_ptr<ASTIntegerNumberExpr> parseIntegerNumberExpr();
         std::unique_ptr<ASTCallableExpr> parseIdentifierExpr();
-        std::unique_ptr<ASTCallableExpr> parseIdentifierExpr(const Token&);
+        std::unique_ptr<ASTCallableExpr> parseIdentifierExpr(std::string);
+        std::unique_ptr<ASTAttributeAccessExpr> parseAttributeAccess(std::unique_ptr<ASTExprNode>);
+        std::unique_ptr<ASTArrayAccessExpr> parseArrayAccess(std::unique_ptr<ASTExprNode>);
+        std::unique_ptr<ASTFunctionCallExpr> parseFunctionCall(std::unique_ptr<ASTExprNode>);
         std::unique_ptr<ASTUnaryExpr> parseUnaryExpr();
         std::unique_ptr<ASTBinaryExpr> parseBinaryExpr(std::unique_ptr<ASTExprNode>);
         std::unique_ptr<ASTRangeExpr> parseRangeExpr();

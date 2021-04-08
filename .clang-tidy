@@ -1,6 +1,5 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,-*,bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,hicpp-*,portability-*,misc-*,modernize-*,performance-*,redeability-*,fushia-multiple-inheritance,fushia-statically-constructed-objects,fushia-trailing-return,google-build-using-namespace,google-default-arguments.google-runtime-int,llvm-namespace-comment,llvm-prefer-isa-or-dyn-cast-in-conditionals,llvm-twine-local,-modernize-use-trailing-return-type,-misc-no-recursion'
-
+Checks:          'clang-diagnostic-*,clang-analyzer-*,-*,bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,hicpp-*,portability-*,misc-*,modernize-*,performance-*,redeability-*,fushia-multiple-inheritance,fushia-statically-constructed-objects,fushia-trailing-return,google-build-using-namespace,google-default-arguments.google-runtime-int,llvm-namespace-comment,llvm-prefer-isa-or-dyn-cast-in-conditionals,llvm-twine-local,-modernize-use-trailing-return-type,-misc-no-recursion,-cppcoreguidelines-explicit-virtual-functions,-hicpp-use-override,-modernize-use-override'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 AnalyzeTemporaryDtors: false
@@ -149,14 +148,8 @@ CheckOptions:
     value:           '1.0;100.0;'
   - key:             cppcoreguidelines-avoid-magic-numbers.IgnoredIntegerValues
     value:           '1;2;3;4;'
-  - key:             cppcoreguidelines-explicit-virtual-functions.AllowOverrideAndFinal
-    value:           'false'
-  - key:             cppcoreguidelines-explicit-virtual-functions.FinalSpelling
-    value:           final
   - key:             cppcoreguidelines-explicit-virtual-functions.IgnoreDestructors
-    value:           'true'
-  - key:             cppcoreguidelines-explicit-virtual-functions.OverrideSpelling
-    value:           override
+    value:           '1'
   - key:             cppcoreguidelines-init-variables.IncludeStyle
     value:           llvm
   - key:             cppcoreguidelines-init-variables.MathHeader
@@ -271,14 +264,6 @@ CheckOptions:
     value:           'true'
   - key:             hicpp-use-nullptr.NullMacros
     value:           ''
-  - key:             hicpp-use-override.AllowOverrideAndFinal
-    value:           'false'
-  - key:             hicpp-use-override.FinalSpelling
-    value:           final
-  - key:             hicpp-use-override.IgnoreDestructors
-    value:           'false'
-  - key:             hicpp-use-override.OverrideSpelling
-    value:           override
   - key:             llvm-else-after-return.WarnOnConditionVariables
     value:           '0'
   - key:             llvm-else-after-return.WarnOnUnfixable
@@ -375,14 +360,6 @@ CheckOptions:
     value:           'true'
   - key:             modernize-use-nullptr.NullMacros
     value:           'NULL'
-  - key:             modernize-use-override.AllowOverrideAndFinal
-    value:           'false'
-  - key:             modernize-use-override.FinalSpelling
-    value:           final
-  - key:             modernize-use-override.IgnoreDestructors
-    value:           'false'
-  - key:             modernize-use-override.OverrideSpelling
-    value:           override
   - key:             modernize-use-transparent-functors.SafeMode
     value:           'false'
   - key:             modernize-use-using.IgnoreMacros

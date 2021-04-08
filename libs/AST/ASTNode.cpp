@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "AST/ASTNode.hpp"
+#include "AST/ASTVisitor.hpp"
 #include <memory>
 
 namespace yapl
@@ -29,5 +30,9 @@ namespace yapl
 
     void ASTProgramNode::addNode(std::unique_ptr<ASTNode> node) {
         m_Nodes.push_back(std::move(node));
+    }
+
+    void ASTProgramNode::accept(ASTVisitor &visitor) {
+        visitor.dispatchProgram(this);
     }
 } // namespace yapl

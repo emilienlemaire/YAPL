@@ -23,7 +23,6 @@
 
 #include "Lexer/TokenUtils.hpp"
 #include "Symbol/SymbolTable.hpp"
-#include "AST/ASTVisitor.hpp"
 
 namespace yapl {
 
@@ -43,6 +42,8 @@ namespace yapl {
         AND,
         OR
     };
+
+    class ASTVisitor;
 
     class ASTNode {
     private:
@@ -87,6 +88,39 @@ namespace yapl {
                     return Operator::NONE;
             }
         }
+
+        static std::string operatorToString(Operator op) {
+            switch (op) {
+                case Operator::TIMES:
+                    return "*";
+                case Operator::BY:
+                    return "/";
+                case Operator::MOD:
+                    return "%";
+                case Operator::PLUS:
+                    return "+";
+                case Operator::MINUS:
+                    return "-";
+                case Operator::LTH:
+                    return "<";
+                case Operator::MTH:
+                    return ">";
+                case Operator::LEQ:
+                    return "<=";
+                case Operator::MEQ:
+                    return ">=";
+                case Operator::EQ:
+                    return "==";
+                case Operator::NEQ:
+                    return "!=";
+                case Operator::AND:
+                    return "&&";
+                case Operator::OR:
+                    return "||";
+                case Operator::NONE:
+                    return "NONE";
+            }
+        }
     };
 
     class ASTEOFNode : public ASTNode {
@@ -113,13 +147,11 @@ namespace yapl {
         using iterator = vec_type::iterator;
         using const_iterator = vec_type::const_iterator;
 
-        [[nodiscard]] inline iterator begin() noexcept { return m_Nodes.begin(); }
-        [[nodiscard]] inline const_iterator cbegin() const noexcept { return m_Nodes.cbegin(); }
-        [[nodiscard]] inline iterator end() noexcept { return m_Nodes.end(); }
-        [[nodiscard]] inline const_iterator cend() const noexcept { return m_Nodes.cend(); }
+        [[nodiscard]] iterator begin() noexcept { return m_Nodes.begin(); }
+        [[nodiscard]] const_iterator cbegin() const noexcept { return m_Nodes.cbegin(); }
+        [[nodiscard]] iterator end() noexcept { return m_Nodes.end(); }
+        [[nodiscard]] const_iterator cend() const noexcept { return m_Nodes.cend(); }
 
-        virtual void accept(ASTVisitor &visitor) override {
-            visitor.dispatchProgram(this);
-        }
+        virtual void accept(ASTVisitor &visitor) override;
     };
 } // namespace yapl
