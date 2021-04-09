@@ -28,7 +28,9 @@ int main(int argc, char *argv[]) {
             CppLogger::FormatAttribute::Message
     });
 
-    mainConsole.printTrace("YAPL v.{}", VERSION);
+    mainConsole.setFormat(mainFormat);
+
+    mainConsole.printTrace("YAPL v.0.0.1");
 
     if (argc > 1) {
         std::string filepath = argv[1]; //NOLINT: We are in the main function so this is ok.
@@ -36,9 +38,9 @@ int main(int argc, char *argv[]) {
         parser.parse();
         yapl::ASTPrinter printer(std::move(parser.getProgram()));
         printer.dump();
+        auto prog = printer.releaseProgram();
     } else {
-        yapl::Parser parser("", CppLogger::Level::Trace);
-        parser.parse();
+        mainConsole.printFatalError("The REPL is not yet implemented");
     }
 
 }

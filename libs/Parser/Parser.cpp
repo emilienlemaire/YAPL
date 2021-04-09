@@ -527,6 +527,8 @@ namespace yapl {
 
         m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
 
+        structDef->setInsideScope(m_SymbolTable);
+
         // TODO: Enable inheritance
 
         if (m_CurrentToken != token::BRA_O) {

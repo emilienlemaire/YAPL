@@ -49,6 +49,31 @@ namespace yapl {
     {}
 
     // Non virtual classes
+
+    ASTCastExpr::ASTCastExpr(SharedScope scope)
+        : ASTExprNode(std::move(scope))
+    {}
+
+    void ASTCastExpr::setTargetType(const std::string &target) {
+        m_TargetType = target;
+    }
+
+    void ASTCastExpr::setExpr(std::unique_ptr<ASTExprNode> expr) {
+        m_Expr = std::move(expr);
+    }
+
+    const std::string &ASTCastExpr::getTargetType() const {
+        return m_TargetType;
+    }
+
+    ASTExprNode *ASTCastExpr::getExpr() const {
+        return m_Expr.get();
+    }
+
+    void ASTCastExpr::accept(ASTVisitor &visitor) {
+        visitor.dispatchCastExpr(this);
+    }
+
     ASTNegExpr::ASTNegExpr(SharedScope scope)
         : ASTUnaryExpr(std::move(scope))
     {}

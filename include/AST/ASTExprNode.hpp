@@ -66,6 +66,23 @@ namespace yapl {
 
     // Non virtual classes
 
+    class ASTCastExpr : public ASTExprNode {
+    private:
+        std::string m_TargetType;
+        std::unique_ptr<ASTExprNode> m_Expr;
+
+    public:
+        explicit ASTCastExpr(SharedScope);
+
+        void setTargetType(const std::string&);
+        void setExpr(std::unique_ptr<ASTExprNode>);
+
+        [[nodiscard]] const std::string &getTargetType() const;
+        [[nodiscard]] ASTExprNode *getExpr() const;
+
+        virtual void accept(ASTVisitor &visitor) override;
+    };
+
     class ASTNegExpr : public ASTUnaryExpr {
     private:
         std::unique_ptr<ASTExprNode> m_Value;
@@ -186,6 +203,15 @@ namespace yapl {
 
         [[nodiscard]] ASTExprNode *getStart() const;
         [[nodiscard]] ASTExprNode *getEnd() const;
+
+        [[nodiscard]] inline auto getStartPtr() -> decltype(m_Start) {
+            return std::move(m_Start);
+        }
+
+        [[nodiscard]] inline auto getEndPtr() -> decltype(m_End) {
+            return std::move(m_End);
+        }
+
 
         virtual void accept(ASTVisitor &visitor) override;
     };

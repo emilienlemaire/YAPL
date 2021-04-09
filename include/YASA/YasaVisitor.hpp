@@ -1,5 +1,5 @@
 /**
- * include/Printer/ASTPrinter.hpp
+ * include/YASA/YasaVisitor.hpp
  * Copyright (c) 2021 Emilien Lemaire <emilien.lem@icloud.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,30 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
-
 #include "AST/ASTVisitor.hpp"
+#include "Printer/ASTPrinter.hpp"
+#include "Symbol/SymbolTable.hpp"
+#include "CppLogger2/CppLogger2.h"
+
 #include <memory>
 
 namespace yapl {
-    class ASTPrinter : public ASTVisitor {
+    class YasaVisitor : public ASTVisitor {
     private:
-        int m_Tabs = 0;
+        std::shared_ptr<SymbolTable> m_SymboleTbale;
 
-        void printTabs();
+        std::shared_ptr<Type> m_CurrentType;
+        std::shared_ptr<Type> getExprType(ASTExprNode*);
 
         std::unique_ptr<ASTProgramNode> m_Program;
 
+        CppLogger::CppLogger m_Logger;
+
+        ASTPrinter m_ASTPrinter = ASTPrinter(nullptr);
     public:
-        explicit ASTPrinter(std::unique_ptr<ASTProgramNode>);
+        virtual void dispatchProgram(ASTProgramNode* programNode) override;
 
-        void dump();
-
-        [[nodiscard]] std::unique_ptr<ASTProgramNode> releaseProgram();
-
-        virtual void dispatchProgram(ASTProgramNode* program) override;
-
-        virtual void dispatchCastExpr(ASTCastExpr* castExpr) override;
         virtual void dispatchNegExpr(ASTNegExpr* negExpr) override;
         virtual void dispatchNotExpr(ASTNotExpr* notExpr) override;
         virtual void dispatchParExpr(ASTParExpr* parExpr) override;
@@ -68,6 +67,5 @@ namespace yapl {
         virtual void dispatchIf(ASTIfNode* ifNode) override;
         virtual void dispatchFor(ASTForNode* forNode) override;
         virtual void dispatchAssignment(ASTAssignmentNode* assignmentNode) override;
-
     };
 } // namespace yapl

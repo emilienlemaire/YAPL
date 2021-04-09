@@ -177,6 +177,7 @@ namespace yapl
         std::string m_StructName;
         std::vector<std::unique_ptr<ASTDeclarationNode>> m_Attributes;
         std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> m_Methods;
+
     public:
         explicit ASTStructDefinitionNode(SharedScope);
 
