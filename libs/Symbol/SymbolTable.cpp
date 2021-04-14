@@ -15,24 +15,33 @@
  * limitations under the License.
  */
 #include "Symbol/SymbolTable.hpp"
+#include "Symbol/Type.hpp"
+#include "Symbol/PrimitiveType.hpp"
 #include <memory>
 #include <utility>
 
 namespace yapl {
     std::shared_ptr<SymbolTable> SymbolTable::InitTopSymTab() {
-        auto int_t = Type::CreateBaseType("int", true);
-        auto float_t = Type::CreateBaseType("float", true);
-        auto double_t = Type::CreateBaseType("double", true);
-        auto bool_t = Type::CreateBaseType("bool");
-        auto char_t = Type::CreateBaseType("char");
-        auto void_t = Type::CreateBaseType("void");
+        auto int_t = Type::CreatePrimitiveType(true);
+        auto float_t = Type::CreatePrimitiveType(true);
+        auto double_t = Type::CreatePrimitiveType(true);
+        auto bool_t = Type::CreatePrimitiveType(false);
+        auto char_t = Type::CreatePrimitiveType(false);
+        auto void_t = Type::CreatePrimitiveType(false);
 
-        auto int_v = Value::CreateTypeValue("int", int_t);
-        auto float_v = Value::CreateTypeValue("float", float_t);
-        auto double_v = Value::CreateTypeValue("double", double_t);
-        auto bool_v = Value::CreateTypeValue("bool", bool_t);
-        auto char_v = Value::CreateTypeValue("char", char_t);
-        auto void_v = Value::CreateTypeValue("void", void_t);
+        Type::GetOrInsertType(int_t);
+        Type::GetOrInsertType(float_t);
+        Type::GetOrInsertType(double_t);
+        Type::GetOrInsertType(bool_t);
+        Type::GetOrInsertType(char_t);
+        Type::GetOrInsertType(void_t);
+
+        auto int_v = Value::CreateTypeValue("int", int_t.get());
+        auto float_v = Value::CreateTypeValue("float", float_t.get());
+        auto double_v = Value::CreateTypeValue("double", double_t.get());
+        auto bool_v = Value::CreateTypeValue("bool", bool_t.get());
+        auto char_v = Value::CreateTypeValue("char", char_t.get());
+        auto void_v = Value::CreateTypeValue("void", void_t.get());
 
         SymbolTable s;
 

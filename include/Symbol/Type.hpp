@@ -16,81 +16,79 @@
  */
 #pragma once
 
-#include <cstddef>
+#include "parallel_hashmap/phmap.h"
+#include "parallel_hashmap/phmap_fwd_decl.h"
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace yapl {
+    class PrimitiveType;
+    class ArrayType;
+    class FunctionType;
+    class StructType;
+    // TODO(feature): Add pointer types
+    // TODO(feature): Add vector types
+
+    // TODO(maybe): Add type traits to allow operator overloads, etc...
+    //NOLINTNEXTLINE
     class Type {
     private:
-        std::string m_Identifier;
-        bool m_IsBaseType = false;
-        bool m_IsNumeric = false;
-        bool m_IsStruct = false;
-        bool m_IsArray = false;
-        bool m_IsFunctionType = false;
-        bool m_HasName = false;
-        bool m_IsArgList = false;
-        size_t m_Size = 0;
-        std::vector<std::shared_ptr<Type>> m_FieldsTypes;
-        std::vector<std::shared_ptr<Type>> m_ParamsTypes;
-        std::shared_ptr<Type> m_ElementsType = nullptr;
-        std::shared_ptr<Type> m_ReturnType = nullptr;
 
-        friend class SymbolTable;
-
+        static phmap::parallel_node_hash_map<Type *, std::shared_ptr<Type>> s_Types;
         Type() = default;
 
-        static std::shared_ptr<Type> CreateBaseType(const std::string&, bool isNumeric = false);
+        virtual bool isEqual(const Type &o) = 0;
+
+        friend class PrimitiveType;
+        friend class ArrayType;
+        friend class FunctionType;
+        friend class StructType;
+
     public:
-        Type& operator=(const Type&) = delete;
+        template<class T>
+        bool operator==(const T &o) {
+            return this->isEqual(o);
+        }
 
-        bool operator==(const Type&) const;
-        bool operator!=(const Type&) const;
+        template<class T>
+        bool operator!=(const T &o) {
+            return !this->isEqual(o);
+        }
 
-        static std::shared_ptr<Type> CreateSimpleType(
-                    const std::string&
-                );
-        static std::shared_ptr<Type> CreateStructType(
-                    const std::string&,
-                    const std::vector<std::shared_ptr<Type>>&
-                );
-        static std::shared_ptr<Type> CreateArrayType(
-                    size_t,
-                    std::shared_ptr<Type>
-                );
-        static std::shared_ptr<Type> CreateFunctionType(
-                    std::shared_ptr<Type>,
-                    const std::vector<std::shared_ptr<Type>>&
-                );
+        [[nodiscard]] virtual size_t hash() const = 0;
 
-        static std::shared_ptr<Type> CreateArgumentListType(
-                    const std::vector<std::shared_ptr<Type>>&
-                );
+        friend size_t hash_value(const Type &t) {
+            return t.hash();
+        }
 
-        static std::string MangleTypeName(const std::shared_ptr<Type>&);
-        static std::string MangleTypeName(Type&);
-        static std::string MangleTypeName(const Type&);
+        static std::shared_ptr<PrimitiveType> CreatePrimitiveType(bool isNumeric=false);
 
-        static std::string MangleArrayType(
-                const std::shared_ptr<Type>&,
-                size_t
-                );
-        static std::string MangleFunctionType(
-                    const std::shared_ptr<Type>&,
-                    const std::vector<std::shared_ptr<Type>>&
-                );
-        static std::string MangleArgumentListType(
-                    const std::vector<std::shared_ptr<Type>>&
-                );
+        static std::shared_ptr<ArrayType> CreateArrayType(
+                Type* elementsType,
+                uint64_t numElements
+            );
 
-        [[nodiscard]] bool hasName() const { return m_HasName; }
-        [[nodiscard]] bool isNumeric() const { return m_IsNumeric; }
-        [[nodiscard]] bool isArray() const { return m_IsArray; }
-        [[nodiscard]] std::string getIdentifier() const { return m_Identifier; }
-        [[nodiscard]] std::vector<std::shared_ptr<Type>> getFieldsType() const { return m_FieldsTypes; }
-        [[nodiscard]] std::shared_ptr<Type> getElementsType() const { return m_ElementsType; }
-        [[nodiscard]] std::shared_ptr<Type> getReturnType() const { return m_ReturnType; }
+        static std::shared_ptr<FunctionType> CreateFunctionType(
+                Type *returnType,
+                std::vector<Type*> paramsType
+            );
+
+        static std::shared_ptr<StructType> CreateStructType(
+                std::string identifier,
+                std::vector<std::string> fieldNames,
+                std::vector<Type*> elementsType
+            );
+
+        static std::shared_ptr<Type> GetOrInsertType(std::shared_ptr<Type> type) {
+            if (s_Types.find(type) != s_Types.end()) {
+                auto typePtr = s_Types.find(type.get());
+                return typePtr->second;
+            }
+
+            s_Types[type.get()] = type;
+
+            return type;
+        }
     };
 } // namespace yapl

@@ -14,20 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <cstddef>
 #include <memory>
-#include <queue>
 #include <string>
-#include <type_traits>
-#include <utility>
 #include <vector>
 
-#include "Parser/Parser.hpp"
+#include <CppLogger2/CppLogger2.h>
+
 #include "AST/ASTExprNode.hpp"
 #include "AST/ASTNode.hpp"
 #include "AST/ASTStatementNode.hpp"
-#include "CppLogger2/CppLogger2.h"
 #include "Lexer/TokenUtils.hpp"
+#include "Parser/Parser.hpp"
+#include "Symbol/Type.hpp"
+#include "Symbol/PrimitiveType.hpp"
+#include "Symbol/ArrayType.hpp"
+#include "Symbol/StructType.hpp"
 
 //#define LOG_PARSER
 
@@ -372,6 +373,7 @@ namespace yapl {
         // This should allow for default parameters, let's try
         bool hasDefaultParameter = false;
 
+        // We get the params
         while (m_CurrentToken != token::PAR_C) {
             if (m_CurrentToken != token::IDENT) {
                 return parseError<ASTFunctionDefinitionNode>(
@@ -471,13 +473,15 @@ namespace yapl {
 
         m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the body scope
 
+        std::vector<Type*> parametersType = {};
         std::vector<std::shared_ptr<Value>> parametersValue = {};
 
         // TODO: Create overload for each default parameters
         for (const auto &param : functionDefinition->getParameters()) {
-            auto paramType = m_SymbolTable->lookup(param->getType());
+            auto paramType = m_SymbolTable->lookup(param->getType())->getType();
             auto paramValue = Value::CreateVariableValue(param->getIdentifier(), paramType);
             parametersValue.push_back(paramValue);
+            parametersType.push_back(paramType);
             m_SymbolTable->insert(paramValue);
         }
 
@@ -491,8 +495,9 @@ namespace yapl {
 
         m_SymbolTable = m_SymbolTable->popScope(); // Exit the body scope
 
-        auto typeValue = m_SymbolTable->lookup(typeName);
-        auto functionValue = Value::CreateFunctionValue(funcName, typeValue, parametersValue);
+        auto returnType = m_SymbolTable->lookup(functionDefinition->getReturnType())->getType();
+        auto funcType = Type::CreateFunctionType(returnType, parametersType);
+        auto functionValue = Value::CreateFunctionValue(funcName, funcType.get());
 
         // TODO: Allow function overload
         if (!m_SymbolTable->insert(functionValue)) {
@@ -526,8 +531,6 @@ namespace yapl {
         structDef->setStructName(m_CurrentToken.identifier);
 
         m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
-
-        structDef->setInsideScope(m_SymbolTable);
 
         // TODO: Enable inheritance
 
@@ -593,18 +596,22 @@ namespace yapl {
 
         m_SymbolTable = m_SymbolTable->popScope();
 
-        std::vector<std::shared_ptr<Type>> attrType;
+        std::vector<Type *> attrType;
+        std::vector<std::string> attrsName;
 
         for (const auto &attr : structDef->getAttributes()) {
+            auto attrName = attr->getIdentifier();
             auto typeName = attr->getType();
             auto typeValue = m_SymbolTable->lookup(typeName);
 
             attrType.push_back(typeValue->getType());
+            attrsName.push_back(attrName);
         }
 
-        auto structType = Type::CreateStructType(structDef->getStructName(), attrType);
+        auto structType = Type::CreateStructType(structDef->getStructName(), attrsName, attrType);
+        auto insertedType = Type::GetOrInsertType(structType);
 
-        auto structTypeValue = Value::CreateTypeValue(structDef->getStructName(), structType);
+        auto structTypeValue = Value::CreateTypeValue(structDef->getStructName(), insertedType.get());
 
         m_SymbolTable->insert(std::move(structTypeValue));
 
@@ -629,6 +636,7 @@ namespace yapl {
             );
     }
 
+    // FIXME: Review with new types
     std::unique_ptr<ASTDeclarationNode> Parser::parseDeclaration(const std::string &type) {
         std::unique_ptr<ASTDeclarationNode> declarationNode = std::make_unique<ASTDeclarationNode>(m_SymbolTable);
 
@@ -646,11 +654,19 @@ namespace yapl {
             return parseArrayDeclaration(std::move(declarationNode));
         }
 
-        // It doesn't matter now if the type value is nullptr, as we will check it
-        // during semantic analysis.
+        // This should be a simple or struct type, it should be registered in the ST.
         auto typeValue = m_SymbolTable->lookup(type);
 
-        auto variable = Value::CreateVariableValue(identifier, typeValue);
+        if (!typeValue) {
+            return parseError<ASTDeclarationNode>(
+                    "File: {}:{}\n\tUnknown type in declaration: {}.",
+                    m_FilePath,
+                    m_CurrentToken.pos,
+                    type
+                );
+        }
+
+        auto variable = Value::CreateVariableValue(identifier, typeValue->getType());
 
         m_SymbolTable->insert(variable);
 
@@ -680,7 +696,7 @@ namespace yapl {
             initialization->setType(type);
             initialization->setValue(std::move(expr));
 
-            auto typeValue = m_SymbolTable->lookup(type);
+            auto typeValue = m_SymbolTable->lookup(type)->getType();
             auto initValue = Value::CreateVariableValue(identifier, typeValue);
 
             m_SymbolTable->insert(initValue);
@@ -696,6 +712,7 @@ namespace yapl {
             );
     }
 
+    // FIXME: Correct array size
     std::unique_ptr<ASTArrayDeclarationNode> Parser::parseArrayDeclaration(
             std::unique_ptr<ASTDeclarationNode> declaration
             ) {
@@ -710,40 +727,43 @@ namespace yapl {
 
         auto arrayDeclaration = std::make_unique<ASTArrayDeclarationNode>(m_SymbolTable);
 
-        auto typeName = declaration->getType();
+        auto baseTypeName = declaration->getType();
 
         int size = std::stoi(m_CurrentToken.identifier);
 
-        auto typeValue = m_SymbolTable->lookup(typeName);
+        auto typeValue = m_SymbolTable->lookup(baseTypeName);
 
         if (!typeValue) {
             return parseError<ASTArrayDeclarationNode>(
                     "File: {}:{}\n\tTrying to declare an array of unknown type: {}",
                     m_FilePath,
                     m_CurrentToken,
-                    typeName
+                    baseTypeName
                     );
         }
 
         auto type = typeValue->getType();
 
+        // We have an array of array
         if (auto arrDecl = dynamic_cast<ASTArrayDeclarationNode*>(declaration.get())) {
-            typeName = Type::MangleArrayType(type, arrDecl->getSize());
-            typeValue = m_SymbolTable->lookup(typeName);
+            baseTypeName = baseTypeName + "[" + std::to_string(arrDecl->getSize()) + "]";
+            // It should be there
+            typeValue = m_SymbolTable->lookup(baseTypeName);
             type = typeValue->getType();
         }
 
 
-        auto mangledType = Type::MangleArrayType(type, size);
+        auto arrTypeName = baseTypeName + "[" + std::to_string(size) + "]";
 
-        if (!m_SymbolTable->lookup(mangledType)) {
-            auto newType = Type::CreateArrayType(size, type);
-            auto newTypeValue = Value::CreateTypeValue(mangledType, newType);
+        if (!m_SymbolTable->lookup(arrTypeName)) {
+            auto newType = Type::CreateArrayType(type, size);
+            auto insertType = Type::GetOrInsertType(newType);
+            auto newTypeValue = Value::CreateTypeValue(arrTypeName, newType.get());
 
             m_SymbolTable->insert(newTypeValue);
         }
 
-        arrayDeclaration->setType(typeName);
+        arrayDeclaration->setType(baseTypeName);
         arrayDeclaration->setIdentifier(declaration->getIdentifier());
         arrayDeclaration->setSize(size);
 

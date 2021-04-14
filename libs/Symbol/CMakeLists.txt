@@ -1,1 +1,3 @@
-add_library(symbol STATIC SymbolTable.cpp Type.cpp Value.cpp)
+file(GLOB SRC_FILES *.cpp)
+
+add_library(symbol STATIC ${SRC_FILES})

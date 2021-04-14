@@ -1,5 +1,5 @@
 /**
- * include/Symbol/SymbolTable.hpp
+ * include/Symbol/ArrayType.cpp
  * Copyright (c) 2021 Emilien Lemaire <emilien.lem@icloud.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,26 +16,22 @@
  */
 #pragma once
 
-#include <memory>
-#include <vector>
+#include "Type.hpp"
 
-#include "parallel_hashmap/phmap.h"
-#include "Value.hpp"
-
-// FIXME: FIX EVERYTHING
 namespace yapl {
-    class SymbolTable {
+    class ArrayType : public Type {
     private:
-        std::shared_ptr<SymbolTable> m_ParentScope;
-        std::vector<std::shared_ptr<SymbolTable>> m_ChildrenScopes;
-        phmap::node_hash_map<std::string, std::shared_ptr<Value>> m_Symbols;
+        uint64_t m_NumElements;
+        Type *p_ElementsType;
 
+        ArrayType(Type* elementsType, uint64_t numElements);
+
+        virtual bool isEqual(const Type &o) override;
+        friend class Type;
     public:
-        bool insert(std::shared_ptr<Value> val);
-        std::shared_ptr<Value> lookup(const std::string&);
-        std::shared_ptr<SymbolTable> pushScope(std::shared_ptr<SymbolTable>);
-        std::shared_ptr<SymbolTable> popScope();
 
-        static std::shared_ptr<SymbolTable> InitTopSymTab();
+        [[nodiscard]] virtual size_t hash() const override;
+        [[nodiscard]] uint64_t getNumElements() const { return m_NumElements; }
+        [[nodiscard]] Type *getElementsType() const { return p_ElementsType; }
     };
 } // namespace yapl

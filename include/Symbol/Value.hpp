@@ -16,6 +16,7 @@
  */
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -32,33 +33,33 @@ namespace yapl {
         Method
     };
 
+    // FIXME: Review with new types
     class Value {
     private:
         ValueKind m_Kind;
         std::string m_Name;
-        std::shared_ptr<Type> m_Type = nullptr; // For semantic analyzer
-        std::shared_ptr<Value> m_TypeValue; // For parser
+        Type* m_Type = nullptr; // For semantic analyzer
+        FunctionType *m_FunctionType = nullptr;
         std::vector<std::shared_ptr<Value>> m_Params;
         std::shared_ptr<SymbolTable> m_Scope = nullptr;
+        std::shared_ptr<SymbolTable> m_InnerScope = nullptr;
 
         static std::string MangleFunctionName(const Value&);
 
         Value() = default;
-        Value(ValueKind, const std::string&, Type);
     public:
-        static std::shared_ptr<Value> CreateTypeValue(const std::string&, std::shared_ptr<Type>);
-        static std::shared_ptr<Value> CreateVariableValue(const std::string&, std::shared_ptr<Value>);
+        static std::shared_ptr<Value> CreateTypeValue(const std::string&, Type*);
+        static std::shared_ptr<Value> CreateVariableValue(const std::string&, Type*);
         static std::shared_ptr<Value> CreateFunctionValue(
                 const std::string&,
-                std::shared_ptr<Value>,
-                std::vector<std::shared_ptr<Value>>
+                FunctionType*
             );
 
-        static std::string MangleFunctionName(const std::shared_ptr<Value>&);
-
+        void setInnerScope(std::shared_ptr<SymbolTable>);
         [[nodiscard]] std::string getName() const { return m_Name; }
         [[nodiscard]] ValueKind getKind() const { return m_Kind; }
-        [[nodiscard]] std::shared_ptr<Type> getType() const { return m_Type; }
-        [[nodiscard]] std::shared_ptr<Value> getTypeValue() const {return m_TypeValue; }
+        [[nodiscard]] Type *getType() const { return m_Type; }
+        [[nodiscard]] FunctionType *getFunctionType() const { return m_FunctionType; }
+        [[nodiscard]] std::shared_ptr<SymbolTable> getInnerScope() const { return m_InnerScope; }
     };
 } // namespace yapl

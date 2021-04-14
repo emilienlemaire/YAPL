@@ -5,7 +5,8 @@ bool name1 = true;
 double name2 = -1.5;
 float name3 = .5f;
 
-int infiniteArray[3][2] = {{ 1, 2}, {3, 4}, {5, 6}};
+int infiniteArray[3][2] = {{1, 2}, {3, 4}, {5, 6}};
+int infiniteArray2[4][3][2] = {infiniteArray, infiniteArray, infiniteArray, infiniteArray};
 
 float test = anArray[name].aMethod(12, bla, test.a);
 

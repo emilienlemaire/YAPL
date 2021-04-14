@@ -47,6 +47,7 @@ namespace yapl {
         OR = 15
     };
 
+    // FIXME: Review with new types
     class Parser {
     private:
         CppLogger::CppLogger m_Logger;
