@@ -40,7 +40,7 @@ namespace yapl {
         return v_ParamsType.cend();
     }
 
-    bool FunctionType::isEqual(const Type &o) {
+    bool FunctionType::isEqual(const Type &o) const {
         if (auto t = dynamic_cast<const FunctionType*>(&o)) {
             if (v_ParamsType.size() == t->getNumParams()) {
                 if (*p_ReturnType != *(t->getReturnType())) {

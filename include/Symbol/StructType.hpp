@@ -30,7 +30,7 @@ namespace yapl {
 
         StructType(std::string idenitifier, std::vector<std::string> fieldNames, std::vector<Type*> elementsType);
 
-        virtual bool isEqual(const Type &o) override;
+        [[nodiscard]] virtual bool isEqual(const Type &o) const override;
 
         friend class Type;
     public:
@@ -43,7 +43,7 @@ namespace yapl {
 
         [[nodiscard]] const std::string &getIdentifier() const { return m_Identifier; }
         [[nodiscard]] const std::vector<Type*> &getElementsType() const { return v_ElementsType; }
-        [[nodiscard]] const Type *getElementType(size_t idx) const { return v_ElementsType[idx]; }
-        [[nodiscard]] const Type *getFieldType(const std::string &name) const;
+        [[nodiscard]] Type *getElementType(size_t idx) const { return v_ElementsType[idx]; }
+        [[nodiscard]] Type *getFieldType(const std::string &name) const;
     };
 } // namespace yapl

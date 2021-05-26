@@ -6,9 +6,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CMAKE_LINKER /usr/local/bin/ld.lld)
     set(CMAKE_RANLIB /usr/local/bin/llvm-ranlib)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld -stdlib=libc++ -D_GLIBCXX_USE_CXX11_ABI=0 -fPIC")
-else()
-    set(CMAKE_C_COMPILER /usr/local/opt/llvm/bin/clang)
-    set(CMAKE_CXX_COMPILER /usr/local/opt/llvm/bin/clang++)
+# else()
+#     set(CMAKE_C_COMPILER /usr/local/opt/llvm/bin/clang)
+#     set(CMAKE_CXX_COMPILER /usr/local/opt/llvm/bin/clang++)
 endif()
 
 project(YAPL)
@@ -37,5 +37,5 @@ add_subdirectory(tests)
 add_executable(yapl
     main.cpp)
 
-target_link_libraries(yapl PUBLIC cpplogger parser printer)
+target_link_libraries(yapl PUBLIC cpplogger parser printer yasa)
 

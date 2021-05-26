@@ -49,7 +49,7 @@ namespace yapl {
         return v_ElementsType.begin();
     }
 
-    bool StructType::isEqual(const Type &o) {
+    bool StructType::isEqual(const Type &o) const {
         if (auto t = dynamic_cast<const StructType*>(&o)) {
             if (v_ElementsType.size() == t->getElementsType().size()) {
                 for (size_t i = 0; i < v_ElementsType.size(); i++)
@@ -70,7 +70,7 @@ namespace yapl {
         return false;
     }
 
-    const Type *StructType::getFieldType(const std::string &name) const {
+    Type *StructType::getFieldType(const std::string &name) const {
         auto idx = m_FieldTypeMap.at(name);
 
         return v_ElementsType[idx];

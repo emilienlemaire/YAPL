@@ -25,7 +25,7 @@ namespace yapl {
         : Type(), p_ElementsType(elementsType), m_NumElements(numElements)
     {}
 
-    bool ArrayType::isEqual(const Type &o) {
+    bool ArrayType::isEqual(const Type &o) const {
         if (auto t = dynamic_cast<const ArrayType*>(&o)) {
             return (t->getElementsType()->isEqual(*p_ElementsType)) && t->getNumElements() == m_NumElements;
         }

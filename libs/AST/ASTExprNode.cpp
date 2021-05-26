@@ -54,7 +54,7 @@ namespace yapl {
         : ASTExprNode(std::move(scope))
     {}
 
-    void ASTCastExpr::setTargetType(const std::string &target) {
+    void ASTCastExpr::setTargetType(uint64_t target) {
         m_TargetType = target;
     }
 
@@ -62,7 +62,7 @@ namespace yapl {
         m_Expr = std::move(expr);
     }
 
-    const std::string &ASTCastExpr::getTargetType() const {
+    uint64_t ASTCastExpr::getTargetType() const {
         return m_TargetType;
     }
 

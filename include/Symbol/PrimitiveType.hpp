@@ -16,6 +16,7 @@
  */
 #pragma once
 
+#include "Symbol/SymbolTable.hpp"
 #include "Type.hpp"
 
 namespace yapl {
@@ -27,11 +28,14 @@ namespace yapl {
         bool m_IsNumeric;
         explicit PrimitiveType(bool isNumeric);
 
-        virtual bool isEqual(const Type &o) override;
+        [[nodiscard]] virtual bool isEqual(const Type &o) const override;
 
         friend class Type;
+        friend class SymbolTable;
 
     public:
         [[nodiscard]] virtual size_t hash() const override;
+        [[nodiscard]] bool isNumeric() const { return m_IsNumeric; }
+        [[nodiscard]] bool getTypeID() const { return m_TypeID; }
     };
 } // namespace yapl

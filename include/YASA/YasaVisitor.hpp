@@ -14,20 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "AST/ASTNode.hpp"
 #include "AST/ASTVisitor.hpp"
 #include "Printer/ASTPrinter.hpp"
 #include "Symbol/SymbolTable.hpp"
 #include "CppLogger2/CppLogger2.h"
+#include "Symbol/Type.hpp"
 
 #include <memory>
 
 namespace yapl {
     class YasaVisitor : public ASTVisitor {
     private:
-        std::shared_ptr<SymbolTable> m_SymboleTbale;
+        std::shared_ptr<SymbolTable> m_SymbolTable;
 
-        std::shared_ptr<Type> m_CurrentType;
-        std::shared_ptr<Type> getExprType(ASTExprNode*);
+        Type* getExprType(ASTExprNode*);
 
         std::unique_ptr<ASTProgramNode> m_Program;
 
@@ -35,6 +36,10 @@ namespace yapl {
 
         ASTPrinter m_ASTPrinter = ASTPrinter(nullptr);
     public:
+        explicit YasaVisitor(std::unique_ptr<ASTProgramNode> program);
+
+        ~YasaVisitor() = default;
+
         virtual void dispatchProgram(ASTProgramNode* programNode) override;
 
         virtual void dispatchNegExpr(ASTNegExpr* negExpr) override;
@@ -51,6 +56,7 @@ namespace yapl {
         virtual void dispatchAttributeAccessExpr(ASTAttributeAccessExpr* attributeAccessExpr) override;
         virtual void dispatchArrayAccessExpr(ASTArrayAccessExpr* arrayAccessExpr) override;
         virtual void dispatchFunctionCallExpr(ASTFunctionCallExpr* functionCallExpr) override;
+        virtual void dispatchCastExpr(ASTCastExpr* functionCallExpr) override;
 
         virtual void dispatchBlock(ASTBlockNode* blockNode) override;
         virtual void dispatchExprStatement(ASTExprStatementNode* exprStatementNode) override;

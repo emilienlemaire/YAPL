@@ -26,7 +26,7 @@ namespace yapl {
         :Type(), m_IsNumeric(isNumeric), m_TypeID(s_TypeID++)
     {}
 
-    bool PrimitiveType::isEqual(const Type &o) {
+    bool PrimitiveType::isEqual(const Type &o) const {
         if (auto t = dynamic_cast<const PrimitiveType*>(&o)) {
             return m_TypeID == t->m_TypeID;
         }

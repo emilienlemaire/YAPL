@@ -26,7 +26,7 @@ namespace yapl {
 
         ArrayType(Type* elementsType, uint64_t numElements);
 
-        virtual bool isEqual(const Type &o) override;
+        virtual bool isEqual(const Type &o) const override;
         friend class Type;
     public:
 

@@ -68,16 +68,16 @@ namespace yapl {
 
     class ASTCastExpr : public ASTExprNode {
     private:
-        std::string m_TargetType;
+        uint64_t m_TargetType;
         std::unique_ptr<ASTExprNode> m_Expr;
 
     public:
         explicit ASTCastExpr(SharedScope);
 
-        void setTargetType(const std::string&);
+        void setTargetType(uint64_t);
         void setExpr(std::unique_ptr<ASTExprNode>);
 
-        [[nodiscard]] const std::string &getTargetType() const;
+        [[nodiscard]] uint64_t getTargetType() const;
         [[nodiscard]] ASTExprNode *getExpr() const;
 
         virtual void accept(ASTVisitor &visitor) override;

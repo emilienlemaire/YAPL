@@ -17,10 +17,21 @@
 #include "Symbol/SymbolTable.hpp"
 #include "Symbol/Type.hpp"
 #include "Symbol/PrimitiveType.hpp"
+#include "parallel_hashmap/phmap.h"
 #include <memory>
 #include <utility>
 
 namespace yapl {
+    phmap::node_hash_map<u_int64_t, std::shared_ptr<Type>> SymbolTable::s_PrimitiveType =
+        phmap::node_hash_map<u_int64_t, std::shared_ptr<Type>>();
+
+    uint64_t SymbolTable::intID = 0;
+    uint64_t SymbolTable::floatID = 0;
+    uint64_t SymbolTable::doubleID = 0;
+    uint64_t SymbolTable::boolID = 0;
+    uint64_t SymbolTable::charID = 0;
+    uint64_t SymbolTable::voidID = 0;
+
     std::shared_ptr<SymbolTable> SymbolTable::InitTopSymTab() {
         auto int_t = Type::CreatePrimitiveType(true);
         auto float_t = Type::CreatePrimitiveType(true);
@@ -35,6 +46,20 @@ namespace yapl {
         Type::GetOrInsertType(bool_t);
         Type::GetOrInsertType(char_t);
         Type::GetOrInsertType(void_t);
+
+        s_PrimitiveType[int_t->getTypeID()] = int_t;
+        s_PrimitiveType[float_t->getTypeID()] = float_t;
+        s_PrimitiveType[double_t->getTypeID()] = double_t;
+        s_PrimitiveType[bool_t->getTypeID()] = bool_t;
+        s_PrimitiveType[char_t->getTypeID()] = char_t;
+        s_PrimitiveType[void_t->getTypeID()] = void_t;
+
+        intID = int_t->getTypeID();
+        floatID = float_t->getTypeID();
+        doubleID = double_t->getTypeID();
+        boolID = bool_t->getTypeID();
+        charID = char_t->getTypeID();
+        voidID = void_t->getTypeID();
 
         auto int_v = Value::CreateTypeValue("int", int_t.get());
         auto float_v = Value::CreateTypeValue("float", float_t.get());

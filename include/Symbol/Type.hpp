@@ -38,7 +38,7 @@ namespace yapl {
         static phmap::parallel_node_hash_map<Type *, std::shared_ptr<Type>> s_Types;
         Type() = default;
 
-        virtual bool isEqual(const Type &o) = 0;
+        [[nodiscard]] virtual bool isEqual(const Type &o) const = 0;
 
         friend class PrimitiveType;
         friend class ArrayType;
@@ -47,12 +47,12 @@ namespace yapl {
 
     public:
         template<class T>
-        bool operator==(const T &o) {
+        bool operator==(const T &o) const {
             return this->isEqual(o);
         }
 
         template<class T>
-        bool operator!=(const T &o) {
+        bool operator!=(const T &o) const {
             return !this->isEqual(o);
         }
 

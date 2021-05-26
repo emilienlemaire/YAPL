@@ -19,6 +19,7 @@
 #include "YAPL.h"
 #include "Parser/Parser.hpp"
 #include "Printer/ASTPrinter.hpp"
+#include "YASA/YasaVisitor.hpp"
 
 int main(int argc, char *argv[]) {
     CppLogger::CppLogger mainConsole(CppLogger::Level::Trace, "Main");
@@ -39,6 +40,7 @@ int main(int argc, char *argv[]) {
         yapl::ASTPrinter printer(std::move(parser.getProgram()));
         printer.dump();
         auto prog = printer.releaseProgram();
+        yapl::YasaVisitor yasaVisitor(std::move(prog));
     } else {
         mainConsole.printFatalError("The REPL is not yet implemented");
     }

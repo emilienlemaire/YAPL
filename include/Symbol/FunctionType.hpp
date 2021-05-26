@@ -26,7 +26,7 @@ namespace yapl {
 
         FunctionType(Type* returnType, std::vector<Type*> paramsType);
 
-        virtual bool isEqual(const Type &o) override;
+        [[nodiscard]] virtual bool isEqual(const Type &o) const override;
 
         friend class Type;
     public:
@@ -40,6 +40,6 @@ namespace yapl {
         [[nodiscard]] const std::vector<Type*> &getParamsType() const { return v_ParamsType; }
         [[nodiscard]] const Type* getParamType(size_t idx) const { return v_ParamsType[idx]; }
         [[nodiscard]] auto getNumParams() const -> decltype(v_ParamsType.size()) { return v_ParamsType.size(); }
-        [[nodiscard]] const Type *getReturnType() const { return p_ReturnType; }
+        [[nodiscard]] Type *getReturnType() const { return p_ReturnType; }
     };
 } // namespace yapl

@@ -1,0 +1,255 @@
+[37m[Main] YAPL v.0.0.1 [m
+ASTImportNode:
+  namespaces:
+    hello
+    that
+  values:
+    that
+ASTInitializationNode:
+  type: int
+  name: name
+  value: 
+    ASTIntegerNumberExpr: value: 12
+ASTInitializationNode:
+  type: bool
+  name: name1
+  value: 
+    ASTBoolLiteralExpr: value = 1
+ASTInitializationNode:
+  type: double
+  name: name2
+  value: 
+    ASTNegExpr:
+      ASTDoubleNumberExpr: value: 1.5
+ASTInitializationNode:
+  type: float
+  name: name3
+  value: 
+    ASTFloatNumberExpr: value: 0.5
+ASTArrayInitializationNode:
+  type: int[3]
+  name: infiniteArray
+  size: 2
+  values: 
+    ASTArgumentList:
+      ASTArgumentList:
+        ASTIntegerNumberExpr: value: 1
+        ASTIntegerNumberExpr: value: 2
+      ASTArgumentList:
+        ASTIntegerNumberExpr: value: 3
+        ASTIntegerNumberExpr: value: 4
+      ASTArgumentList:
+        ASTIntegerNumberExpr: value: 5
+        ASTIntegerNumberExpr: value: 6
+ASTArrayInitializationNode:
+  type: int[4][3]
+  name: infiniteArray2
+  size: 2
+  values: 
+    ASTArgumentList:
+      ASTIdentifierExpr: value: infiniteArray
+      ASTIdentifierExpr: value: infiniteArray
+      ASTIdentifierExpr: value: infiniteArray
+      ASTIdentifierExpr: value: infiniteArray
+ASTInitializationNode:
+  type: float
+  name: test
+  value: 
+    ASTFunctionCallExpr:
+      function: 
+        ASTAttributeAccessExpr:
+          struct: 
+            ASTArrayAccessExpr:
+              array: 
+                ASTIdentifierExpr: value: anArray
+              index:
+                ASTIdentifierExpr: value: name
+          attribute:
+            ASTIdentifierExpr: value: aMethod
+      arguments:
+        ASTArgumentList:
+          ASTIntegerNumberExpr: value: 12
+          ASTIdentifierExpr: value: bla
+          ASTAttributeAccessExpr:
+            struct: 
+              ASTIdentifierExpr: value: test
+            attribute:
+              ASTIdentifierExpr: value: a
+ASTFunctionDefinitionNode:
+  name: f1
+  return type: void
+  parameters: (0)
+  body: 
+    ASTBlockNode:
+ASTFunctionDefinitionNode:
+  name: f2
+  return type: void
+  parameters: (1)
+    ASTDeclarationNode:
+      type: int
+      name: a
+  body: 
+    ASTBlockNode:
+ASTFunctionDefinitionNode:
+  name: f3
+  return type: void
+  parameters: (1)
+    ASTInitializationNode:
+      type: int
+      name: a
+      value: 
+        ASTIntegerNumberExpr: value: 12
+  body: 
+    ASTBlockNode:
+ASTFunctionDefinitionNode:
+  name: f4
+  return type: void
+  parameters: (1)
+    ASTArrayDeclarationNode:
+      type: int
+      name: arr
+      size: 2
+  body: 
+    ASTBlockNode:
+ASTFunctionDefinitionNode:
+  name: f5
+  return type: void
+  parameters: (1)
+    ASTArrayInitializationNode:
+      type: int
+      name: arr
+      size: 2
+      values: 
+        ASTArgumentList:
+          ASTIntegerNumberExpr: value: 1
+          ASTIntegerNumberExpr: value: 2
+  body: 
+    ASTBlockNode:
+ASTFunctionDefinitionNode:
+  name: f6
+  return type: void
+  parameters: (2)
+    ASTDeclarationNode:
+      type: int
+      name: a
+    ASTInitializationNode:
+      type: int
+      name: b
+      value: 
+        ASTIntegerNumberExpr: value: 2
+  body: 
+    ASTBlockNode:
+ASTFunctionDefinitionNode:
+  name: f7
+  return type: void
+  parameters: (3)
+    ASTDeclarationNode:
+      type: int
+      name: a
+    ASTInitializationNode:
+      type: int
+      name: b
+      value: 
+        ASTIntegerNumberExpr: value: 2
+    ASTInitializationNode:
+      type: int
+      name: c
+      value: 
+        ASTIntegerNumberExpr: value: 3
+  body: 
+    ASTBlockNode:
+ASTStructDefinitionNode:
+  name: str
+  attributes: 
+    ASTDeclarationNode:
+      type: int
+      name: a
+    ASTInitializationNode:
+      type: int
+      name: b
+      value: 
+        ASTIntegerNumberExpr: value: 2
+  methods: 
+    ASTFunctionDefinitionNode:
+      name: addToA
+      return type: int
+      parameters: (1)
+        ASTDeclarationNode:
+          type: int
+          name: v
+      body: 
+        ASTBlockNode:
+          ASTIfNode:
+            condition:
+              ASTBinaryExpr:
+                  lhs: 
+                    ASTIdentifierExpr: value: v
+                  operator: <
+                  rhs: 
+                    ASTIntegerNumberExpr: value: 0
+              then:
+                ASTBlockNode:
+                  ASTAssignmentNode:
+                    variable:
+                      ASTIdentifierExpr: value: v
+                    value:
+                      ASTNegExpr:
+                        ASTIdentifierExpr: value: v
+                  ASTExprStatementNode:
+                    ASTFunctionCallExpr:
+                      function: 
+                        ASTIdentifierExpr: value: f2
+                      arguments:
+                        ASTArgumentList:
+                          ASTIdentifierExpr: value: v
+              else:
+                ASTBlockNode:
+                  ASTAssignmentNode:
+                    variable:
+                      ASTIdentifierExpr: value: v
+                    value:
+                      ASTNegExpr:
+                        ASTIdentifierExpr: value: v
+                  ASTExprStatementNode:
+                    ASTFunctionCallExpr:
+                      function: 
+                        ASTIdentifierExpr: value: f2
+                      arguments:
+                        ASTArgumentList:
+                          ASTIdentifierExpr: value: v
+            ASTForNode:
+              iteration variable: 
+                i
+              rang expr:
+                ASTRangeExpr:
+                    start:
+                    ASTIntegerNumberExpr: value: 0
+                  end:
+                    ASTIntegerNumberExpr: value: 12
+              body:
+                ASTBlockNode:
+                  ASTAssignmentNode:
+                    variable:
+                      ASTIdentifierExpr: value: v
+                    value:
+                      ASTBinaryExpr:
+                          lhs: 
+                            ASTIdentifierExpr: value: v
+                          operator: +
+                          rhs: 
+                            ASTIdentifierExpr: value: i
+              ASTReturnNode:
+                value:
+                  ASTBinaryExpr:
+                      lhs: 
+                        ASTIdentifierExpr: value: a
+                      operator: +
+                      rhs: 
+                        ASTIdentifierExpr: value: v
+      ASTInitializationNode:
+        type: str
+        name: test
+        value: 
+          ASTArgumentList:
+            ASTIntegerNumberExpr: value: 1
+            ASTIntegerNumberExpr: value: 3
