@@ -149,6 +149,32 @@ namespace yapl {
         virtual void accept(ASTVisitor &visitor) override;
     };
 
+    class ASTArrayLiteralExpr : public ASTExprNode {
+    private:
+        std::vector<std::unique_ptr<ASTExprNode>> m_Values;
+    public:
+        explicit ASTArrayLiteralExpr(SharedScope);
+
+        using vectorType = typename std::vector<std::unique_ptr<ASTExprNode>>;
+        using iterator = typename vectorType::iterator;
+        using const_iterator = typename vectorType::const_iterator;
+
+        void addValue(std::unique_ptr<ASTExprNode>);
+
+        [[nodiscard]] const vectorType &getValues() const;
+
+        inline auto begin() noexcept -> decltype(m_Values.begin())
+            { return m_Values.begin(); }
+        inline auto end() noexcept -> decltype(m_Values.end())
+            { return m_Values.end(); }
+        inline auto cbegin() noexcept -> decltype(m_Values.cbegin())
+            { return m_Values.cbegin(); }
+        inline auto cend() noexcept -> decltype(m_Values.cend())
+            { return m_Values.cend(); }
+
+        virtual void accept(ASTVisitor &visitor) override;
+    };
+
     class ASTBoolLiteralExpr : public ASTExprNode {
     private:
         bool m_Value = false;

@@ -122,5 +122,6 @@ namespace yapl {
         std::unique_ptr<ASTRangeExpr> parseRangeExpr();
 
         std::unique_ptr<ASTArgumentList> parseArgumentList();
+        std::unique_ptr<ASTArrayLiteralExpr> parseArrayLiteral();
     };
 } // namespace yapl

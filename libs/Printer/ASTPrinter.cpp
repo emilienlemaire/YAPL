@@ -96,6 +96,16 @@ namespace yapl {
         m_Tabs--;
     }
 
+    void ASTPrinter::dispatchArrayLiteralExpr(ASTArrayLiteralExpr* arrayLiteral) {
+        printTabs();
+        std::cout << "ASTArrayLiteralExpr:" << std::endl;
+        m_Tabs++;
+        for(auto &value : arrayLiteral->getValues()) {
+            value->accept(*this);
+        }
+        m_Tabs--;
+    }
+
     void ASTPrinter::dispatchBoolLiteralExpr(ASTBoolLiteralExpr* boolLiteralExpr) {
         printTabs();
         std::cout << "ASTBoolLiteralExpr: value = " <<

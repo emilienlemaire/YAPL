@@ -31,6 +31,7 @@ namespace yapl {
         friend class Type;
     public:
         [[nodiscard]] virtual size_t hash() const override;
+        [[nodiscard]] virtual const std::string dump() const override;
 
         auto begin() -> decltype(v_ParamsType.begin());
         auto end() -> decltype(v_ParamsType.end());

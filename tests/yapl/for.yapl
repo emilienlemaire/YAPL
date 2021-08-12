@@ -4,7 +4,7 @@ func main() -> int {
         b = b + i;
     }
 
-    int arr[4] = {1, 2, 3, 4};
+    int arr[4] = [1, 2, 3, 4];
 
     for (int elem in array) {
         elem = elem + 1;

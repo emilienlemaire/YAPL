@@ -67,4 +67,19 @@ namespace yapl {
         }
         return hash;
     }
+
+    const std::string FunctionType::dump() const {
+        std::string str = "Function type: return " + p_ReturnType->dump() + ", ";
+
+        if (v_ParamsType.size() > 0) {
+            str += "arg types: ";
+            for (auto argType : v_ParamsType) {
+                str += (argType->dump() + ", ");
+            }
+        } else {
+            str += "nor args.";
+        }
+
+        return str;
+    }
 } // namespace yapl

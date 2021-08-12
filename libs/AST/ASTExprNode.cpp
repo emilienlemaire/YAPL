@@ -138,6 +138,22 @@ namespace yapl {
         visitor.dispatchArgumentList(this);
     }
 
+    ASTArrayLiteralExpr::ASTArrayLiteralExpr(SharedScope scope)
+        : ASTExprNode(std::move(scope))
+    {}
+
+    void ASTArrayLiteralExpr::addValue(std::unique_ptr<ASTExprNode> argument) {
+        m_Values.push_back(std::move(argument));
+    }
+
+    const ASTArrayLiteralExpr::vectorType &ASTArrayLiteralExpr::getValues() const {
+        return m_Values;
+    }
+
+    void ASTArrayLiteralExpr::accept(ASTVisitor &visitor) {
+        visitor.dispatchArrayLiteralExpr(this);
+    }
+
     ASTBoolLiteralExpr::ASTBoolLiteralExpr(SharedScope scope)
         : ASTExprNode(std::move(scope))
     {}

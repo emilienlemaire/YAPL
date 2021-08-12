@@ -95,13 +95,25 @@ namespace yapl {
         return hash;
     }
 
+    const std::string StructType::dump() const {
+        std::string str = "Struct type: " + m_Identifier;
+
+        for (auto [name, typeIdx] : m_FieldTypeMap) {
+            str += ", (field: " + name + " type: " + v_ElementsType[typeIdx]->dump() + ")";
+        }
+
+        return str;
+    }
+
     bool StructType::isField(const std::string &fieldName) const {
         return m_FieldTypeMap.contains(fieldName);
     }
 
     ArrayType *StructType::toArrayType() {
         auto firstElementType = v_ElementsType[0];
+        std::cerr << "Transforming struct to array" << std::endl;
 
+        std::cerr << "Begining type: " << dump() << std::endl;
         for (auto elemType : v_ElementsType) {
             if (*elemType != *firstElementType) {
                 std::cerr << "The types don't match" << std::endl;
@@ -122,6 +134,8 @@ namespace yapl {
 
         auto arrType = Type::CreateArrayType(firstElementType, size);
         Type::GetOrInsertType(arrType);
+
+        std::cerr << "Finishing type: " << arrType->dump() << std::endl;
 
         return arrType.get();
     }

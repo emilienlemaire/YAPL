@@ -42,6 +42,7 @@ namespace yapl {
         virtual void dispatchNotExpr(ASTNotExpr* notExpr) override;
         virtual void dispatchParExpr(ASTParExpr* parExpr) override;
         virtual void dispatchArgumentList(ASTArgumentList* argumentList) override;
+        virtual void dispatchArrayLiteralExpr(ASTArrayLiteralExpr* arrayLiteral) override;
         virtual void dispatchBoolLiteralExpr(ASTBoolLiteralExpr* boolLiteralExpr) override;
         virtual void dispatchBinaryExpr(ASTBinaryExpr* binaryExpr) override;
         virtual void dispatchRangeExpr(ASTRangeExpr* rangeExpr) override;

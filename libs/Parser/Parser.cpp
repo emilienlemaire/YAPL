@@ -843,7 +843,10 @@ namespace yapl {
 
         arrayInitialization->setValues(std::move(values));
 
-        auto arrType = m_SymbolTable->lookup(arrayInitialization->getType())->getType();
+        auto arrTypeIndent = arrayInitialization->getType() + "[" +
+            std::to_string(arrayInitialization->getSize()) + "]";
+
+        auto arrType = m_SymbolTable->lookup(arrTypeIndent)->getType();
         auto arrValue = Value::CreateVariableValue(arrayInitialization->getIdentifier(), arrType);
         m_SymbolTable->insert(arrValue);
 
@@ -1296,6 +1299,10 @@ namespace yapl {
             exprTmp = parseArgumentList();
         }
 
+        if (m_CurrentToken == token::ACC_O) {
+            exprTmp = parseArrayLiteral();
+        }
+
         // All tokens higher than assign are binray operators.
         if (m_CurrentToken.token > token::ASSIGN) {
             return parseBinaryExpr(std::move(exprTmp));
@@ -1590,6 +1597,36 @@ namespace yapl {
         m_CurrentToken = m_Lexer.getNextToken(); // Eat ')' or '}'
 
         return argumentList;
+    }
+
+    std::unique_ptr<ASTArrayLiteralExpr> Parser::parseArrayLiteral() {
+        auto arrayLiteral = std::make_unique<ASTArrayLiteralExpr>(m_SymbolTable);
+
+        m_CurrentToken = m_Lexer.getNextToken();
+
+        while (m_CurrentToken != token::ACC_C) {
+            auto value = parseExpr();
+
+            arrayLiteral->addValue(std::move(value));
+
+            if (m_CurrentToken != token::COMMA &&
+                    m_CurrentToken != token::ACC_C) {
+                return parseError<ASTArrayLiteralExpr>(
+                        "File: {}:{}\n\tExpecting a ',' or ']' in an array literal instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            if (m_CurrentToken == token::COMMA) {
+                m_CurrentToken = m_Lexer.getNextToken();
+            }
+        }
+
+        m_CurrentToken = m_Lexer.getNextToken(); // Eat ']'
+
+        return arrayLiteral;
     }
 
     std::unique_ptr<ASTRangeExpr> Parser::parseRangeExpr() {

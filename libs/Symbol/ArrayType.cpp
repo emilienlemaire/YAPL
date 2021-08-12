@@ -39,6 +39,6 @@ namespace yapl {
     }
 
     const std::string ArrayType::dump() const {
-        return "Array of " + std::to_string(m_NumElements) + p_ElementsType->dump();
+        return "Array of (" + std::to_string(m_NumElements) + " " + p_ElementsType->dump() + ")";
     }
 } // namespace yapl

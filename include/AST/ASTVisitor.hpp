@@ -31,6 +31,7 @@ namespace yapl {
         virtual void dispatchNotExpr(ASTNotExpr*) = 0;
         virtual void dispatchParExpr(ASTParExpr*) = 0;
         virtual void dispatchArgumentList(ASTArgumentList*) = 0;
+        virtual void dispatchArrayLiteralExpr(ASTArrayLiteralExpr*) = 0;
         virtual void dispatchBoolLiteralExpr(ASTBoolLiteralExpr*) = 0;
         virtual void dispatchBinaryExpr(ASTBinaryExpr*) = 0;
         virtual void dispatchRangeExpr(ASTRangeExpr*) = 0;

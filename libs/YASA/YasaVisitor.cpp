@@ -81,6 +81,17 @@ namespace yapl {
             return inserted.get();
         }
 
+        if (auto arrLit = dynamic_cast<ASTArrayLiteralExpr*>(expr)) {
+            auto elemType = getExprType(arrLit->getValues()[0].get());
+
+            auto size = arrLit->getValues().size();
+
+            auto arrType = Type::CreateArrayType(elemType, size);
+            auto inserted = Type::GetOrInsertType(arrType);
+
+            return inserted.get();
+        }
+
         if (auto boolLit = dynamic_cast<ASTBoolLiteralExpr*>(expr)) {
             auto type = boolLit->getScope()->lookup("bool")->getType();
 
@@ -200,6 +211,23 @@ namespace yapl {
     void YasaVisitor::dispatchArgumentList(ASTArgumentList* argumentList) {
         for (auto &arg: *argumentList) {
             arg->accept(*this);
+        }
+    }
+
+    void YasaVisitor::dispatchArrayLiteralExpr(ASTArrayLiteralExpr* arrayLiteral) {
+        for (auto &value: *arrayLiteral) {
+            value->accept(*this);
+        }
+
+        auto firstElementType = getExprType(arrayLiteral->getValues()[0].get());
+
+        for (auto &value: *arrayLiteral) {
+            auto elemType = getExprType(value.get());
+
+            if (*elemType != *firstElementType) {
+                m_Logger.printError("All elements of an array literal must have the same type");
+                m_ASTPrinter.dispatchArrayLiteralExpr(arrayLiteral);
+            }
         }
     }
 
@@ -428,7 +456,11 @@ namespace yapl {
             )->getType();
 
         if (*arrType != *rvalueType) {
-            m_Logger.printError("rvalue does not match the array type");
+            m_Logger.printError(
+                    "rvalue of type {} does not match the array of type {}",
+                    rvalueType->dump(),
+                    arrType->dump()
+                );
             m_Logger.printError("ArrType name: {}", arrMembersTypeName);
             m_ASTPrinter.dispatchArrayInitialization(arrayInitializationNode);
         }
