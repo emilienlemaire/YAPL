@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #include "Symbol/Value.hpp"
+#include "Symbol/FunctionType.hpp"
 #include <memory>
 
 namespace yapl {
@@ -44,6 +45,7 @@ namespace yapl {
         v.m_Kind = ValueKind::Function;
         v.m_Name = name;
         v.m_FunctionType = type;
+        v.m_Type = v.m_FunctionType;
         return std::make_shared<Value>(v);
     }
 

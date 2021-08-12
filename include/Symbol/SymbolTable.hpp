@@ -30,12 +30,12 @@ namespace yapl {
         std::vector<std::shared_ptr<SymbolTable>> m_ChildrenScopes;
         phmap::node_hash_map<std::string, std::shared_ptr<Value>> m_Symbols;
         static phmap::node_hash_map<uint64_t, std::shared_ptr<Type>> s_PrimitiveType;
-        static uint64_t intID;
-        static uint64_t floatID;
-        static uint64_t doubleID;
-        static uint64_t boolID;
-        static uint64_t charID;
-        static uint64_t voidID;
+        constexpr static uint64_t intID = 0;
+        constexpr static uint64_t floatID = 1;
+        constexpr static uint64_t doubleID = 2;
+        constexpr static uint64_t boolID = 3;
+        constexpr static uint64_t charID = 4;
+        constexpr static uint64_t voidID = 5;
 
     public:
         bool insert(std::shared_ptr<Value> val);
@@ -67,6 +67,30 @@ namespace yapl {
 
         static std::shared_ptr<Type> GetVoidType() {
             return s_PrimitiveType[voidID];
+        }
+
+        constexpr static uint64_t GetIntID() {
+            return intID;
+        }
+
+        constexpr static uint64_t GetFloatID() {
+            return floatID;
+        }
+
+        constexpr static uint64_t GetDoubleID() {
+            return doubleID;
+        }
+
+        constexpr static uint64_t GetBoolID() {
+            return boolID;
+        }
+
+        constexpr static uint64_t GetCharID() {
+            return charID;
+        }
+
+        constexpr static uint64_t GetVoidID() {
+            return voidID;
         }
     };
 } // namespace yapl

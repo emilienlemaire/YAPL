@@ -35,7 +35,8 @@ namespace yapl {
 
     public:
         [[nodiscard]] virtual size_t hash() const override;
+        [[nodiscard]] virtual const std::string dump() const override;
         [[nodiscard]] bool isNumeric() const { return m_IsNumeric; }
-        [[nodiscard]] bool getTypeID() const { return m_TypeID; }
+        [[nodiscard]] uint64_t getTypeID() const { return m_TypeID; }
     };
 } // namespace yapl

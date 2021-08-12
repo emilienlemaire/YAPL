@@ -18,6 +18,8 @@ endforeach()
 
 add_custom_target(runTestFiles ALL DEPENDS "${testTargets}")
 
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/vendor/Catch2/extras")
+
 find_package(Catch2 REQUIRED)
 
 add_executable(tests
@@ -25,7 +27,6 @@ add_executable(tests
 
 target_link_libraries(tests PRIVATE Catch2::Catch2WithMain lexer)
 
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/vendor/Catch2/extras")
 
 include(CTest)
 enable_testing()

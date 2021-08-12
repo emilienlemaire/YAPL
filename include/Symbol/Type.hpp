@@ -57,6 +57,7 @@ namespace yapl {
         }
 
         [[nodiscard]] virtual size_t hash() const = 0;
+        [[nodiscard]] virtual const std::string dump() const = 0;
 
         friend size_t hash_value(const Type &t) {
             return t.hash();
@@ -81,7 +82,7 @@ namespace yapl {
             );
 
         static std::shared_ptr<Type> GetOrInsertType(std::shared_ptr<Type> type) {
-            if (s_Types.find(type) != s_Types.end()) {
+            if (s_Types.find(type.get()) != s_Types.end()) {
                 auto typePtr = s_Types.find(type.get());
                 return typePtr->second;
             }

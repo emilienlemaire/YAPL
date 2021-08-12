@@ -1,3 +1,4 @@
+// This is ok for yasa to not accept this file, we are just testing the parser.
 import hello::that::{that};
 
 int name = 12;
@@ -5,8 +6,17 @@ bool name1 = true;
 double name2 = -1.5;
 float name3 = .5f;
 
-int infiniteArray[3][2] = {{1, 2}, {3, 4}, {5, 6}};
-int infiniteArray2[4][3][2] = {infiniteArray, infiniteArray, infiniteArray, infiniteArray};
+int infiniteArray[3][2] = {
+    {1, 2},
+    {3, 4},
+    {5, 6}
+};
+int infiniteArray2[4][3][2] = {
+    infiniteArray,
+    infiniteArray,
+    infiniteArray,
+    infiniteArray
+};
 
 float test = anArray[name].aMethod(12, bla, test.a);
 

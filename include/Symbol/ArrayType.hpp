@@ -26,11 +26,12 @@ namespace yapl {
 
         ArrayType(Type* elementsType, uint64_t numElements);
 
-        virtual bool isEqual(const Type &o) const override;
+        [[nodiscard]] virtual bool isEqual(const Type &o) const override;
         friend class Type;
     public:
 
         [[nodiscard]] virtual size_t hash() const override;
+        [[nodiscard]] virtual const std::string dump() const override;
         [[nodiscard]] uint64_t getNumElements() const { return m_NumElements; }
         [[nodiscard]] Type *getElementsType() const { return p_ElementsType; }
     };

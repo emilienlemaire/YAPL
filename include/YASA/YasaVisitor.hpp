@@ -26,6 +26,8 @@
 namespace yapl {
     class YasaVisitor : public ASTVisitor {
     private:
+        static std::vector<ASTExprNode*> s_ReturnExprs;
+
         std::shared_ptr<SymbolTable> m_SymbolTable;
 
         Type* getExprType(ASTExprNode*);
@@ -39,6 +41,8 @@ namespace yapl {
         explicit YasaVisitor(std::unique_ptr<ASTProgramNode> program);
 
         ~YasaVisitor() = default;
+
+        void analyze();
 
         virtual void dispatchProgram(ASTProgramNode* programNode) override;
 

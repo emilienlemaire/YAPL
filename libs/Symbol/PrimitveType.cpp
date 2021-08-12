@@ -17,6 +17,7 @@
 
 #include "Symbol/Type.hpp"
 #include "Symbol/PrimitiveType.hpp"
+#include "Symbol/SymbolTable.hpp"
 #include "parallel_hashmap/phmap_utils.h"
 
 namespace yapl {
@@ -32,6 +33,25 @@ namespace yapl {
         }
 
         return false;
+    }
+
+    const std::string PrimitiveType::dump() const {
+        switch (m_TypeID) {
+            case SymbolTable::GetIntID():
+                return "int";
+            case SymbolTable::GetBoolID():
+                return "bool";
+            case SymbolTable::GetCharID():
+                return "char";
+            case SymbolTable::GetDoubleID():
+                return "double";
+            case SymbolTable::GetFloatID():
+                return "float";
+            case SymbolTable::GetVoidID():
+                return "void";
+            default:
+                return "undefined";
+        }
     }
 
     size_t PrimitiveType::hash() const {

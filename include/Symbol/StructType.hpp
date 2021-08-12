@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Symbol/Type.hpp"
+#include "Symbol/ArrayType.hpp"
 #include "parallel_hashmap/phmap.h"
 #include <string>
 #include <vector>
@@ -35,15 +36,18 @@ namespace yapl {
         friend class Type;
     public:
         [[nodiscard]] virtual size_t hash() const override;
+        [[nodiscard]] virtual const std::string dump() const override;
 
-        auto begin() -> decltype(v_ElementsType.begin());
-        auto end() -> decltype(v_ElementsType.end());
-        auto cbegin() -> decltype(v_ElementsType.cbegin());
-        auto cend() -> decltype(v_ElementsType.cend());
+        auto begin() -> decltype(m_FieldTypeMap.begin());
+        auto end() -> decltype(m_FieldTypeMap.end());
+        auto cbegin() -> decltype(m_FieldTypeMap.cbegin());
+        auto cend() -> decltype(m_FieldTypeMap.cend());
 
         [[nodiscard]] const std::string &getIdentifier() const { return m_Identifier; }
         [[nodiscard]] const std::vector<Type*> &getElementsType() const { return v_ElementsType; }
         [[nodiscard]] Type *getElementType(size_t idx) const { return v_ElementsType[idx]; }
         [[nodiscard]] Type *getFieldType(const std::string &name) const;
+        [[nodiscard]] bool isField(const std::string &fieldName) const;
+        [[nodiscard]] ArrayType *toArrayType();
     };
 } // namespace yapl

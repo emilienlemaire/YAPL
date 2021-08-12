@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -27,6 +28,7 @@
 #include "Parser/Parser.hpp"
 #include "Symbol/Type.hpp"
 #include "Symbol/PrimitiveType.hpp"
+#include "Symbol/FunctionType.hpp"
 #include "Symbol/ArrayType.hpp"
 #include "Symbol/StructType.hpp"
 
@@ -479,6 +481,11 @@ namespace yapl {
         // TODO: Create overload for each default parameters
         for (const auto &param : functionDefinition->getParameters()) {
             auto paramType = m_SymbolTable->lookup(param->getType())->getType();
+            if (auto arrayDecl = dynamic_cast<ASTArrayDeclarationNode*>(param.get())) {
+                paramType = m_SymbolTable->lookup(
+                        arrayDecl->getType() + "[" + std::to_string(arrayDecl->getSize()) + "]"
+                    )->getType();
+            }
             auto paramValue = Value::CreateVariableValue(param->getIdentifier(), paramType);
             parametersValue.push_back(paramValue);
             parametersType.push_back(paramType);
@@ -497,6 +504,7 @@ namespace yapl {
 
         auto returnType = m_SymbolTable->lookup(functionDefinition->getReturnType())->getType();
         auto funcType = Type::CreateFunctionType(returnType, parametersType);
+        auto insertedType = Type::GetOrInsertType(std::dynamic_pointer_cast<Type>(funcType));
         auto functionValue = Value::CreateFunctionValue(funcName, funcType.get());
 
         // TODO: Allow function overload
@@ -524,9 +532,10 @@ namespace yapl {
                 );
         }
 
+        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the body scope
+
         auto structDef = std::make_unique<ASTStructDefinitionNode>(m_SymbolTable);
 
-        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the body scope
 
         structDef->setStructName(m_CurrentToken.identifier);
 
@@ -593,9 +602,6 @@ namespace yapl {
         }
 
         // TODO: Add the constructor, (maybe in semantic analysis)
-
-        m_SymbolTable = m_SymbolTable->popScope();
-
         std::vector<Type *> attrType;
         std::vector<std::string> attrsName;
 
@@ -607,6 +613,16 @@ namespace yapl {
             attrType.push_back(typeValue->getType());
             attrsName.push_back(attrName);
         }
+
+        for (const auto &meth : structDef->getMethods()) {
+            auto methName = meth->getFunctionName();
+            auto methType = m_SymbolTable->lookup(methName)->getType();
+
+            attrsName.push_back(methName);
+            attrType.push_back(methType);
+        }
+
+        m_SymbolTable = m_SymbolTable->popScope();
 
         auto structType = Type::CreateStructType(structDef->getStructName(), attrsName, attrType);
         auto insertedType = Type::GetOrInsertType(structType);
@@ -638,7 +654,8 @@ namespace yapl {
 
     // FIXME: Review with new types
     std::unique_ptr<ASTDeclarationNode> Parser::parseDeclaration(const std::string &type) {
-        std::unique_ptr<ASTDeclarationNode> declarationNode = std::make_unique<ASTDeclarationNode>(m_SymbolTable);
+        std::unique_ptr<ASTDeclarationNode> declarationNode =
+            std::make_unique<ASTDeclarationNode>(m_SymbolTable);
 
         declarationNode->setType(type);
 
@@ -649,7 +666,7 @@ namespace yapl {
         m_CurrentToken = m_Lexer.getNextToken(); // Eat identifier
 
         if (m_CurrentToken == token::ACC_O) {
-            m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
+            // m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
 
             return parseArrayDeclaration(std::move(declarationNode));
         }
@@ -666,10 +683,6 @@ namespace yapl {
                 );
         }
 
-        auto variable = Value::CreateVariableValue(identifier, typeValue->getType());
-
-        m_SymbolTable->insert(variable);
-
         if (m_CurrentToken == token::ASSIGN) {
             m_CurrentToken = m_Lexer.getNextToken(); // Eat '='
 
@@ -679,6 +692,9 @@ namespace yapl {
         if (m_CurrentToken == token::PAR_O) {
             return parseStructConstructorInitialization(std::move(declarationNode));
         }
+
+        auto variable = Value::CreateVariableValue(identifier, typeValue->getType());
+        m_SymbolTable->insert(variable);
 
         return declarationNode;
     }
@@ -712,85 +728,97 @@ namespace yapl {
             );
     }
 
-    // FIXME: Correct array size
+    // WIP: Correct array size
     std::unique_ptr<ASTArrayDeclarationNode> Parser::parseArrayDeclaration(
             std::unique_ptr<ASTDeclarationNode> declaration
-            ) {
-        if (m_CurrentToken != token::INT_LIT) {
-            return parseError<ASTArrayDeclarationNode>(
-                    "File {}:{}\n\tExpecting an integer literal afater '[' instead of {}",
-                    m_FilePath,
-                    m_CurrentToken.pos,
-                    m_CurrentToken
-                );
+        ) {
+
+        std::vector<int> arraySizes = std::vector<int>();
+
+        while (m_CurrentToken == token::ACC_O) {
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
+
+            if (m_CurrentToken != token::INT_LIT) {
+                return parseError<ASTArrayDeclarationNode>(
+                        "File {}:{}\n\tExpecting an integer literal after '[' instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            arraySizes.push_back(std::stoi(m_CurrentToken.identifier));
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat int lit
+
+            if (m_CurrentToken != token::ACC_C) {
+                return parseError<ASTArrayDeclarationNode>(
+                        "File {}:{}\n\tExpecting a ']' after array size instead of {}",
+                        m_FilePath,
+                        m_CurrentToken.pos,
+                        m_CurrentToken
+                    );
+            }
+
+            m_CurrentToken = m_Lexer.getNextToken(); // Eat ']'
         }
 
         auto arrayDeclaration = std::make_unique<ASTArrayDeclarationNode>(m_SymbolTable);
 
-        auto baseTypeName = declaration->getType();
+        std::reverse(arraySizes.begin(), arraySizes.end());
 
-        int size = std::stoi(m_CurrentToken.identifier);
+        auto baseTypeIdent = declaration->getType();
+        auto baseTypeValue = m_SymbolTable->lookup(baseTypeIdent);
 
-        auto typeValue = m_SymbolTable->lookup(baseTypeName);
-
-        if (!typeValue) {
+        if (!baseTypeValue) {
             return parseError<ASTArrayDeclarationNode>(
                     "File: {}:{}\n\tTrying to declare an array of unknown type: {}",
                     m_FilePath,
                     m_CurrentToken,
-                    baseTypeName
-                    );
+                    baseTypeIdent
+                );
         }
 
-        auto type = typeValue->getType();
+        // We should have inserted all the types we need for the array if they are nested.
+        for (size_t i = 0; i < arraySizes.size() - 1; i++)
+        {
+            auto oldBaseType = baseTypeValue->getType();
+            baseTypeIdent += "[" + std::to_string(arraySizes[i]) + "]";
+            baseTypeValue = m_SymbolTable->lookup(baseTypeIdent);
 
-        // We have an array of array
-        if (auto arrDecl = dynamic_cast<ASTArrayDeclarationNode*>(declaration.get())) {
-            baseTypeName = baseTypeName + "[" + std::to_string(arrDecl->getSize()) + "]";
-            // It should be there
-            typeValue = m_SymbolTable->lookup(baseTypeName);
-            type = typeValue->getType();
+            if (!baseTypeValue) {
+                auto baseType = Type::CreateArrayType(oldBaseType, arraySizes[i]);
+                Type::GetOrInsertType(baseType);
+                baseTypeValue = Value::CreateTypeValue(baseTypeIdent, baseType.get());
+                m_SymbolTable->insert(baseTypeValue);
+            }
         }
 
+        auto size = arraySizes.back();
 
-        auto arrTypeName = baseTypeName + "[" + std::to_string(size) + "]";
+        auto arrTypeIdent = baseTypeIdent + "[" + std::to_string(size) + "]";
 
-        if (!m_SymbolTable->lookup(arrTypeName)) {
-            auto newType = Type::CreateArrayType(type, size);
+        if (!m_SymbolTable->lookup(arrTypeIdent)) {
+            auto newType = Type::CreateArrayType(baseTypeValue->getType(), size);
             auto insertType = Type::GetOrInsertType(newType);
-            auto newTypeValue = Value::CreateTypeValue(arrTypeName, newType.get());
+            auto newTypeValue = Value::CreateTypeValue(arrTypeIdent, newType.get());
 
             m_SymbolTable->insert(newTypeValue);
         }
 
-        arrayDeclaration->setType(baseTypeName);
+        arrayDeclaration->setType(baseTypeIdent);
         arrayDeclaration->setIdentifier(declaration->getIdentifier());
         arrayDeclaration->setSize(size);
-
-        m_CurrentToken = m_Lexer.getNextToken(); // Eat int literal
-
-        if (m_CurrentToken != token::ACC_C) {
-            return parseError<ASTArrayDeclarationNode>(
-                    "File: {}:{}\n\tExpecting a ']' after array declaration instead of {}",
-                    m_FilePath,
-                    m_CurrentToken.pos,
-                    m_CurrentToken
-                );
-        }
-
-        m_CurrentToken = m_Lexer.getNextToken(); // Eat ']'
-
-        if (m_CurrentToken == token::ACC_O) {
-            m_CurrentToken = m_Lexer.getNextToken(); // Eat '['
-
-            return parseArrayDeclaration(std::move(arrayDeclaration));
-        }
 
         if (m_CurrentToken == token::ASSIGN) {
             m_CurrentToken = m_Lexer.getNextToken(); // Eat '='
 
             return parseArrayInitialization(std::move(arrayDeclaration));
         }
+
+        auto arrType = m_SymbolTable->lookup(arrTypeIdent)->getType();
+        auto arrValue = Value::CreateVariableValue(arrayDeclaration->getIdentifier(), arrType);
+        m_SymbolTable->insert(arrValue);
 
         return arrayDeclaration;
     }
@@ -813,8 +841,11 @@ namespace yapl {
         arrayInitialization->setType(declaration->getType());
         arrayInitialization->setSize(declaration->getSize());
 
-
         arrayInitialization->setValues(std::move(values));
+
+        auto arrType = m_SymbolTable->lookup(arrayInitialization->getType())->getType();
+        auto arrValue = Value::CreateVariableValue(arrayInitialization->getIdentifier(), arrType);
+        m_SymbolTable->insert(arrValue);
 
         return arrayInitialization;
     }
@@ -829,6 +860,11 @@ namespace yapl {
         auto arguments = parseArgumentList(); // Eats ')'
 
         structInit->setAttributeValues(std::move(arguments));
+
+        auto structType = m_SymbolTable->lookup(structInit->getType())->getType();
+        auto structVar = Value::CreateVariableValue(structInit->getIdentifier(), structType);
+
+        m_SymbolTable->insert(structVar);
 
         return structInit;
     }

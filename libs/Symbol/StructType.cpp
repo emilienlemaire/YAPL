@@ -15,15 +15,23 @@
  * limitations under the License.
  */
 
+#include "Symbol/ArrayType.hpp"
 #include "Symbol/Type.hpp"
 #include "Symbol/StructType.hpp"
 #include "parallel_hashmap/phmap_utils.h"
+#include <iostream>
 #include <vector>
 
 namespace yapl {
-    StructType::StructType(std::string identifier, std::vector<std::string> fieldsName, std::vector<Type*> elementsType)
-        : Type(), m_Identifier(std::move(identifier)), v_ElementsType(std::move(elementsType)),
-          m_FieldTypeMap(phmap::flat_hash_map<std::string, uint64_t>())
+    StructType::StructType(
+        std::string identifier,
+        std::vector<std::string> fieldsName,
+        std::vector<Type*> elementsType
+    ):
+        Type(),
+        m_Identifier(identifier),
+        v_ElementsType(elementsType),
+        m_FieldTypeMap(phmap::flat_hash_map<std::string, uint64_t>())
     {
         if (v_ElementsType.size() == fieldsName.size()) {
             for (size_t i = 0; i < v_ElementsType.size(); i++)
@@ -33,20 +41,20 @@ namespace yapl {
         }
     }
 
-    auto StructType::begin() -> decltype(v_ElementsType.begin()) {
-        return v_ElementsType.begin();
+    auto StructType::begin() -> decltype(m_FieldTypeMap.begin()) {
+        return m_FieldTypeMap.begin();
     }
 
-    auto StructType::end() -> decltype(v_ElementsType.end()) {
-        return v_ElementsType.end();
+    auto StructType::end() -> decltype(m_FieldTypeMap.end()) {
+        return m_FieldTypeMap.end();
     }
 
-    auto StructType::cbegin() -> decltype(v_ElementsType.cbegin()) {
-        return v_ElementsType.cbegin();
+    auto StructType::cbegin() -> decltype(m_FieldTypeMap.cbegin()) {
+        return m_FieldTypeMap.cbegin();
     }
 
-    auto StructType::cend() -> decltype(v_ElementsType.cend()) {
-        return v_ElementsType.begin();
+    auto StructType::cend() -> decltype(m_FieldTypeMap.cend()) {
+        return m_FieldTypeMap.begin();
     }
 
     bool StructType::isEqual(const Type &o) const {
@@ -71,9 +79,12 @@ namespace yapl {
     }
 
     Type *StructType::getFieldType(const std::string &name) const {
-        auto idx = m_FieldTypeMap.at(name);
+        if (m_FieldTypeMap.contains(name)) {
+            auto idx = m_FieldTypeMap.at(name);
 
-        return v_ElementsType[idx];
+            return v_ElementsType[idx];
+        }
+        return nullptr;
     }
 
     size_t StructType::hash() const {
@@ -82,5 +93,36 @@ namespace yapl {
             hash = phmap::HashState().combine(0, hash, *elemType);
         }
         return hash;
+    }
+
+    bool StructType::isField(const std::string &fieldName) const {
+        return m_FieldTypeMap.contains(fieldName);
+    }
+
+    ArrayType *StructType::toArrayType() {
+        auto firstElementType = v_ElementsType[0];
+
+        for (auto elemType : v_ElementsType) {
+            if (*elemType != *firstElementType) {
+                std::cerr << "The types don't match" << std::endl;
+                return nullptr;
+            }
+        }
+
+        if (auto structType = dynamic_cast<StructType*>(firstElementType)) {
+            std::cerr << "Trying to convert the inner init list" << std::endl;
+            firstElementType = structType->toArrayType();
+            if (!firstElementType) {
+                std::cerr << "The inner types don't match" << std::endl;
+                return nullptr;
+            }
+        }
+
+        const auto size = v_ElementsType.size();
+
+        auto arrType = Type::CreateArrayType(firstElementType, size);
+        Type::GetOrInsertType(arrType);
+
+        return arrType.get();
     }
 } // namespace yapl

@@ -18,6 +18,7 @@
 #include "Symbol/Type.hpp"
 #include "Symbol/ArrayType.hpp"
 #include "parallel_hashmap/phmap_utils.h"
+#include <string>
 
 namespace yapl {
 
@@ -35,5 +36,9 @@ namespace yapl {
 
     size_t ArrayType::hash() const {
         return phmap::HashState().combine(0, *p_ElementsType, m_NumElements);
+    }
+
+    const std::string ArrayType::dump() const {
+        return "Array of " + std::to_string(m_NumElements) + p_ElementsType->dump();
     }
 } // namespace yapl
