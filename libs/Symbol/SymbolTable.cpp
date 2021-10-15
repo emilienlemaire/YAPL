@@ -70,6 +70,10 @@ namespace yapl {
         return std::make_shared<SymbolTable>(s);
     }
 
+    bool SymbolTable::isTopLevel() const {
+        return (m_ParentScope == nullptr);
+    }
+
     bool SymbolTable::insert(std::shared_ptr<Value> val) {
         std::string name = val->getName();
 

@@ -30,6 +30,7 @@ namespace yapl {
     // TODO(feature): Add pointer types
     // TODO(feature): Add vector types
 
+    // TODO: Add LLVM RTTI compatibility
     // TODO(maybe): Add type traits to allow operator overloads, etc...
     //NOLINTNEXTLINE
     class Type {

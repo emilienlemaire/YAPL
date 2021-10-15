@@ -1,15 +1,13 @@
 struct test {
     int a;
     int b;
-    func add() -> int {
-        return a + b;
-    }
-    func addA(int c) -> int {
-        return a + c;
-    }
 }
 
 test s(12, 5);
+
+func add(test t) -> int {
+    return t.a + t.b;
+}
 
 func f(int a, int b) -> int {
     test t(9, 0);
@@ -19,18 +17,18 @@ func f(int a, int b) -> int {
     return t.a;
 }
 
-func f1(int a) -> int {
-    int b = s.add();
-    return b + s.addA(a);
-}
+// func f1(int a) -> int {
+//    int b = s.add();
+//    return b + s.addA(a);
+// }
 
 func f2(int array[2], int loops) -> void {
     for (int i in array) {
-        print(i);
+        // Do something
     }
 
     for (int i in 0 ... loops) {
-        print(i);
+        // Do something
     }
 }
 

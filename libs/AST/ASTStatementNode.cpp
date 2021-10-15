@@ -20,6 +20,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "AST/ASTNode.hpp"
@@ -151,6 +152,10 @@ namespace yapl {
         : ASTStatementNode(std::move(scope))
     {}
 
+    void ASTFunctionDefinitionNode::addParameterFirst(std::unique_ptr<ASTDeclarationNode> declaration) {
+        m_Parameters.insert(m_Parameters.begin(), std::move(declaration));
+    }
+
     void ASTFunctionDefinitionNode::setFunctionName(const std::string &functionName) {
         m_FunctionName = functionName;
     }
@@ -200,6 +205,10 @@ namespace yapl {
     }
 
     void ASTStructDefinitionNode::addMethod(std::unique_ptr<ASTFunctionDefinitionNode> method) {
+        auto thisParam = std::make_unique<ASTDeclarationNode>(this->getScope());
+        thisParam->setType(m_StructName);
+        thisParam->setIdentifier("this");
+        method->addParameterFirst(std::move(thisParam));
         m_Methods.push_back(std::move(method));
     }
 

@@ -1,16 +1,18 @@
 int a[4];
 int b[5] = {1, 2, 3, 4, 5};
-bool v = true;
-int i = b[3];
 
 func f() -> void {
     int c = 2;
     int d[3] = {1, c, 3};
     d = {2, 3, 5};
     bool is = true;
-    int e = b[v];
 
     a = {1, 2, 3, 4};
     b[4] = 2;
     int g = b[4];
+}
+
+func g(int i) -> void {
+    f();
+    int c = 1 + i;
 }

@@ -7,12 +7,28 @@
 #include "Symbol/FunctionType.hpp"
 #include "Symbol/StructType.hpp"
 #include <cstdlib>
+#include <map>
 #include <memory>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
+
+
+// FIXME: Make sure we don't try to get the type if the identifier is not found.
+// FIXME: Look at top level array initialization so we don't allow things like:
+/* int infiniteArray[3][2] = [
+    [1, 2],
+    [3, 4],
+    [5, 6]
+];
+int infiniteArray2[4][3][2] = [
+    infiniteArray,
+    infiniteArray,
+    infiniteArray,
+    infiniteArray
+]; */
 
 namespace yapl {
 
@@ -29,6 +45,18 @@ namespace yapl {
         m_Logger.setFormat(yasaFormat);
 
         m_SymbolTable = m_Program->getScope();
+    }
+
+    std::map<ASTExprNode*, Type*> YasaVisitor::getExprTypeMap() const {
+        return m_ExprTypeMap;
+    }
+
+    std::map<ASTExprNode*, Type*> YasaVisitor::releaseExprTypeMap() {
+        return std::move(m_ExprTypeMap);
+    }
+
+    std::unique_ptr<ASTProgramNode> YasaVisitor::releaseProgram() {
+        return std::move(m_Program);
     }
 
     void YasaVisitor::analyze() {
@@ -54,7 +82,7 @@ namespace yapl {
 
         if (auto parExpr = dynamic_cast<ASTParExpr*>(expr)) {
             auto expr = parExpr->getExpr();
-            return getExprType(parExpr);
+            return getExprType(expr);
         }
 
         if (auto argList = dynamic_cast<ASTArgumentList*>(expr)) {
@@ -187,6 +215,7 @@ namespace yapl {
         auto type = getExprType(negExpr->getValue());
         if (auto primitiveType = dynamic_cast<PrimitiveType*>(type)) {
             if (primitiveType->isNumeric()) {
+                m_ExprTypeMap[negExpr] = type;
                 return;
             }
         }
@@ -199,19 +228,41 @@ namespace yapl {
 
         auto type = getExprType(notExpr->getValue());
         if (*type != *SymbolTable::GetBoolType()) {
-            m_Logger.printError("This expression cannot be negated, it has a wrong type:");
+            m_Logger.printError(
+                    "This expression cannot be negated, it has a wrong type: {}",
+                    type->dump()
+                );
             m_ASTPrinter.dispatchNotExpr(notExpr);
+            return;
         }
+
+        m_ExprTypeMap[notExpr] = type;
     }
 
     void YasaVisitor::dispatchParExpr(ASTParExpr* parExpr) {
         parExpr->getExpr()->accept(*this);
+
+        auto type = getExprType(parExpr->getExpr());
+
+        /* int f1(int a, int b) {
+         *      return a + b;
+         * }
+         *
+         * float f2(float a, float b) {
+         *      return a + b;
+         * }
+         *
+         * */
+        m_ExprTypeMap[parExpr] = type;
     }
 
     void YasaVisitor::dispatchArgumentList(ASTArgumentList* argumentList) {
         for (auto &arg: *argumentList) {
             arg->accept(*this);
         }
+
+        auto type = getExprType(argumentList);
+        m_ExprTypeMap[argumentList] = type;
     }
 
     void YasaVisitor::dispatchArrayLiteralExpr(ASTArrayLiteralExpr* arrayLiteral) {
@@ -227,11 +278,19 @@ namespace yapl {
             if (*elemType != *firstElementType) {
                 m_Logger.printError("All elements of an array literal must have the same type");
                 m_ASTPrinter.dispatchArrayLiteralExpr(arrayLiteral);
+                return;
             }
         }
+
+        auto type = Type::CreateArrayType(firstElementType, arrayLiteral->getValues().size());
+        auto inserted = Type::GetOrInsertType(type);
+        m_ExprTypeMap[arrayLiteral] = inserted.get();
     }
 
-    void YasaVisitor::dispatchBoolLiteralExpr(ASTBoolLiteralExpr* boolLiteralExpr) {}
+    void YasaVisitor::dispatchBoolLiteralExpr(ASTBoolLiteralExpr* boolLiteralExpr) {
+        auto type = SymbolTable::GetBoolType();
+        m_ExprTypeMap[boolLiteralExpr] = type.get();
+    }
 
     void YasaVisitor::dispatchBinaryExpr(ASTBinaryExpr* binaryExpr) {
         // We make all necessary checks and castings to the lhs and rhs expressions.
@@ -241,6 +300,7 @@ namespace yapl {
         auto lhsType = getExprType(binaryExpr->getLHS());
         auto rhsType = getExprType(binaryExpr->getRHS());
 
+        // FIXME: The modulo operator should be available only for int to int.
         if (*lhsType != *rhsType) {
 
             if (auto [lhsPrimitiveType, rhsPrimitiveType] =
@@ -267,6 +327,8 @@ namespace yapl {
                 return;
             }
         }
+
+        m_ExprTypeMap[binaryExpr] = lhsType;
     }
 
     void YasaVisitor::dispatchRangeExpr(ASTRangeExpr* rangeExpr) {
@@ -296,6 +358,8 @@ namespace yapl {
 
                         rangeExpr->setEnd(std::move(castExpr));
 
+                        m_ExprTypeMap[rangeExpr] = startType;
+
                         return;
                     }
 
@@ -307,6 +371,7 @@ namespace yapl {
             }
 
             if (startPrimitiveType->isNumeric()) {
+                m_ExprTypeMap[rangeExpr] = startType;
                 return;
             }
         }
@@ -315,13 +380,25 @@ namespace yapl {
         m_ASTPrinter.dispatchRangeExpr(rangeExpr);
     }
 
-    void YasaVisitor::dispatchFloatNumberExpr(ASTFloatNumberExpr* floatNumberExpr) {}
+    void YasaVisitor::dispatchFloatNumberExpr(ASTFloatNumberExpr* floatNumberExpr) {
+        auto type = SymbolTable::GetFloatType().get();
+        m_ExprTypeMap[floatNumberExpr] = type;
+    }
 
-    void YasaVisitor::dispatchDoubleNumberExpr(ASTDoubleNumberExpr* doubleNumberExpr) {}
+    void YasaVisitor::dispatchDoubleNumberExpr(ASTDoubleNumberExpr* doubleNumberExpr) {
+        auto type = SymbolTable::GetDoubleType().get();
+        m_ExprTypeMap[doubleNumberExpr] = type;
+    }
 
-    void YasaVisitor::dispatchIntegerNumberExpr(ASTIntegerNumberExpr* integerNumberExpr) {}
+    void YasaVisitor::dispatchIntegerNumberExpr(ASTIntegerNumberExpr* integerNumberExpr) {
+        auto type = SymbolTable::GetIntType().get();
+        m_ExprTypeMap[integerNumberExpr] = type;
+    }
 
-    void YasaVisitor::dispatchIdentifierExpr(ASTIdentifierExpr* identifierExpr) {}
+    void YasaVisitor::dispatchIdentifierExpr(ASTIdentifierExpr* identifierExpr) {
+        auto type = getExprType(identifierExpr);
+        m_ExprTypeMap[identifierExpr] = type;
+    }
 
     void YasaVisitor::dispatchAttributeAccessExpr(ASTAttributeAccessExpr* attributeAccessExpr) {
         attributeAccessExpr->getStruct()->accept(*this);
@@ -348,6 +425,9 @@ namespace yapl {
                 m_Logger.printError("The type of the field {} is undefined", attrIdentifier);
                 m_ASTPrinter.dispatchAttributeAccessExpr(attributeAccessExpr);
             }
+
+            auto type = structType->getFieldType(attrIdentifier);
+            m_ExprTypeMap[attributeAccessExpr] = type;
         }
     }
 
@@ -357,11 +437,16 @@ namespace yapl {
 
         if (auto indexPrimType = dynamic_cast<PrimitiveType*>(indexType)) {
             if (indexPrimType->getTypeID() == SymbolTable::GetIntID()) {
+                auto type = getExprType(arrayAccessExpr);
+                m_ExprTypeMap[arrayAccessExpr] = type;
                 return;
             }
         }
 
-        m_Logger.printError("The type of the index expression of an array must be 'int'");
+        m_Logger.printError(
+                "The type of the index expression of an array must be 'int', got '{}'",
+                indexType->dump()
+            );
         m_ASTPrinter.dispatchArrayAccessExpr(arrayAccessExpr);
     }
 
@@ -385,6 +470,8 @@ namespace yapl {
                         return;
                     }
                 }
+
+                m_ExprTypeMap[functionCallExpr] = funcType->getReturnType();
                 return;
             }
             m_Logger.printError(
@@ -403,6 +490,10 @@ namespace yapl {
         // Should do some type compatibility, maybe. But since only yasa can cast as of now this is
         // not yet necessary.
         castExpr->getExpr()->accept(*this);
+
+        auto type = SymbolTable::GetTypeByID(castExpr->getTargetType());
+
+        m_ExprTypeMap[castExpr] = type.get();
     }
 
     void YasaVisitor::dispatchBlock(ASTBlockNode* blockNode) {
@@ -426,7 +517,30 @@ namespace yapl {
         auto exprType = getExprType(initializationNode->getValue());
 
         if (varType != exprType) {
-            m_Logger.printError("The type of the expression doesn't match the type of the variable");
+            if (auto [varStructType, argListType] = std::make_pair<StructType*, StructType*>(
+                    dynamic_cast<StructType*>(varType),
+                    dynamic_cast<StructType*>(exprType)
+                ); varStructType && argListType) {
+
+                for(int i = 0; i < argListType->getElementsType().size(); i++) {
+                    if (varStructType->getElementType(i) != argListType->getElementType(i)) {
+                        m_Logger.printError(
+                                "Field {} of the assigned structure must be of type {}, got type {}",
+                                i,
+                                varStructType->getElementType(i)->dump(),
+                                argListType->getElementType(i)->dump()
+                            );
+                        m_ASTPrinter.dispatchInitialization(initializationNode);
+                    }
+                }
+
+                return;
+            }
+            m_Logger.printError(
+                    "The type of the expression ({}) doesn't match the type of the variable ({})",
+                    exprType->dump(),
+                    varType->dump()
+                );
             m_ASTPrinter.dispatchInitialization(initializationNode);
         }
     }
@@ -486,6 +600,7 @@ namespace yapl {
                         m_ASTPrinter.dispatchStructInitialization(structInitializationNode);
                     }
                 }
+                m_ExprTypeMap[attrList] = structT;
                 return;
             }
             m_Logger.printError("Expecting an argument list.");

@@ -111,21 +111,16 @@ namespace yapl {
 
     ArrayType *StructType::toArrayType() {
         auto firstElementType = v_ElementsType[0];
-        std::cerr << "Transforming struct to array" << std::endl;
 
-        std::cerr << "Begining type: " << dump() << std::endl;
         for (auto elemType : v_ElementsType) {
             if (*elemType != *firstElementType) {
-                std::cerr << "The types don't match" << std::endl;
                 return nullptr;
             }
         }
 
         if (auto structType = dynamic_cast<StructType*>(firstElementType)) {
-            std::cerr << "Trying to convert the inner init list" << std::endl;
             firstElementType = structType->toArrayType();
             if (!firstElementType) {
-                std::cerr << "The inner types don't match" << std::endl;
                 return nullptr;
             }
         }
@@ -134,8 +129,6 @@ namespace yapl {
 
         auto arrType = Type::CreateArrayType(firstElementType, size);
         Type::GetOrInsertType(arrType);
-
-        std::cerr << "Finishing type: " << arrType->dump() << std::endl;
 
         return arrType.get();
     }

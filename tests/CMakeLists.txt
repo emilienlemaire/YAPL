@@ -6,7 +6,7 @@ foreach(yaplFile IN LISTS test_files)
     message(STATUS "Creating test target for ${yaplFile}")
     get_filename_component(fileName "${yaplFile}" NAME)
     string(REPLACE ".yapl" "" file "${fileName}")
-    set(testTarget "testYaplFile${file}")
+    set(testTarget "testYaplFile_${file}")
     list(APPEND testTargets "${testTarget}")
     add_custom_target(${testTarget}
         COMMAND yapl "${yaplFile}"

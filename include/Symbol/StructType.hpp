@@ -45,6 +45,7 @@ namespace yapl {
 
         [[nodiscard]] const std::string &getIdentifier() const { return m_Identifier; }
         [[nodiscard]] const std::vector<Type*> &getElementsType() const { return v_ElementsType; }
+        [[nodiscard]] uint64_t getFieldIndex(const std::string &field) const { return m_FieldTypeMap.at(field); }
         [[nodiscard]] Type *getElementType(size_t idx) const { return v_ElementsType[idx]; }
         [[nodiscard]] Type *getFieldType(const std::string &name) const;
         [[nodiscard]] bool isField(const std::string &fieldName) const;

@@ -6,9 +6,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CMAKE_LINKER /usr/local/bin/ld.lld)
     set(CMAKE_RANLIB /usr/local/bin/llvm-ranlib)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld -stdlib=libc++ -D_GLIBCXX_USE_CXX11_ABI=0 -fPIC")
-# else()
-#     set(CMAKE_C_COMPILER /usr/local/opt/llvm/bin/clang)
-#     set(CMAKE_CXX_COMPILER /usr/local/opt/llvm/bin/clang++)
+else()
+    set(CMAKE_C_COMPILER /opt/homebrew/opt/llvm/bin/clang)
+    set(CMAKE_CXX_COMPILER /opt/homebrew/opt/llvm/bin/clang++)
 endif()
 
 project(YAPL)
@@ -23,7 +23,11 @@ endif()
 
 include_directories(include vendor)
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    include_directories(/usr/local/opt/llvm/include)
+    if(CMAKE_BUILD_TYPE STREQUAL Debug)
+        include_directories(/usr/local/include)
+    else()
+        include_directories(/opt/homebrew/opt/llvm/include)
+    endif()
 endif()
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -37,5 +41,5 @@ add_subdirectory(tests)
 add_executable(yapl
     main.cpp)
 
-target_link_libraries(yapl PUBLIC cpplogger parser printer yasa)
+target_link_libraries(yapl PUBLIC cpplogger parser printer yasa irgenerator)
 

@@ -348,6 +348,8 @@ namespace yapl {
 
         auto functionDefinition = std::make_unique<ASTFunctionDefinitionNode>(m_SymbolTable);
 
+        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the function scope
+
         if (m_CurrentToken != token::IDENT) {
             return parseError<ASTFunctionDefinitionNode>(
                     "File: {}:{}\n\tExpecting an identifier after 'func' instead of {}",
@@ -472,8 +474,6 @@ namespace yapl {
                     m_CurrentToken
                 );
         }
-
-        m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the body scope
 
         std::vector<Type*> parametersType = {};
         std::vector<std::shared_ptr<Value>> parametersValue = {};

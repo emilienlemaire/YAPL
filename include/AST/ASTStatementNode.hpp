@@ -155,6 +155,9 @@ namespace yapl
         std::string m_ReturnType;
         std::vector<std::unique_ptr<ASTDeclarationNode>> m_Parameters;
         std::unique_ptr<ASTBlockNode> m_Body;
+        void addParameterFirst(std::unique_ptr<ASTDeclarationNode>);
+
+        friend class ASTStructDefinitionNode;
 
     public:
         explicit ASTFunctionDefinitionNode(SharedScope);

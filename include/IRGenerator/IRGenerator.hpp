@@ -1,60 +1,56 @@
-/**
- * include/YASA/YasaVisitor.hpp
- * Copyright (c) 2021 Emilien Lemaire <emilien.lem@icloud.com>
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 #pragma once
 
-#include "AST/ASTExprNode.hpp"
 #include "AST/ASTNode.hpp"
 #include "AST/ASTVisitor.hpp"
-#include "Printer/ASTPrinter.hpp"
-#include "Symbol/SymbolTable.hpp"
 #include "CppLogger2/CppLogger2.h"
-#include "Symbol/Type.hpp"
+
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/APSInt.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constant.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalVariable.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
 
 #include <map>
 #include <memory>
+#include <string>
 
+// TODO: Make ManeValueMap scoped
 namespace yapl {
-    class YasaVisitor : public ASTVisitor {
+    class IRGenerator : public ASTVisitor {
     private:
-        static std::vector<ASTExprNode*> s_ReturnExprs;
-
-        std::shared_ptr<SymbolTable> m_SymbolTable;
-
-        Type* getExprType(ASTExprNode*);
-
-        std::unique_ptr<ASTProgramNode> m_Program;
+        llvm::LLVMContext m_LLVMContext;
+        llvm::IRBuilder<> m_Builder;
+        std::unique_ptr<llvm::Module> m_Module;
 
         CppLogger::CppLogger m_Logger;
 
-        ASTPrinter m_ASTPrinter = ASTPrinter(nullptr);
+        std::unique_ptr<ASTProgramNode> m_Program;
 
-        std::map<ASTExprNode *, Type *> m_ExprTypeMap;
+        llvm::Type *p_LastType = nullptr;
+        llvm::Value *p_LastValue = nullptr;
 
+        std::map<std::string, llvm::Value*> m_NameValueMap = std::map<std::string, llvm::Value*>();
+        std::map<Type*, llvm::Type*> m_YAPLLLVMTypeMap = std::map<Type*, llvm::Type*>();
+        std::map<ASTExprNode*, Type*> m_ExprTypeMap;
+
+        llvm::Type *getOrCreateLLVMType(Type *YAPLType);
     public:
-        explicit YasaVisitor(std::unique_ptr<ASTProgramNode> program);
+        IRGenerator(
+                std::map<ASTExprNode*, Type*> exprTypeMap,
+                std::unique_ptr<ASTProgramNode> program,
+                llvm::StringRef filepath
+            );
 
-        ~YasaVisitor() = default;
-
-        [[nodiscard]] std::map<ASTExprNode*, Type*> getExprTypeMap() const;
-        [[nodiscard]] std::map<ASTExprNode*, Type*> releaseExprTypeMap();
-
-        [[nodiscard]] std::unique_ptr<ASTProgramNode> releaseProgram();
-
-        void analyze();
+        void generate();
 
         virtual void dispatchProgram(ASTProgramNode* programNode) override;
 
@@ -90,5 +86,7 @@ namespace yapl {
         virtual void dispatchIf(ASTIfNode* ifNode) override;
         virtual void dispatchFor(ASTForNode* forNode) override;
         virtual void dispatchAssignment(ASTAssignmentNode* assignmentNode) override;
+
+        void dispatchMethod(ASTFunctionDefinitionNode* methodDefinition, StructType* structType);
     };
 } // namespace yapl

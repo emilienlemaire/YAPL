@@ -1,6 +1,7 @@
 tags
 .cache
 .clangd
+.ccls-cache
 Debug
 .vimspector.json
 .DS_Store

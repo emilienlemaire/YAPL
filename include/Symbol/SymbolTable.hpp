@@ -22,7 +22,6 @@
 #include "parallel_hashmap/phmap.h"
 #include "Value.hpp"
 
-// FIXME: FIX (MOSTLY) EVERYTHING
 namespace yapl {
     class SymbolTable {
     private:
@@ -39,6 +38,7 @@ namespace yapl {
 
     public:
         bool insert(std::shared_ptr<Value> val);
+        bool isTopLevel() const;
         std::shared_ptr<Value> lookup(const std::string&);
         std::shared_ptr<SymbolTable> pushScope(std::shared_ptr<SymbolTable>);
         std::shared_ptr<SymbolTable> popScope();
@@ -91,6 +91,10 @@ namespace yapl {
 
         constexpr static uint64_t GetVoidID() {
             return voidID;
+        }
+
+        static std::shared_ptr<Type> GetTypeByID(uint64_t ID) {
+            return s_PrimitiveType[ID];
         }
     };
 } // namespace yapl
