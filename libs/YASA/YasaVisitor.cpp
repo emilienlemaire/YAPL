@@ -14,22 +14,7 @@
 #include <utility>
 #include <vector>
 
-
-
-// FIXME: Make sure we don't try to get the type if the identifier is not found.
-// FIXME: Look at top level array initialization so we don't allow things like:
-/* int infiniteArray[3][2] = [
-    [1, 2],
-    [3, 4],
-    [5, 6]
-];
-int infiniteArray2[4][3][2] = [
-    infiniteArray,
-    infiniteArray,
-    infiniteArray,
-    infiniteArray
-]; */
-
+// TODO: Make an error handling/diagnostic library
 namespace yapl {
 
     std::vector<ASTExprNode*> YasaVisitor::s_ReturnExprs = std::vector<ASTExprNode*>();
@@ -204,6 +189,34 @@ namespace yapl {
         return nullptr;
     }
 
+    bool YasaVisitor::isLiteralExpr(ASTExprNode* expr) {
+        if (auto boolLit = dynamic_cast<ASTBoolLiteralExpr*>(expr)) {
+            return true;
+        }
+
+        if (auto numberLit = dynamic_cast<ASTNumberExpr*>(expr)) {
+            return true;
+        }
+
+        if (auto argList = dynamic_cast<ASTArgumentList*>(expr)) {
+            bool isLit = true;
+            for (auto &val : argList->getArguments()) {
+                isLit &= isLiteralExpr(val.get());
+            }
+            return isLit;
+        }
+
+        if (auto arrLit = dynamic_cast<ASTArrayLiteralExpr*>(expr)) {
+            bool isLit = true;
+            for (auto &val : arrLit->getValues()) {
+                isLit &= isLiteralExpr(val.get());
+            }
+            return isLit;
+        }
+
+        return false;
+    }
+
     void YasaVisitor::dispatchProgram(ASTProgramNode* programNode) {
         for (auto &node : *programNode) {
             node->accept(*this);
@@ -268,6 +281,13 @@ namespace yapl {
     void YasaVisitor::dispatchArrayLiteralExpr(ASTArrayLiteralExpr* arrayLiteral) {
         for (auto &value: *arrayLiteral) {
             value->accept(*this);
+        }
+
+        if (arrayLiteral->getScope()->isTopLevel()) {
+            if (!isLiteralExpr(arrayLiteral)) {
+                m_Logger.printError("A top level array must be fully literal");
+                return;
+            }
         }
 
         auto firstElementType = getExprType(arrayLiteral->getValues()[0].get());

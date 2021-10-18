@@ -34,8 +34,6 @@ namespace yapl {
 
         std::shared_ptr<SymbolTable> m_SymbolTable;
 
-        Type* getExprType(ASTExprNode*);
-
         std::unique_ptr<ASTProgramNode> m_Program;
 
         CppLogger::CppLogger m_Logger;
@@ -43,6 +41,9 @@ namespace yapl {
         ASTPrinter m_ASTPrinter = ASTPrinter(nullptr);
 
         std::map<ASTExprNode *, Type *> m_ExprTypeMap;
+
+        Type* getExprType(ASTExprNode*);
+        bool isLiteralExpr(ASTExprNode*);
 
     public:
         explicit YasaVisitor(std::unique_ptr<ASTProgramNode> program);
