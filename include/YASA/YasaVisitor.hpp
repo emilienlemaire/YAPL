@@ -42,6 +42,8 @@ namespace yapl {
 
         std::map<ASTExprNode *, Type *> m_ExprTypeMap;
 
+        StructType *p_CurrentYaplStruct = nullptr;
+
         Type* getExprType(ASTExprNode*);
         bool isLiteralExpr(ASTExprNode*);
 

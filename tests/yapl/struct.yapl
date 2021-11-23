@@ -1,6 +1,10 @@
 struct test {
     int a;
     int b;
+
+    func addToA(int c) -> int {
+        return a+b;
+    }
 }
 
 test s(12, 5);

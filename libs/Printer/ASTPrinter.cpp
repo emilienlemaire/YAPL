@@ -131,6 +131,7 @@ namespace yapl {
         rhs->accept(*this);
         m_Tabs--;
         m_Tabs--;
+        m_Tabs--;
     }
     void ASTPrinter::dispatchRangeExpr(ASTRangeExpr* rangeExpr) {
         printTabs();

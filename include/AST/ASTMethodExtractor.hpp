@@ -1,61 +1,42 @@
+/**
+ * include/Printer/ASTMethodExtractor.hpp
+ * Copyright (c) 2021 Emilien Lemaire <emilien.lem@icloud.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #pragma once
 
-#include "AST/ASTNode.hpp"
 #include "AST/ASTVisitor.hpp"
-#include "CppLogger2/CppLogger2.h"
-
-#include "llvm/ADT/APFloat.h"
-#include "llvm/ADT/APSInt.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constant.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/GlobalVariable.h"
-#include "llvm/IR/Instruction.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Verifier.h"
-
-#include <map>
 #include <memory>
-#include <string>
 
-// TODO: Make ManeValueMap scoped
 namespace yapl {
-    class IRGenerator : public ASTVisitor {
+    class ASTMethodExtractor : public ASTVisitor {
     private:
-        llvm::LLVMContext m_LLVMContext;
-        llvm::IRBuilder<> m_Builder;
-        std::unique_ptr<llvm::Module> m_Module;
-
-        CppLogger::CppLogger m_Logger;
-
         std::unique_ptr<ASTProgramNode> m_Program;
+        std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> m_Methods;
 
-        llvm::Type *p_LastType = nullptr;
-        llvm::Value *p_LastValue = nullptr;
-        llvm::Type *p_CurrentStruct = nullptr;
-        Type *p_CurrentYaplStruct = nullptr;
+        StructType *p_CurrentStruct = nullptr;
 
-        std::map<std::string, llvm::Value*> m_NameValueMap = std::map<std::string, llvm::Value*>();
-        std::map<Type*, llvm::Type*> m_YAPLLLVMTypeMap = std::map<Type*, llvm::Type*>();
-        std::map<ASTExprNode*, Type*> m_ExprTypeMap;
-
-        llvm::Type *getOrCreateLLVMType(Type *YAPLType);
+        ASTProgramNode::iterator m_Iterator;
     public:
-        IRGenerator(
-                std::map<ASTExprNode*, Type*> exprTypeMap,
-                std::unique_ptr<ASTProgramNode> program,
-                llvm::StringRef filepath
-            );
+        explicit ASTMethodExtractor(std::unique_ptr<ASTProgramNode>);
 
-        void generate();
+        [[nodiscard]] std::unique_ptr<ASTProgramNode> releaseProgram();
 
-        virtual void dispatchProgram(ASTProgramNode* programNode) override;
+        void extractMethods();
+        virtual void dispatchProgram(ASTProgramNode* program) override;
 
+        virtual void dispatchCastExpr(ASTCastExpr* castExpr) override;
         virtual void dispatchNegExpr(ASTNegExpr* negExpr) override;
         virtual void dispatchNotExpr(ASTNotExpr* notExpr) override;
         virtual void dispatchParExpr(ASTParExpr* parExpr) override;
@@ -71,7 +52,6 @@ namespace yapl {
         virtual void dispatchAttributeAccessExpr(ASTAttributeAccessExpr* attributeAccessExpr) override;
         virtual void dispatchArrayAccessExpr(ASTArrayAccessExpr* arrayAccessExpr) override;
         virtual void dispatchFunctionCallExpr(ASTFunctionCallExpr* functionCallExpr) override;
-        virtual void dispatchCastExpr(ASTCastExpr* functionCallExpr) override;
 
         virtual void dispatchBlock(ASTBlockNode* blockNode) override;
         virtual void dispatchExprStatement(ASTExprStatementNode* exprStatementNode) override;
@@ -89,6 +69,5 @@ namespace yapl {
         virtual void dispatchFor(ASTForNode* forNode) override;
         virtual void dispatchAssignment(ASTAssignmentNode* assignmentNode) override;
 
-        void dispatchMethod(ASTFunctionDefinitionNode* methodDefinition, StructType* structType);
     };
 } // namespace yapl

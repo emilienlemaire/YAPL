@@ -15,6 +15,7 @@
 #include <vector>
 
 // TODO: Make an error handling/diagnostic library
+// TODO: Change the way we handle methods (maybe from the parser to the IR Code)
 namespace yapl {
 
     std::vector<ASTExprNode*> YasaVisitor::s_ReturnExprs = std::vector<ASTExprNode*>();
@@ -28,6 +29,11 @@ namespace yapl {
                 });
 
         m_Logger.setFormat(yasaFormat);
+
+        if (!m_Program) {
+            m_Logger.printFatalError("The program is a nullptr!!!");
+            exit(EXIT_FAILURE);
+        }
 
         m_SymbolTable = m_Program->getScope();
     }
@@ -148,6 +154,15 @@ namespace yapl {
 
         if (auto identifierExpr = dynamic_cast<ASTIdentifierExpr*>(expr)) {
             auto identVal = identifierExpr->getScope()->lookup(identifierExpr->getIdentifier());
+
+            if (identifierExpr->getIdentifier() == "this") {
+                if (p_CurrentYaplStruct) {
+                    return p_CurrentYaplStruct;
+                }
+
+                m_Logger.printError("Trying to acces 'this' outside a strcut scope");
+                return m_SymbolTable->lookup("void")->getType();
+            }
 
             if (!identVal) {
                 m_Logger.printError("Cannot find symbol: {}", identifierExpr->getIdentifier());
@@ -422,12 +437,20 @@ namespace yapl {
 
     void YasaVisitor::dispatchAttributeAccessExpr(ASTAttributeAccessExpr* attributeAccessExpr) {
         attributeAccessExpr->getStruct()->accept(*this);
+        // attributeAccessExpr->getAttribute()->accept(*this);
         auto structExpr = attributeAccessExpr->getStruct();
         auto structT = getExprType(structExpr);
 
         if (auto structType = dynamic_cast<StructType*>(structT)) {
             auto attrIdentifier = attributeAccessExpr->getAttribute()->getIdentifier();
             if (!structType->isField(attrIdentifier)) {
+                if(auto methValue = attributeAccessExpr->getScope()->lookup(attrIdentifier)) {
+                    m_Logger.printInfo("We have a method {}", methValue->getName());
+                    if (auto methType = dynamic_cast<FunctionType*>(methValue->getType())) {
+                        m_Logger.printInfo("We have a type {}", methValue->getName());
+                        return;
+                    }
+                }
                 m_Logger.printError(
                         "Trying to access an inexistant field from struct: {}",
                         attributeAccessExpr->getAttribute()->getIdentifier()
@@ -441,6 +464,7 @@ namespace yapl {
                 m_ASTPrinter.dispatchAttributeAccessExpr(attributeAccessExpr);
                 return;
             }
+
             if (!structType->getFieldType(attrIdentifier)) {
                 m_Logger.printError("The type of the field {} is undefined", attrIdentifier);
                 m_ASTPrinter.dispatchAttributeAccessExpr(attributeAccessExpr);
@@ -665,13 +689,20 @@ namespace yapl {
     }
 
     void YasaVisitor::dispatchStructDefinition(ASTStructDefinitionNode* structDefinitionNode) {
+        p_CurrentYaplStruct = dynamic_cast<StructType*>(
+                structDefinitionNode
+                ->getScope()
+                ->lookup(structDefinitionNode->getStructName())
+                ->getType()
+            );
         for (auto &attr : structDefinitionNode->getAttributes()) {
             attr->accept(*this);
         }
 
-        for (auto &meth : structDefinitionNode->getMethods()) {
-            meth->accept(*this);
+        for (auto &method : structDefinitionNode->getMethods()) {
+            method->accept(*this);
         }
+         p_CurrentYaplStruct = nullptr;
     }
 
     void YasaVisitor::dispatchImport(ASTImportNode* importNode) {}

@@ -343,12 +343,13 @@ namespace yapl {
             );
     }
 
+    // TODO: Add "this" to paramters if function is mathod, or find a way to change the type of the function later
     std::unique_ptr<ASTFunctionDefinitionNode> Parser::parseFunctionDefinition() {
         m_CurrentToken = m_Lexer.getNextToken(); // Eat 'func'
 
-        auto functionDefinition = std::make_unique<ASTFunctionDefinitionNode>(m_SymbolTable);
-
         m_SymbolTable = m_SymbolTable->pushScope(m_SymbolTable); // We enter the function scope
+
+        auto functionDefinition = std::make_unique<ASTFunctionDefinitionNode>(m_SymbolTable);
 
         if (m_CurrentToken != token::IDENT) {
             return parseError<ASTFunctionDefinitionNode>(
@@ -614,13 +615,13 @@ namespace yapl {
             attrsName.push_back(attrName);
         }
 
-        for (const auto &meth : structDef->getMethods()) {
+        /* for (const auto &meth : structDef->getMethods()) {
             auto methName = meth->getFunctionName();
             auto methType = m_SymbolTable->lookup(methName)->getType();
 
             attrsName.push_back(methName);
             attrType.push_back(methType);
-        }
+        } */
 
         m_SymbolTable = m_SymbolTable->popScope();
 

@@ -133,16 +133,18 @@ namespace yapl {
 
         if (auto structType = dynamic_cast<StructType*>(YAPLType)) {
 
-            std::vector<llvm::Type*> LLVMFiledsType;
+            std::vector<llvm::Type*> LLVMFieldsType;
 
             for (auto [name, idx] : *structType) {
                 auto LLVMFieldType = getOrCreateLLVMType(structType->getFieldType(name));
-                LLVMFiledsType.push_back(LLVMFieldType);
+                if (!LLVMFieldType->isFunctionTy()) {
+                    LLVMFieldsType.push_back(LLVMFieldType);
+                }
             }
 
             auto LLVMType = llvm::StructType::create(
                     m_LLVMContext,
-                    LLVMFiledsType,
+                    LLVMFieldsType,
                     structType->getIdentifier()
                 );
 
@@ -404,6 +406,14 @@ namespace yapl {
         attributeAccessExpr->getStruct()->accept(*this);
 
         auto yaplType = m_ExprTypeMap[attributeAccessExpr->getStruct()];
+
+        // TODO: Add info about the struct type because we need to use "this"
+
+        if (auto identExpr = dynamic_cast<ASTIdentifierExpr*>(attributeAccessExpr->getStruct())) {
+            if (identExpr->getIdentifier() == "this") {
+                yaplType = p_CurrentYaplStruct;
+            }
+        }
 
         if (auto yaplStructType = dynamic_cast<StructType*>(yaplType)) {
             auto attrExpr = attributeAccessExpr->getAttribute();
@@ -673,22 +683,38 @@ namespace yapl {
         auto llvmType = getOrCreateLLVMType(yaplType);
 
         if (auto llvmFuncType = llvm::dyn_cast<llvm::FunctionType>(llvmType)) {
+            // llvmFuncType->dump();
+            if (p_CurrentStruct) {
+                auto params = std::vector<llvm::Type*>();
+                params.push_back(p_CurrentStruct);
+                for (unsigned i = 0; i < llvmFuncType->getNumParams(); i++) {
+                    params.push_back(llvmFuncType->getParamType(i));
+                }
+                llvmFuncType = llvm::FunctionType::get(
+                        llvmFuncType->getReturnType(),
+                        params,
+                        false
+                    );
+            }
+            // llvmFuncType->dump();
             auto func = llvm::Function::Create(
                     llvmFuncType,
                     llvm::Function::ExternalLinkage,
                     functionName,
                     m_Module.get()
                 );
+
             auto entryBlock = llvm::BasicBlock::Create(m_LLVMContext, "entry", func);
             m_Builder.SetInsertPoint(entryBlock);
 
             unsigned idx = 0;
             for (auto &param : functionDefinitionNode->getParameters()) {
+                // llvmFuncType->dump();
                 // param->accept(*this);
+                m_Logger.printInfo("Param {} {} {}", param->getType(), param->getIdentifier(), idx);
+                func->getArg(idx)->getType()->dump();
                 p_LastValue = m_Builder.CreateAlloca(func->getArg(idx)->getType(), nullptr, param->getIdentifier());
                 m_NameValueMap[param->getIdentifier()] = p_LastValue;
-                m_Logger.printInfo("Trying to store {}", param->getIdentifier());
-                func->dump();
                 m_Builder.CreateStore(func->getArg(idx), p_LastValue);
                 idx++;
             }
@@ -698,11 +724,13 @@ namespace yapl {
             if (llvmFuncType->getReturnType()->isVoidTy()) {
                 m_Builder.CreateRetVoid();
             }
-             func->dump();
 
-            /* if (llvm::verifyFunction(*func, &llvm::errs())) {
+
+            if (llvm::verifyFunction(*func, &llvm::errs())) {
                 m_Logger.printError("There is a probleme with the function {}", functionName);
-            } */
+            }
+
+            func->dump();
 
             return;
         }
@@ -719,9 +747,19 @@ namespace yapl {
 
         if (auto yaplStructType = dynamic_cast<StructType*>(yaplType)) {
             auto llvmStructType = getOrCreateLLVMType(yaplStructType);
+            p_CurrentStruct = llvmStructType;
+            p_CurrentYaplStruct = yaplStructType;
+            p_CurrentStruct->dump();
             for (auto &method : structDefinitionNode->getMethods()) {
+                /* auto param = std::make_unique<ASTDeclarationNode>(method->getScope());
+§u                param->setIdentifier("this");
+                param->setType(structDefinitionNode->getStructName());
+                method->addParameter(std::move(param)); */
+                m_Logger.printInfo("Making method {}", method->getFunctionName());
                 method->accept(*this);
             }
+            p_CurrentStruct = nullptr;
+            p_CurrentYaplStruct = nullptr;
         }
 
     }

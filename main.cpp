@@ -21,6 +21,7 @@
 #include "Parser/Parser.hpp"
 #include "Printer/ASTPrinter.hpp"
 #include "YASA/YasaVisitor.hpp"
+#include "AST/ASTMethodExtractor.hpp"
 
 int main(int argc, char *argv[]) {
     CppLogger::CppLogger mainConsole(CppLogger::Level::Trace, "Main");
@@ -38,10 +39,17 @@ int main(int argc, char *argv[]) {
         std::string filepath = argv[1]; //NOLINT: We know this is a good index, we check it before.
         yapl::Parser parser(filepath, CppLogger::Level::Trace);
         parser.parse();
-        /* yapl::ASTPrinter printer(std::move(parser.getProgram()));
+        yapl::ASTPrinter printer(std::move(parser.getProgram()));
         printer.dump();
-        auto prog = printer.releaseProgram(); */
-        yapl::YasaVisitor yasaVisitor(std::move(parser.getProgram()));
+        auto prog = printer.releaseProgram();
+        yapl::ASTMethodExtractor extractor(std::move(prog));
+        extractor.extractMethods();
+        prog = extractor.releaseProgram();
+        mainConsole.printInfo("Methods extracted ===========================");
+        printer = yapl::ASTPrinter(std::move(prog));
+        printer.dump();
+        prog = printer.releaseProgram();
+        yapl::YasaVisitor yasaVisitor(std::move(prog));
         yasaVisitor.analyze();
         yapl::IRGenerator irGenerator = yapl::IRGenerator(
                 yasaVisitor.getExprTypeMap(),

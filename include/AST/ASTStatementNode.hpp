@@ -156,8 +156,12 @@ namespace yapl
         std::vector<std::unique_ptr<ASTDeclarationNode>> m_Parameters;
         std::unique_ptr<ASTBlockNode> m_Body;
         void addParameterFirst(std::unique_ptr<ASTDeclarationNode>);
+        void overrideBody(ASTBlockNode *body);
+
+        ASTBlockNode *releaseBody();
 
         friend class ASTStructDefinitionNode;
+        friend class ASTMethodExtractor;
 
     public:
         explicit ASTFunctionDefinitionNode(SharedScope);
@@ -181,6 +185,9 @@ namespace yapl
         std::vector<std::unique_ptr<ASTDeclarationNode>> m_Attributes;
         std::vector<std::unique_ptr<ASTFunctionDefinitionNode>> m_Methods;
 
+        void removeMethod(const std::string &name);
+
+        friend class ASTMethodExtractor;
     public:
         explicit ASTStructDefinitionNode(SharedScope);
 

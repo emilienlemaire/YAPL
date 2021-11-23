@@ -47,7 +47,7 @@ namespace yapl {
         OR = 15
     };
 
-    // FIXME: Review with new types
+    // TODO: Modify AST For struct definitions: struct type should only have the attributes and generate methods as functions that take "this" as argument
     class Parser {
     private:
         CppLogger::CppLogger m_Logger;

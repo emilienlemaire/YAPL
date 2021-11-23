@@ -137,6 +137,8 @@ namespace yapl {
     class ASTProgramNode : public ASTNode {
     private:
         std::vector<std::unique_ptr<ASTNode>> m_Nodes;
+
+        friend class ASTMethodExtractor;
     public:
         ASTProgramNode(std::shared_ptr<SymbolTable> scope, std::vector<std::unique_ptr<ASTNode>> nodes)
             :ASTNode(std::move(scope)), m_Nodes(std::move(nodes))
@@ -151,6 +153,7 @@ namespace yapl {
         [[nodiscard]] const_iterator cbegin() const noexcept { return m_Nodes.cbegin(); }
         [[nodiscard]] iterator end() noexcept { return m_Nodes.end(); }
         [[nodiscard]] const_iterator cend() const noexcept { return m_Nodes.cend(); }
+        [[nodiscard]] size_t getNumNodes() const { return m_Nodes.size(); }
 
         virtual void accept(ASTVisitor &visitor) override;
     };

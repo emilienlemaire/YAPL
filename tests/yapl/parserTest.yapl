@@ -11,12 +11,6 @@ int infiniteArray[3][2] = [
     [3, 4],
     [5, 6]
 ];
-int infiniteArray2[4][3][2] = [
-    infiniteArray,
-    infiniteArray,
-    infiniteArray,
-    infiniteArray
-];
 
 // Commented out for YASA
 // float test = anArray[name].aMethod(12, bla, test.a);
@@ -44,22 +38,12 @@ struct str {
     int b = 2;
 
     func addToA(int v) -> int {
-        if (v < 0) {
-            v = -v;
-            f2(v);
-        } else {
-            f3(v);
-        }
-
-        for (int i in 0 ... 12) {
-            v = v + i;
-        }
-        return a + v;
+        return this.a + v;
     }
 }
 
-str test = {1, 3};
+str test(1,2);
 
-// Not yet possible, should look into it
-// str test1(1);
-// str test2(1, 2);
+func f8(int a) -> int {
+    return test.addToA(a);
+}
